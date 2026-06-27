@@ -33,7 +33,7 @@
   .card{background:var(--card);border:1px solid var(--bord);border-radius:3px;padding:14px;margin-bottom:14px}
   .card h3{margin:0 0 10px;font-size:13px;color:var(--azul2);border-bottom:1px solid var(--bord);padding-bottom:6px}
   /* Filtros */
-  .filtros{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}
+  .filtros{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end}
   @media(max-width:820px){.filtros{grid-template-columns:1fr 1fr}}
   label{display:block;font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600}
   select,input{width:100%;padding:7px 8px;border:1px solid var(--bord);border-radius:3px;
@@ -94,6 +94,7 @@
   <div class="tab active" data-tab="general">Vista General</div>
   <div class="tab" data-tab="calc">Calculadora de Reposición</div>
   <div class="tab" data-tab="lead">Lead Time Real</div>
+  <div class="tab" data-tab="nivel2">Reposición CEDIS (Nivel 2)</div>
 </div>
 
 <div class="wrap">
@@ -101,6 +102,14 @@
   <!-- Filtros comunes -->
   <div class="card">
     <div class="filtros">
+      <div>
+        <label>CEDIS responsable</label>
+        <select id="fCEDIS"><option value="">Todos</option>
+          <option value="CEDIS PANAMA">CEDIS Panamá</option>
+          <option value="CEDIS DIVISA">CEDIS Divisa</option>
+          <option value="CEDIS CHIRIQUI">CEDIS Chiriquí</option>
+        </select>
+      </div>
       <div>
         <label>Unidad Ejecutora</label>
         <select id="fUE"><option value="">Todas</option></select>
@@ -145,6 +154,7 @@
         <table id="tGen">
           <thead><tr>
             <th data-k="ue">Unidad Ejecutora</th>
+            <th data-k="ced">CEDIS</th>
             <th data-k="cod">Código</th>
             <th data-k="sum">Suministro</th>
             <th data-k="inv" class="num">Inventario</th>
@@ -261,6 +271,42 @@
     </div>
   </section>
 
+  <!-- ===== TAB NIVEL 2 ===== -->
+  <section id="tab-nivel2" class="hidden">
+    <div class="card">
+      <h3>Reposición de CEDIS regionales → CEDIS Panamá</h3>
+      <p class="muted">
+        CEDIS Divisa (Veraguas, Coclé, Herrera, Los Santos) y CEDIS Chiriquí (Chiriquí, Bocas del Toro)
+        se abastecen de CEDIS Panamá. Aquí se evalúa el inventario de cada CEDIS regional contra su
+        demanda agregada aguas abajo y contra lo que recibe de CEDIS Panamá.
+      </p>
+      <div class="legend" style="background:#fbf3df;border:1px solid #e0c97a;padding:8px;border-radius:3px">
+        <b>Nota de alcance:</b> la demanda aguas abajo de Divisa/Chiriquí es <b>parcial</b>, porque
+        DISTRIBUCIONES_PROMEDIO registra salidas de CEDIS Panamá, no las distribuciones internas de cada
+        CEDIS regional a sus propias UEs. Por eso se muestra también <b>Cob. Recibido</b> (inventario ÷ lo
+        que tú les despachas), que es la referencia más robusta con los datos actuales.
+      </div>
+    </div>
+    <div class="card">
+      <h3>Matriz Nivel 2 <span class="muted" id="cntN2"></span></h3>
+      <div class="tablewrap">
+        <table id="tN2">
+          <thead><tr>
+            <th data-k="ced">CEDIS</th>
+            <th data-k="cod">Código</th>
+            <th data-k="sum">Suministro</th>
+            <th data-k="inv" class="num">Inventario CEDIS</th>
+            <th data-k="dem" class="num">Demanda/mes (parcial)</th>
+            <th data-k="rec" class="num">Recibido/mes</th>
+            <th data-k="cobD" class="num">Cob. Demanda</th>
+            <th data-k="cobR" class="num">Cob. Recibido</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <script>
@@ -272,6 +318,8 @@ let RAW=[];        // filas crudas de la matriz
 let HEADERS=[];
 let META={};
 let LEAD=[];
+let N2={header:[],rows:[]};
+let sortN2={k:'dem',dir:-1};
 let baseCobertura='consumo';   // para coberturas de Vista General
 let modoLead='mensual';        // para la calculadora
 let sortGen={k:'cobC',dir:1};
@@ -294,6 +342,7 @@ function jsonp(params){
 const COL={};
 function mapCols(){
   COL.ue=HEADERS.indexOf('UNIDAD_EJECUTORA');
+  COL.ced=HEADERS.indexOf('CEDIS_RESPONSABLE');
   COL.cod=HEADERS.indexOf('COD_ABASTO');
   COL.sum=HEADERS.indexOf('SUMINISTRO');
   COL.inv=HEADERS.indexOf('INVENTARIO');
@@ -315,6 +364,7 @@ async function cargar(){
     if(!d.ok){ document.getElementById('meta').textContent='Error: '+(d.error||'sin datos'); return; }
     HEADERS=d.header; RAW=d.rows; META=d.meta||{}; mapCols();
     const l=await jsonp({accion:'lead'}); LEAD=(l&&l.lead&&l.lead.rows)||[];
+    const n2=await jsonp({accion:'nivel2'}); N2=(n2&&n2.nivel2)||{header:[],rows:[]};
     poblarUE();
     document.getElementById('meta').innerHTML=
       'Generado: '+(META.generado?new Date(META.generado).toLocaleString('es-PA'):'—')+
@@ -368,10 +418,12 @@ function calcFila(r){
 
 /* ======================= FILTRADO ======================= */
 function filtrar(){
+  const ced=document.getElementById('fCEDIS').value;
   const ue=document.getElementById('fUE').value;
   const reng=document.getElementById('fReng').value.trim().toUpperCase();
   const est=document.getElementById('fEstado').value;
   return RAW.filter(r=>{
+    if(ced && r[COL.ced]!==ced) return false;
     if(ue && r[COL.ue]!==ue) return false;
     if(reng){
       const hay=String(r[COL.cod]).includes(reng)||String(r[COL.sum]||'').toUpperCase().includes(reng);
@@ -398,12 +450,13 @@ function render(){
   renderGeneral();
   renderCalc();
   renderLead();
+  renderN2();
 }
 function renderGeneral(){
   let rows=filtrar();
   const sk=sortGen.k, dir=sortGen.dir;
   const get={
-    ue:r=>r[COL.ue], cod:r=>String(r[COL.cod]), sum:r=>r[COL.sum]||'',
+    ue:r=>r[COL.ue], ced:r=>r[COL.ced]||'', cod:r=>String(r[COL.cod]), sum:r=>r[COL.sum]||'',
     inv:r=>N(r[COL.inv]), cons:r=>N(r[COL.cons]), dist:r=>N(r[COL.dist]),
     req:r=>N(r[COL.req]), cobC:r=>r[COL.cobC]===''?-1:N(r[COL.cobC]),
     cobD:r=>r[COL.cobD]===''?-1:N(r[COL.cobD]), cobR:r=>r[COL.cobR]===''?-1:N(r[COL.cobR]),
@@ -411,11 +464,12 @@ function renderGeneral(){
   }[sk];
   rows.sort((a,b)=>{const x=get(a),y=get(b);return (x>y?1:x<y?-1:0)*dir;});
 
-  // KPIs
-  const tot=RAW.length;
-  const cero=RAW.filter(r=>N(r[COL.cero])===1).length;
-  const pres=RAW.filter(r=>r[COL.brecha]!==''&&N(r[COL.brecha])>1).length;
-  let bajoRop=0; RAW.forEach(r=>{ if(calcFila(r).estado!=='ok') bajoRop++; });
+  // KPIs (sobre el conjunto filtrado, no todo RAW, para que respondan al filtro CEDIS)
+  const universo=filtrar();
+  const tot=universo.length;
+  const cero=universo.filter(r=>N(r[COL.cero])===1).length;
+  const pres=universo.filter(r=>r[COL.brecha]!==''&&N(r[COL.brecha])>1).length;
+  let bajoRop=0; universo.forEach(r=>{ if(calcFila(r).estado!=='ok') bajoRop++; });
   document.getElementById('k_tot').textContent=tot.toLocaleString();
   document.getElementById('k_cero').textContent=cero.toLocaleString();
   document.getElementById('k_cero_pct').textContent=(100*cero/tot).toFixed(1)+'% del total';
@@ -428,6 +482,7 @@ function renderGeneral(){
   const slice=rows.slice(0,1500);
   tb.innerHTML=slice.map(r=>`<tr>
     <td>${r[COL.ue]}</td>
+    <td><span class="badge-tipo">${r[COL.ced]||'—'}</span></td>
     <td class="num">${r[COL.cod]}</td>
     <td>${r[COL.sum]||''}</td>
     <td class="num">${N(r[COL.inv]).toLocaleString()}</td>
@@ -514,6 +569,39 @@ function renderLead(){
     scales:{y:{beginAtZero:true,title:{display:true,text:'Días'}}}}});
 }
 
+/* ======================= RENDER NIVEL 2 ======================= */
+function renderN2(){
+  const H=N2.header||[]; const rows0=(N2.rows||[]).slice();
+  const ci={ced:H.indexOf('CEDIS'),cod:H.indexOf('COD_ABASTO'),sum:H.indexOf('SUMINISTRO'),
+    inv:H.indexOf('INVENTARIO_CEDIS'),dem:H.indexOf('DEMANDA_MES'),rec:H.indexOf('RECIBIDO_MES'),
+    cobD:H.indexOf('COB_DEMANDA_MESES'),cobR:H.indexOf('COB_RECIBIDO_MESES')};
+  // filtro por CEDIS (si está seleccionado uno regional) y por renglón
+  const fced=document.getElementById('fCEDIS').value;
+  const reng=document.getElementById('fReng').value.trim().toUpperCase();
+  let rows=rows0.filter(r=>{
+    if(fced && r[ci.ced]!==fced) return false;
+    if(reng){ const hay=String(r[ci.cod]).includes(reng)||String(r[ci.sum]||'').toUpperCase().includes(reng); if(!hay)return false; }
+    return true;
+  });
+  const sk=sortN2.k, dir=sortN2.dir;
+  const get={ced:r=>r[ci.ced],cod:r=>String(r[ci.cod]),sum:r=>r[ci.sum]||'',
+    inv:r=>N(r[ci.inv]),dem:r=>N(r[ci.dem]),rec:r=>N(r[ci.rec]),
+    cobD:r=>r[ci.cobD]===''?-1:N(r[ci.cobD]),cobR:r=>r[ci.cobR]===''?-1:N(r[ci.cobR])}[sk]||(r=>0);
+  rows.sort((a,b)=>{const x=get(a),y=get(b);return (x>y?1:x<y?-1:0)*dir;});
+  const tb=document.querySelector('#tN2 tbody');
+  tb.innerHTML=rows.slice(0,1500).map(r=>`<tr>
+    <td><span class="badge-tipo">${r[ci.ced]}</span></td>
+    <td class="num">${r[ci.cod]}</td>
+    <td>${r[ci.sum]||''}</td>
+    <td class="num">${N(r[ci.inv]).toLocaleString()}</td>
+    <td class="num">${N(r[ci.dem]).toLocaleString()}</td>
+    <td class="num">${N(r[ci.rec]).toLocaleString()}</td>
+    <td class="num">${covCell(r[ci.cobD])}</td>
+    <td class="num">${covCell(r[ci.cobR])}</td>
+  </tr>`).join('');
+  document.getElementById('cntN2').textContent='('+rows.length.toLocaleString()+(rows.length>1500?' · mostrando 1500':'')+')';
+}
+
 /* ======================= SORT HANDLERS ======================= */
 function bindSort(tableId,sortObj,rerender){
   document.querySelectorAll('#'+tableId+' thead th').forEach(th=>{
@@ -533,7 +621,7 @@ document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    ['general','calc','lead'].forEach(id=>{
+    ['general','calc','lead','nivel2'].forEach(id=>{
       document.getElementById('tab-'+id).classList.toggle('hidden',id!==t.dataset.tab);
     });
   });
@@ -553,8 +641,8 @@ document.querySelectorAll('.chip[data-lt]').forEach(ch=>{
     ch.classList.add('on'); modoLead=ch.dataset.lt; renderCalc();
   });
 });
-['fUE','fReng','fEstado'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',()=>{renderGeneral();renderCalc();});
+['fCEDIS','fUE','fReng','fEstado'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{renderGeneral();renderCalc();renderN2();});
 });
 ['pBase','pLeadM','pLeadU','pSeg','pObj'].forEach(id=>{
   document.getElementById(id).addEventListener('input',renderCalc);
@@ -567,6 +655,7 @@ document.getElementById('btnRefrescar').addEventListener('click',async()=>{
 
 bindSort('tGen',sortGen,renderGeneral);
 bindSort('tCalc',sortCalc,renderCalc);
+bindSort('tN2',sortN2,renderN2);
 
 cargar();
 </script>
