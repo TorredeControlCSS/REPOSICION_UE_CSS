@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Calculadora de Reposición · CEDIS Panamá</title>
+<link rel="icon" href="icons/icon-512.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --azul:#1e5a9e; --azul2:#0C447C; --bg:#ececec; --card:#ffffff;
+    --bord:#a8a8a8; --txt:#1a1a1a; --sub:#555; --mono:'Consolas','Courier New',monospace;
+    --ok:#1f8a4c; --warn:#b8860b; --crit:#c0392b; --gris:#f4f4f4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:'Segoe UI',Tahoma,system-ui,sans-serif;font-size:13px}
+  /* Topbar institucional */
+  .topbar{background:linear-gradient(90deg,var(--azul2),var(--azul));color:#fff;
+    display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:2px solid var(--azul2)}
+  .topbar img{width:46px;height:46px;border-radius:4px;background:#fff;padding:3px}
+  .topbar .t1{font-size:15px;font-weight:700;letter-spacing:.3px}
+  .topbar .t2{font-size:11px;opacity:.85}
+  .topbar .spacer{flex:1}
+  .topbar .meta{font-size:11px;opacity:.9;text-align:right;line-height:1.5}
+  /* Tabs */
+  .tabs{display:flex;background:var(--card);border-bottom:1px solid var(--bord);padding:0 8px;gap:2px;flex-wrap:wrap}
+  .tab{padding:10px 16px;cursor:pointer;border:1px solid transparent;border-bottom:none;
+    font-weight:600;color:var(--sub);font-size:12.5px}
+  .tab.active{color:var(--azul2);background:var(--gris);border-color:var(--bord);
+    border-bottom:2px solid var(--azul);border-radius:3px 3px 0 0}
+  .wrap{padding:14px 16px;max-width:1500px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--bord);border-radius:3px;padding:14px;margin-bottom:14px}
+  .card h3{margin:0 0 10px;font-size:13px;color:var(--azul2);border-bottom:1px solid var(--bord);padding-bottom:6px}
+  /* Filtros */
+  .filtros{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}
+  @media(max-width:820px){.filtros{grid-template-columns:1fr 1fr}}
+  label{display:block;font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600}
+  select,input{width:100%;padding:7px 8px;border:1px solid var(--bord);border-radius:3px;
+    background:#fff;color:var(--txt);font-size:12.5px}
+  .btn{padding:7px 14px;border:1px solid var(--azul2);background:var(--azul);color:#fff;
+    border-radius:3px;cursor:pointer;font-weight:600;font-size:12.5px;white-space:nowrap}
+  .btn.sec{background:#fff;color:var(--azul2)}
+  .btn:hover{filter:brightness(.95)}
+  /* KPIs */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--card);border:1px solid var(--bord);border-radius:3px;padding:12px}
+  .kpi .lbl{font-size:11px;color:var(--sub);font-weight:600}
+  .kpi .val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--azul2);margin-top:4px}
+  .kpi .sub{font-size:10.5px;color:var(--sub);margin-top:2px}
+  .kpi.crit .val{color:var(--crit)} .kpi.warn .val{color:var(--warn)} .kpi.ok .val{color:var(--ok)}
+  /* Tabla */
+  .tablewrap{overflow:auto;max-height:62vh;border:1px solid var(--bord);border-radius:3px}
+  table{border-collapse:collapse;width:100%;font-size:12px;background:#fff}
+  thead th{position:sticky;top:0;background:var(--azul2);color:#fff;padding:7px 8px;text-align:left;
+    font-weight:600;cursor:pointer;white-space:nowrap;user-select:none;border-right:1px solid #1e5a9e}
+  thead th .arr{opacity:.5;font-size:10px;margin-left:3px}
+  tbody td{padding:6px 8px;border-bottom:1px solid #e3e3e3;border-right:1px solid #efefef}
+  tbody tr:nth-child(even){background:#fafafa}
+  tbody tr:hover{background:#eef4fb}
+  td.num{font-family:var(--mono);text-align:right}
+  .pill{padding:2px 7px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap}
+  .pill.ok{background:#e3f4ea;color:var(--ok)} .pill.warn{background:#fbf3df;color:var(--warn)}
+  .pill.crit{background:#fbe6e3;color:var(--crit)}
+  .cov{font-family:var(--mono);font-weight:700}
+  .cov.ok{color:var(--ok)} .cov.warn{color:var(--warn)} .cov.crit{color:var(--crit)} .cov.na{color:#999}
+  .muted{color:var(--sub);font-size:11px}
+  .params{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  @media(max-width:900px){.params{grid-template-columns:repeat(2,1fr)}}
+  .loading{text-align:center;padding:40px;color:var(--sub)}
+  .badge-tipo{font-size:10px;padding:1px 6px;border:1px solid var(--bord);border-radius:3px;color:var(--sub)}
+  .legend{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.6}
+  .legend b{color:var(--txt)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .chip{font-size:11px;padding:3px 9px;border:1px solid var(--bord);border-radius:12px;cursor:pointer;background:#fff;color:var(--sub)}
+  .chip.on{background:var(--azul);color:#fff;border-color:var(--azul2)}
+  .pedir{font-family:var(--mono);font-weight:700;color:var(--azul2)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img src="icons/icon-512.png" alt="CSS" onerror="this.style.display='none'">
+  <div>
+    <div class="t1">Calculadora de Reposición · Unidades Ejecutoras</div>
+    <div class="t2">Torre de Control — DINALOG / CEDIS Panamá</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="meta" id="meta">Cargando…</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="general">Vista General</div>
+  <div class="tab" data-tab="calc">Calculadora de Reposición</div>
+  <div class="tab" data-tab="lead">Lead Time Real</div>
+</div>
+
+<div class="wrap">
+
+  <!-- Filtros comunes -->
+  <div class="card">
+    <div class="filtros">
+      <div>
+        <label>Unidad Ejecutora</label>
+        <select id="fUE"><option value="">Todas</option></select>
+      </div>
+      <div>
+        <label>Renglón (código o suministro)</label>
+        <input id="fReng" placeholder="Filtrar por código o nombre…"/>
+      </div>
+      <div>
+        <label>Estado de cobertura</label>
+        <select id="fEstado">
+          <option value="">Todos</option>
+          <option value="crit">Crítico (&lt; reorden)</option>
+          <option value="cero">En cero</option>
+          <option value="presion">Efecto presión (req &gt; consumo)</option>
+        </select>
+      </div>
+      <div><button class="btn" id="btnRefrescar">Recalcular matriz</button></div>
+    </div>
+    <div class="legend">
+      Base de consumo para coberturas:
+      <span class="chips">
+        <span class="chip on" data-base="consumo">Consumo reportado</span>
+        <span class="chip" data-base="distrib">Distribución real</span>
+        <span class="chip" data-base="req">Requisición</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ===== TAB GENERAL ===== -->
+  <section id="tab-general">
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">Renglones UE × Código</div><div class="val" id="k_tot">—</div><div class="sub">posiciones evaluadas</div></div>
+      <div class="kpi crit"><div class="lbl">En cero absoluto</div><div class="val" id="k_cero">—</div><div class="sub" id="k_cero_pct">— del total</div></div>
+      <div class="kpi crit"><div class="lbl">Bajo punto de reorden</div><div class="val" id="k_rop">—</div><div class="sub">requieren pedir ya</div></div>
+      <div class="kpi warn"><div class="lbl">Efecto presión</div><div class="val" id="k_pres">—</div><div class="sub">req &gt; consumo</div></div>
+      <div class="kpi"><div class="lbl">Ventana requisiciones</div><div class="val" id="k_vent">—</div><div class="sub" id="k_vent2">meses analizados</div></div>
+    </div>
+    <div class="card">
+      <h3>Requisiciones vs Distribuciones vs Consumos — por renglón <span class="muted" id="cntGen"></span></h3>
+      <div class="tablewrap">
+        <table id="tGen">
+          <thead><tr>
+            <th data-k="ue">Unidad Ejecutora</th>
+            <th data-k="cod">Código</th>
+            <th data-k="sum">Suministro</th>
+            <th data-k="inv" class="num">Inventario</th>
+            <th data-k="cons" class="num">Consumo/mes</th>
+            <th data-k="dist" class="num">Distrib/mes</th>
+            <th data-k="req" class="num">Req/mes</th>
+            <th data-k="cobC" class="num">Cob. Consumo</th>
+            <th data-k="cobD" class="num">Cob. Distrib</th>
+            <th data-k="cobR" class="num">Cob. Req</th>
+            <th data-k="brecha" class="num">Brecha R/C</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <b>Cobertura</b> = inventario ÷ base mensual (en meses). 
+        <span class="cov crit">&lt;0.5</span> crítico ·
+        <span class="cov warn">0.5–1</span> ajustado ·
+        <span class="cov ok">&gt;1</span> holgado.
+        <b>Brecha R/C</b> &gt; 1 indica que la UE pide más de lo que consume (efecto presión / sobre-pedido).
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TAB CALCULADORA ===== -->
+  <section id="tab-calc" class="hidden">
+    <div class="card">
+      <h3>Parámetros del punto de reorden</h3>
+      <div class="params">
+        <div>
+          <label>Base de consumo diario</label>
+          <select id="pBase">
+            <option value="consumo">Consumo reportado</option>
+            <option value="distrib">Distribución real</option>
+            <option value="req">Requisición promedio</option>
+            <option value="max">Mayor de los tres (conservador)</option>
+          </select>
+        </div>
+        <div>
+          <label>Lead time MENSUAL (días)</label>
+          <input id="pLeadM" type="number" value="24" min="1"/>
+        </div>
+        <div>
+          <label>Lead time URGENCIA (días)</label>
+          <input id="pLeadU" type="number" value="8" min="1"/>
+        </div>
+        <div>
+          <label>Factor seguridad (días)</label>
+          <input id="pSeg" type="number" value="7" min="0"/>
+        </div>
+        <div>
+          <label>Cobertura objetivo (días)</label>
+          <input id="pObj" type="number" value="30" min="1"/>
+        </div>
+      </div>
+      <div class="legend">
+        <b>Punto de reorden</b> = consumo diario × lead time + (factor seguridad × consumo diario).
+        <b>Cantidad a pedir</b> = consumo diario × (cobertura objetivo + lead time + seguridad) − inventario actual, con piso en 0.
+        El lead time usado por defecto es el <b>medido</b> (24d mensual / 8d urgencia), no el teórico.
+        <div class="chips">
+          <span class="chip on" data-lt="mensual">Modo Mensual</span>
+          <span class="chip" data-lt="urgencia">Modo Urgencia</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi crit"><div class="lbl">Renglones a pedir</div><div class="val" id="c_npedir">—</div><div class="sub">inv ≤ punto de reorden</div></div>
+      <div class="kpi"><div class="lbl">Unidades a solicitar</div><div class="val" id="c_total">—</div><div class="sub">suma cantidades sugeridas</div></div>
+      <div class="kpi ok"><div class="lbl">En nivel óptimo</div><div class="val" id="c_ok">—</div><div class="sub">no requieren pedido</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Sugerencia de pedido por renglón <span class="muted" id="cntCalc"></span></h3>
+      <div class="tablewrap">
+        <table id="tCalc">
+          <thead><tr>
+            <th data-k="ue">Unidad Ejecutora</th>
+            <th data-k="cod">Código</th>
+            <th data-k="sum">Suministro</th>
+            <th data-k="inv" class="num">Inventario</th>
+            <th data-k="cd" class="num">Consumo/día</th>
+            <th data-k="rop" class="num">Punto reorden</th>
+            <th data-k="cobDias" class="num">Cobertura (días)</th>
+            <th data-k="estado">Estado</th>
+            <th data-k="pedir" class="num">Cantidad a pedir</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TAB LEAD TIME ===== -->
+  <section id="tab-lead" class="hidden">
+    <div class="card">
+      <h3>Lead time real medido vs teórico</h3>
+      <p class="muted">Medido pareando cada requisición F8 con su primera distribución posterior (≤120 días).</p>
+      <div class="tablewrap" style="max-height:none">
+        <table id="tLead">
+          <thead><tr>
+            <th>Tipo de pedido</th><th class="num">N° pares</th>
+            <th class="num">Mediana (d)</th><th class="num">Media (d)</th>
+            <th class="num">P75 (d)</th><th class="num">Teórico (d)</th>
+            <th class="num">Desfase vs teórico</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Comparativa visual</h3>
+      <canvas id="chartLead" height="110"></canvas>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ======================= CONFIG ======================= */
+// Reemplaza por el /exec de TU despliegue del backend de reposición:
+const API = 'https://script.google.com/macros/s/REEMPLAZAR_EXEC_REPOSICION/exec';
+
+let RAW=[];        // filas crudas de la matriz
+let HEADERS=[];
+let META={};
+let LEAD=[];
+let baseCobertura='consumo';   // para coberturas de Vista General
+let modoLead='mensual';        // para la calculadora
+let sortGen={k:'cobC',dir:1};
+let sortCalc={k:'pedir',dir:-1};
+
+/* ======================= JSONP ======================= */
+function jsonp(params){
+  return new Promise((res,rej)=>{
+    const cb='__cb'+Math.random().toString(36).slice(2);
+    const s=document.createElement('script');
+    const q=Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&');
+    window[cb]=(d)=>{ res(d); delete window[cb]; s.remove(); };
+    s.onerror=()=>{ rej(new Error('Error de red')); s.remove(); };
+    s.src=API+'?'+q+'&callback='+cb;
+    document.body.appendChild(s);
+  });
+}
+
+/* ======================= ÍNDICES DE COLUMNA ======================= */
+const COL={};
+function mapCols(){
+  COL.ue=HEADERS.indexOf('UNIDAD_EJECUTORA');
+  COL.cod=HEADERS.indexOf('COD_ABASTO');
+  COL.sum=HEADERS.indexOf('SUMINISTRO');
+  COL.inv=HEADERS.indexOf('INVENTARIO');
+  COL.cons=HEADERS.indexOf('CONSUMO_MES');
+  COL.dist=HEADERS.indexOf('DISTRIB_MES');
+  COL.req=HEADERS.indexOf('REQ_MES');
+  COL.cobC=HEADERS.indexOf('COB_CONSUMO');
+  COL.cobD=HEADERS.indexOf('COB_DISTRIB');
+  COL.cobR=HEADERS.indexOf('COB_REQ');
+  COL.brecha=HEADERS.indexOf('BRECHA_REQ_CONS');
+  COL.cero=HEADERS.indexOf('EN_CERO');
+}
+const N=v=>{const n=Number(v);return isNaN(n)?0:n;};
+
+/* ======================= CARGA ======================= */
+async function cargar(){
+  try{
+    const d=await jsonp({accion:'matriz'});
+    if(!d.ok){ document.getElementById('meta').textContent='Error: '+(d.error||'sin datos'); return; }
+    HEADERS=d.header; RAW=d.rows; META=d.meta||{}; mapCols();
+    const l=await jsonp({accion:'lead'}); LEAD=(l&&l.lead&&l.lead.rows)||[];
+    poblarUE();
+    document.getElementById('meta').innerHTML=
+      'Generado: '+(META.generado?new Date(META.generado).toLocaleString('es-PA'):'—')+
+      '<br>Req '+(META.mesesReq||'?')+'m · Distrib '+(META.mesesDist||'?')+'m · '+(META.filas||RAW.length)+' renglones';
+    render();
+  }catch(e){
+    document.getElementById('meta').textContent='No se pudo conectar al backend.';
+  }
+}
+
+function poblarUE(){
+  const set=new Set();
+  RAW.forEach(r=>set.add(r[COL.ue]));
+  const sel=document.getElementById('fUE');
+  [...set].sort().forEach(u=>{
+    const o=document.createElement('option');o.value=u;o.textContent=u;sel.appendChild(o);
+  });
+}
+
+/* ======================= CÁLCULO CALCULADORA ======================= */
+function paramsCalc(){
+  return {
+    base:document.getElementById('pBase').value,
+    leadM:N(document.getElementById('pLeadM').value),
+    leadU:N(document.getElementById('pLeadU').value),
+    seg:N(document.getElementById('pSeg').value),
+    obj:N(document.getElementById('pObj').value)
+  };
+}
+function consumoDiario(r,base){
+  const c=N(r[COL.cons]), d=N(r[COL.dist]), q=N(r[COL.req]);
+  let m;
+  if(base==='consumo')m=c; else if(base==='distrib')m=d;
+  else if(base==='req')m=q; else m=Math.max(c,d,q);
+  return m/30;
+}
+function calcFila(r){
+  const p=paramsCalc();
+  const lead = modoLead==='urgencia' ? p.leadU : p.leadM;
+  const cd=consumoDiario(r,p.base);
+  const inv=N(r[COL.inv]);
+  const rop = cd*lead + p.seg*cd;
+  const objetivo = cd*(p.obj+lead+p.seg);
+  const pedir = Math.max(0, Math.round(objetivo - inv));
+  const cobDias = cd>0 ? inv/cd : Infinity;
+  let estado;
+  if(inv<=rop) estado = (inv===0?'cero':'crit');
+  else estado='ok';
+  return {cd,inv,rop,pedir,cobDias,estado,lead};
+}
+
+/* ======================= FILTRADO ======================= */
+function filtrar(){
+  const ue=document.getElementById('fUE').value;
+  const reng=document.getElementById('fReng').value.trim().toUpperCase();
+  const est=document.getElementById('fEstado').value;
+  return RAW.filter(r=>{
+    if(ue && r[COL.ue]!==ue) return false;
+    if(reng){
+      const hay=String(r[COL.cod]).includes(reng)||String(r[COL.sum]||'').toUpperCase().includes(reng);
+      if(!hay) return false;
+    }
+    if(est==='cero' && N(r[COL.cero])!==1) return false;
+    if(est==='presion'){ const b=r[COL.brecha]; if(!(b!==''&&N(b)>1)) return false; }
+    if(est==='crit'){ const c=calcFila(r); if(c.estado==='ok') return false; }
+    return true;
+  });
+}
+
+/* ======================= RENDER GENERAL ======================= */
+function covClass(v){
+  if(v===''||v==null) return 'na';
+  v=N(v); if(v<0.5)return 'crit'; if(v<=1)return 'warn'; return 'ok';
+}
+function covCell(v){
+  const c=covClass(v);
+  const txt=(v===''||v==null)?'—':N(v).toFixed(2);
+  return '<span class="cov '+c+'">'+txt+'</span>';
+}
+function render(){
+  renderGeneral();
+  renderCalc();
+  renderLead();
+}
+function renderGeneral(){
+  let rows=filtrar();
+  const sk=sortGen.k, dir=sortGen.dir;
+  const get={
+    ue:r=>r[COL.ue], cod:r=>String(r[COL.cod]), sum:r=>r[COL.sum]||'',
+    inv:r=>N(r[COL.inv]), cons:r=>N(r[COL.cons]), dist:r=>N(r[COL.dist]),
+    req:r=>N(r[COL.req]), cobC:r=>r[COL.cobC]===''?-1:N(r[COL.cobC]),
+    cobD:r=>r[COL.cobD]===''?-1:N(r[COL.cobD]), cobR:r=>r[COL.cobR]===''?-1:N(r[COL.cobR]),
+    brecha:r=>r[COL.brecha]===''?-1:N(r[COL.brecha])
+  }[sk];
+  rows.sort((a,b)=>{const x=get(a),y=get(b);return (x>y?1:x<y?-1:0)*dir;});
+
+  // KPIs
+  const tot=RAW.length;
+  const cero=RAW.filter(r=>N(r[COL.cero])===1).length;
+  const pres=RAW.filter(r=>r[COL.brecha]!==''&&N(r[COL.brecha])>1).length;
+  let bajoRop=0; RAW.forEach(r=>{ if(calcFila(r).estado!=='ok') bajoRop++; });
+  document.getElementById('k_tot').textContent=tot.toLocaleString();
+  document.getElementById('k_cero').textContent=cero.toLocaleString();
+  document.getElementById('k_cero_pct').textContent=(100*cero/tot).toFixed(1)+'% del total';
+  document.getElementById('k_rop').textContent=bajoRop.toLocaleString();
+  document.getElementById('k_pres').textContent=pres.toLocaleString();
+  document.getElementById('k_vent').textContent=(META.mesesReq||'—');
+  document.getElementById('k_vent2').textContent=(META.reqDesde||'')+' → '+(META.reqHasta||'');
+
+  const tb=document.querySelector('#tGen tbody');
+  const slice=rows.slice(0,1500);
+  tb.innerHTML=slice.map(r=>`<tr>
+    <td>${r[COL.ue]}</td>
+    <td class="num">${r[COL.cod]}</td>
+    <td>${r[COL.sum]||''}</td>
+    <td class="num">${N(r[COL.inv]).toLocaleString()}</td>
+    <td class="num">${N(r[COL.cons]).toLocaleString()}</td>
+    <td class="num">${N(r[COL.dist]).toLocaleString()}</td>
+    <td class="num">${N(r[COL.req]).toLocaleString()}</td>
+    <td class="num">${covCell(r[COL.cobC])}</td>
+    <td class="num">${covCell(r[COL.cobD])}</td>
+    <td class="num">${covCell(r[COL.cobR])}</td>
+    <td class="num">${r[COL.brecha]===''?'—':'<b style="color:'+(N(r[COL.brecha])>1?'var(--crit)':'var(--ok)')+'">'+N(r[COL.brecha]).toFixed(2)+'</b>'}</td>
+  </tr>`).join('');
+  document.getElementById('cntGen').textContent='('+rows.length.toLocaleString()+(rows.length>1500?' · mostrando 1500':'')+')';
+}
+
+/* ======================= RENDER CALCULADORA ======================= */
+function renderCalc(){
+  let rows=filtrar().map(r=>({r,c:calcFila(r)}));
+  const sk=sortCalc.k, dir=sortCalc.dir;
+  const get={
+    ue:o=>o.r[COL.ue], cod:o=>String(o.r[COL.cod]), sum:o=>o.r[COL.sum]||'',
+    inv:o=>o.c.inv, cd:o=>o.c.cd, rop:o=>o.c.rop,
+    cobDias:o=>o.c.cobDias===Infinity?1e9:o.c.cobDias,
+    estado:o=>o.c.estado, pedir:o=>o.c.pedir
+  }[sk];
+  rows.sort((a,b)=>{const x=get(a),y=get(b);return (x>y?1:x<y?-1:0)*dir;});
+
+  const npedir=rows.filter(o=>o.c.pedir>0).length;
+  const total=rows.reduce((s,o)=>s+o.c.pedir,0);
+  const ok=rows.filter(o=>o.c.estado==='ok').length;
+  document.getElementById('c_npedir').textContent=npedir.toLocaleString();
+  document.getElementById('c_total').textContent=total.toLocaleString();
+  document.getElementById('c_ok').textContent=ok.toLocaleString();
+
+  const estPill={ok:'<span class="pill ok">Óptimo</span>',
+    crit:'<span class="pill crit">Bajo reorden</span>',
+    cero:'<span class="pill crit">En cero</span>'};
+  const tb=document.querySelector('#tCalc tbody');
+  tb.innerHTML=rows.slice(0,1500).map(o=>{
+    const c=o.c, r=o.r;
+    return `<tr>
+      <td>${r[COL.ue]}</td>
+      <td class="num">${r[COL.cod]}</td>
+      <td>${r[COL.sum]||''}</td>
+      <td class="num">${c.inv.toLocaleString()}</td>
+      <td class="num">${c.cd.toFixed(1)}</td>
+      <td class="num">${Math.round(c.rop).toLocaleString()}</td>
+      <td class="num">${c.cobDias===Infinity?'∞':Math.round(c.cobDias)}</td>
+      <td>${estPill[c.estado]}</td>
+      <td class="num pedir">${c.pedir>0?c.pedir.toLocaleString():'—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('cntCalc').textContent='('+rows.length.toLocaleString()+(rows.length>1500?' · mostrando 1500':'')+')';
+}
+
+/* ======================= RENDER LEAD ======================= */
+let chartLead=null;
+function renderLead(){
+  const tb=document.querySelector('#tLead tbody');
+  tb.innerHTML=LEAD.map(r=>{
+    const med=N(r[2]), teo=N(r[5]);
+    const desf=teo>0?((med/teo).toFixed(1)+'×'):'—';
+    const col=med>teo?'var(--crit)':'var(--ok)';
+    return `<tr>
+      <td><b>${r[0]}</b></td>
+      <td class="num">${N(r[1]).toLocaleString()}</td>
+      <td class="num"><b>${med}</b></td>
+      <td class="num">${r[3]}</td>
+      <td class="num">${r[4]}</td>
+      <td class="num">${teo}</td>
+      <td class="num" style="color:${col};font-weight:700">${desf}</td>
+    </tr>`;
+  }).join('');
+
+  const labels=LEAD.map(r=>r[0]);
+  const medi=LEAD.map(r=>N(r[2]));
+  const teo=LEAD.map(r=>N(r[5]));
+  const ctx=document.getElementById('chartLead');
+  if(!ctx)return;
+  if(chartLead)chartLead.destroy();
+  chartLead=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+    {label:'Lead time real (mediana, días)',data:medi,backgroundColor:'#1e5a9e'},
+    {label:'Lead time teórico (días)',data:teo,backgroundColor:'#a8a8a8'}
+  ]},options:{responsive:true,plugins:{legend:{position:'top'}},
+    scales:{y:{beginAtZero:true,title:{display:true,text:'Días'}}}}});
+}
+
+/* ======================= SORT HANDLERS ======================= */
+function bindSort(tableId,sortObj,rerender){
+  document.querySelectorAll('#'+tableId+' thead th').forEach(th=>{
+    th.addEventListener('click',()=>{
+      const k=th.dataset.k; if(!k)return;
+      if(sortObj.k===k) sortObj.dir*=-1; else {sortObj.k=k;sortObj.dir=1;}
+      document.querySelectorAll('#'+tableId+' thead th .arr').forEach(a=>a.remove());
+      const arr=document.createElement('span');arr.className='arr';
+      arr.textContent=sortObj.dir===1?'▲':'▼';th.appendChild(arr);
+      rerender();
+    });
+  });
+}
+
+/* ======================= EVENTOS ======================= */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    ['general','calc','lead'].forEach(id=>{
+      document.getElementById('tab-'+id).classList.toggle('hidden',id!==t.dataset.tab);
+    });
+  });
+});
+document.querySelectorAll('.chip[data-base]').forEach(ch=>{
+  ch.addEventListener('click',()=>{
+    document.querySelectorAll('.chip[data-base]').forEach(x=>x.classList.remove('on'));
+    ch.classList.add('on'); baseCobertura=ch.dataset.base;
+    // reordena coberturas según base elegida
+    sortGen.k = baseCobertura==='consumo'?'cobC':baseCobertura==='distrib'?'cobD':'cobR';
+    sortGen.dir=1; renderGeneral();
+  });
+});
+document.querySelectorAll('.chip[data-lt]').forEach(ch=>{
+  ch.addEventListener('click',()=>{
+    document.querySelectorAll('.chip[data-lt]').forEach(x=>x.classList.remove('on'));
+    ch.classList.add('on'); modoLead=ch.dataset.lt; renderCalc();
+  });
+});
+['fUE','fReng','fEstado'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{renderGeneral();renderCalc();});
+});
+['pBase','pLeadM','pLeadU','pSeg','pObj'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',renderCalc);
+});
+document.getElementById('btnRefrescar').addEventListener('click',async()=>{
+  document.getElementById('meta').textContent='Recalculando matriz…';
+  try{ const d=await jsonp({accion:'rebuild'}); await cargar(); }
+  catch(e){ document.getElementById('meta').textContent='Error al recalcular.'; }
+});
+
+bindSort('tGen',sortGen,renderGeneral);
+bindSort('tCalc',sortCalc,renderCalc);
+
+cargar();
+</script>
+</body>
+</html>
