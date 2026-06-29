@@ -340,7 +340,7 @@
           <th class="num">Mover</th>
         </tr></thead><tbody></tbody></table>
       </div>
-      <div class="legend">Objetivo: dejar ~2 meses de cobertura por UE. Dona quien tiene &gt;4 meses o stock sin demanda; recibe quien está en cero o bajo 2 meses. Solo dentro del mismo CEDIS.</div>
+      <div class="legend">Jerarquía: <b>primero el inventario del propio CEDIS</b> (marcado <span class="pill ok" style="font-size:9px">CEDIS</span>) reparte a sus UEs en falta; solo si no alcanza, se mueve excedente entre UEs. Objetivo: dejar ~2 meses de cobertura por UE. Solo dentro del mismo CEDIS.</div>
     </div>
 
     <div class="card">
@@ -750,7 +750,7 @@ function renderSug(sug){
   card.classList.remove('hidden');
   tb.innerHTML=s.map(x=>`<tr>
     <td><span class="badge-tipo">${x.cedis}</span></td>
-    <td>${x.desde}</td><td class="num">${x.desde_inv.toLocaleString()}</td>
+    <td>${x.desde_es_cedis?'<b>'+x.desde+'</b> <span class="pill ok" style="font-size:9px">CEDIS</span>':x.desde}</td><td class="num">${x.desde_inv.toLocaleString()}</td>
     <td>${x.hacia}</td><td class="num">${x.hacia_inv.toLocaleString()}</td>
     <td class="num">${x.hacia_req_mes.toLocaleString()}</td>
     <td class="num pedir">${x.cantidad.toLocaleString()}</td>
