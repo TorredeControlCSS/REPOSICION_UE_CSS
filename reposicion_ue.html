@@ -95,6 +95,7 @@
   <div class="tab" data-tab="calc">Calculadora de Reposición</div>
   <div class="tab" data-tab="lead">Lead Time Real</div>
   <div class="tab" data-tab="nivel2">Reposición CEDIS (Nivel 2)</div>
+  <div class="tab" data-tab="redis">Detalle UE × Renglón</div>
 </div>
 
 <div class="wrap">
@@ -307,12 +308,64 @@
     </div>
   </section>
 
+  <!-- ===== TAB DETALLE UE × RENGLÓN ===== -->
+  <section id="tab-redis" class="hidden">
+    <div class="card">
+      <h3>Detalle granular por Unidad Ejecutora y sugerencia de redistribución</h3>
+      <div class="filtros" style="grid-template-columns:2fr 1fr auto">
+        <div>
+          <label>Renglón (código o suministro)</label>
+          <input id="rCod" placeholder="Escribe código o nombre y elige…" list="rCodList" autocomplete="off"/>
+          <datalist id="rCodList"></datalist>
+        </div>
+        <div>
+          <label>CEDIS responsable</label>
+          <select id="rCedis"><option value="">Todos</option>
+            <option value="CEDIS PANAMA">CEDIS Panamá</option>
+            <option value="CEDIS DIVISA">CEDIS Divisa</option>
+            <option value="CEDIS CHIRIQUI">CEDIS Chiriquí</option>
+          </select>
+        </div>
+        <div><button class="btn" id="rBtn">Consultar</button></div>
+      </div>
+      <div class="legend" id="rInfo" style="margin-top:8px"></div>
+    </div>
+
+    <div id="rSugCard" class="card hidden">
+      <h3>Sugerencia de redistribución <span class="muted">(dentro de cada CEDIS: quién sobra → quién falta)</span></h3>
+      <div class="tablewrap" style="max-height:38vh">
+        <table id="rSug"><thead><tr>
+          <th>CEDIS</th><th>Desde (excedente)</th><th class="num">Inv. origen</th>
+          <th>Hacia (falta)</th><th class="num">Inv. destino</th><th class="num">Req/mes destino</th>
+          <th class="num">Mover</th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+      <div class="legend">Objetivo: dejar ~2 meses de cobertura por UE. Dona quien tiene &gt;4 meses o stock sin demanda; recibe quien está en cero o bajo 2 meses. Solo dentro del mismo CEDIS.</div>
+    </div>
+
+    <div class="card">
+      <h3>Detalle por UE <span class="muted" id="rCnt"></span></h3>
+      <div class="filtros" style="grid-template-columns:1fr auto;margin-bottom:10px">
+        <div><label>Filtrar UE</label><input id="rUE" placeholder="Nombre de UE…"/></div>
+        <div style="align-self:end"><button class="btn sec" id="rCsv">Exportar CSV</button></div>
+      </div>
+      <div class="tablewrap">
+        <table id="rDet"><thead><tr>
+          <th data-k="ue">Unidad Ejecutora</th><th data-k="cedis">CEDIS</th>
+          <th data-k="inv" class="num">Inventario</th><th data-k="req" class="num">Req/mes</th>
+          <th data-k="dist" class="num">Distrib/mes</th><th data-k="gap" class="num">GAP</th>
+          <th data-k="cobReq" class="num">Cob. Req (m)</th><th data-k="estado">Estado</th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <script>
 /* ======================= CONFIG ======================= */
 // Reemplaza por el /exec de TU despliegue del backend de reposición:
-const API = 'https://script.google.com/macros/s/AKfycbzxfCoO5-U008jeE-b99hWwLWFZTZuoxBjR5g225UarppxtptndjB1be_BALEARttlL-w/exec';
+const API = 'https://script.google.com/macros/s/REEMPLAZAR_EXEC_REPOSICION/exec';
 
 let RAW=[];        // filas crudas de la matriz
 let HEADERS=[];
@@ -366,6 +419,7 @@ async function cargar(){
     const l=await jsonp({accion:'lead'}); LEAD=(l&&l.lead&&l.lead.rows)||[];
     const n2=await jsonp({accion:'nivel2'}); N2=(n2&&n2.nivel2)||{header:[],rows:[]};
     poblarUE();
+    poblarRenglones();
     document.getElementById('meta').innerHTML=
       'Generado: '+(META.generado?new Date(META.generado).toLocaleString('es-PA'):'—')+
       '<br>Req '+(META.mesesReq||'?')+'m · Distrib '+(META.mesesDist||'?')+'m · '+(META.filas||RAW.length)+' renglones';
@@ -621,7 +675,7 @@ document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    ['general','calc','lead','nivel2'].forEach(id=>{
+    ['general','calc','lead','nivel2','redis'].forEach(id=>{
       document.getElementById('tab-'+id).classList.toggle('hidden',id!==t.dataset.tab);
     });
   });
@@ -656,6 +710,85 @@ document.getElementById('btnRefrescar').addEventListener('click',async()=>{
 bindSort('tGen',sortGen,renderGeneral);
 bindSort('tCalc',sortCalc,renderCalc);
 bindSort('tN2',sortN2,renderN2);
+
+/* ======================= DETALLE UE × RENGLÓN + REDISTRIBUCIÓN ======================= */
+let rDetData=[], rSortK='inv', rSortDir=-1, _sugCache=[];
+function poblarRenglones(){
+  // lista única de código → suministro desde la matriz
+  const seen={}; const dl=document.getElementById('rCodList'); if(!dl)return;
+  RAW.forEach(r=>{ const c=r[COL.cod]; if(!seen[c]){seen[c]=1;
+    const o=document.createElement('option'); o.value=c+' — '+(r[COL.sum]||''); dl.appendChild(o);} });
+}
+function rExtraerCodigo(){
+  const v=document.getElementById('rCod').value.trim();
+  const m=v.match(/(\d{6,})/); return m?m[1]:v.replace(/[^0-9]/g,'');
+}
+async function consultarRedis(){
+  const codigo=rExtraerCodigo();
+  if(!codigo){ document.getElementById('rInfo').textContent='Escribe un código o nombre de renglón.'; return; }
+  document.getElementById('rInfo').textContent='Consultando renglón '+codigo+'…';
+  try{
+    const d=await jsonp({accion:'redistribucion',codigo:codigo});
+    if(!d.ok){ document.getElementById('rInfo').textContent='Error: '+(d.error||'sin datos'); return; }
+    rDetData=d.detalle||[];
+    const R=d.resumen||{};
+    document.getElementById('rInfo').innerHTML='<b>'+d.codigo+'</b> — '+(d.suministro||'')+
+      ' · '+R.ues+' UEs · Inventario total: '+(R.inv_total||0).toLocaleString()+
+      ' u · Req/mes total: '+(R.req_mes_total||0).toLocaleString()+
+      ' u · '+(R.n_sugerencias||0)+' sugerencias ('+(R.movible||0).toLocaleString()+' u movibles)';
+    _sugCache=d.sugerencias||[];
+    renderSug(_sugCache);
+    renderDet();
+  }catch(e){ document.getElementById('rInfo').textContent='No se pudo conectar al backend.'; }
+}
+function renderSug(sug){
+  const card=document.getElementById('rSugCard');
+  const ced=document.getElementById('rCedis').value;
+  let s=ced?sug.filter(x=>x.cedis===ced):sug;
+  const tb=document.querySelector('#rSug tbody');
+  if(!s.length){ card.classList.add('hidden'); tb.innerHTML=''; return; }
+  card.classList.remove('hidden');
+  tb.innerHTML=s.map(x=>`<tr>
+    <td><span class="badge-tipo">${x.cedis}</span></td>
+    <td>${x.desde}</td><td class="num">${x.desde_inv.toLocaleString()}</td>
+    <td>${x.hacia}</td><td class="num">${x.hacia_inv.toLocaleString()}</td>
+    <td class="num">${x.hacia_req_mes.toLocaleString()}</td>
+    <td class="num pedir">${x.cantidad.toLocaleString()}</td>
+  </tr>`).join('');
+}
+function renderDet(){
+  const ced=document.getElementById('rCedis').value;
+  const q=document.getElementById('rUE').value.trim().toUpperCase();
+  let rows=rDetData.filter(r=>(!ced||r.cedis===ced)&&(!q||String(r.ue).toUpperCase().includes(q)));
+  const g={ue:r=>r.ue,cedis:r=>r.cedis,inv:r=>r.inv,req:r=>r.req,dist:r=>r.dist,gap:r=>r.gap,
+    cobReq:r=>r.cobReq==null?-1:r.cobReq,estado:r=>r.estado}[rSortK];
+  rows.sort((a,b)=>{const x=g(a),y=g(b);return(x>y?1:x<y?-1:0)*rSortDir;});
+  const badge={'EN CERO':'crit','CRÍTICO':'crit','SOBREABASTECIDO':'warn','SIN DEMANDA':'warn','NORMAL':'ok'};
+  const tb=document.querySelector('#rDet tbody');
+  tb.innerHTML=rows.map(r=>`<tr>
+    <td>${r.ue}</td><td><span class="badge-tipo">${r.cedis}</span></td>
+    <td class="num">${r.inv.toLocaleString()}</td><td class="num">${r.req.toLocaleString()}</td>
+    <td class="num">${r.dist.toLocaleString()}</td>
+    <td class="num" style="color:${r.gap>=0?'var(--ok)':'var(--crit)'}">${r.gap>=0?'+':''}${r.gap.toLocaleString()}</td>
+    <td class="num">${r.cobReq==null?'—':r.cobReq.toFixed(2)}</td>
+    <td><span class="pill ${badge[r.estado]||'ok'}">${r.estado}</span></td>
+  </tr>`).join('');
+  document.getElementById('rCnt').textContent='('+rows.length+' UEs)';
+}
+document.getElementById('rBtn').addEventListener('click',consultarRedis);
+document.getElementById('rCod').addEventListener('change',consultarRedis);
+document.getElementById('rCedis').addEventListener('change',()=>{ renderDet(); renderSug(_sugCache); });
+document.getElementById('rUE').addEventListener('input',renderDet);
+document.querySelectorAll('#rDet thead th').forEach(th=>th.addEventListener('click',()=>{
+  const k=th.dataset.k; if(!k)return; if(rSortK===k)rSortDir*=-1; else{rSortK=k;rSortDir=1;} renderDet();
+}));
+document.getElementById('rCsv').addEventListener('click',()=>{
+  const ced=document.getElementById('rCedis').value;
+  const rows=rDetData.filter(r=>!ced||r.cedis===ced);
+  const head=['UE','CEDIS','Inventario','Req_mes','Distrib_mes','GAP','Cob_Req','Estado'];
+  const L=[head.join(',')].concat(rows.map(r=>['"'+r.ue+'"',r.cedis,r.inv,r.req,r.dist,r.gap,r.cobReq==null?'':r.cobReq,r.estado].join(',')));
+  const b=new Blob([L.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='detalle_ue_renglon.csv';a.click();
+});
 
 cargar();
 </script>
