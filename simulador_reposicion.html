@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Reposición en el Tiempo · Torre de Control CEDIS Panamá</title>
+<style>
+  :root{
+    --azul:#1e5a9e; --azul2:#0C447C; --bg:#ececec; --card:#fff;
+    --bord:#a8a8a8; --sub:#555; --verde:#2e7d32; --ambar:#b8860b; --rojo:#a11;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);font-family:"Segoe UI",Tahoma,sans-serif;color:#222;}
+  .topbar{background:linear-gradient(90deg,var(--azul2),var(--azul));color:#fff;display:flex;align-items:center;gap:12px;padding:11px 16px;}
+  .topbar img{width:42px;height:42px;object-fit:contain;flex-shrink:0;background:transparent;}
+  .topbar .t1{font-size:15px;font-weight:700;line-height:1.2;}
+  .topbar .t2{font-size:11px;opacity:.85;}
+  .topbar .spacer{flex:1;}
+  .topbar .meta{font-size:10.5px;opacity:.9;text-align:right;line-height:1.5;}
+  .kicker{font-size:11px;color:var(--azul);font-weight:700;letter-spacing:1px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 22px;}
+  .card{background:var(--card);border:1px solid var(--bord);padding:16px;margin-bottom:16px;}
+  label{display:block;font-size:11px;color:var(--sub);text-transform:uppercase;
+    letter-spacing:.4px;margin-bottom:5px;}
+  select,input{width:100%;padding:9px 10px;border:1px solid var(--bord);background:#fff;font-size:14px;border-radius:0;}
+  .row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;}
+  .row>div{flex:1;min-width:200px;}
+  button{font-family:inherit;border:1px solid var(--bord);border-radius:0;cursor:pointer;padding:8px 14px;font-size:12px;}
+  .btn-play{background:var(--verde);color:#fff;font-weight:700;}
+  .btn-play.on{background:var(--rojo);}
+  .btn-sec{background:#f4f4f4;color:#333;}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
+  .kpi{border:1px solid var(--bord);padding:12px 14px;}
+  .kpi .lab{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+  .kpi .val{font-family:Consolas,monospace;font-size:24px;font-weight:700;color:var(--azul2);line-height:1.1;}
+  .kpi .sub{font-size:11px;margin-top:2px;}
+  svg{display:block;width:100%;height:auto;max-width:100%;}
+  .meta{font-size:11px;color:var(--sub);}
+  .aviso{font-size:12px;padding:9px 12px;border:1px solid var(--ambar);background:#fff8e6;color:#7a5a00;margin-bottom:12px;}
+  .aviso.err{border-color:var(--rojo);background:#fdecec;color:#7a1010;}
+  .aviso.ok{border-color:var(--verde);background:#eef7ee;color:#1a5a1a;}
+  .transito-list{font-size:12px;border-collapse:collapse;width:100%;}
+  .transito-list th,.transito-list td{border:1px solid #ddd;padding:5px 8px;text-align:left;}
+  .transito-list th{background:#f4f7fb;color:var(--azul2);font-size:11px;text-transform:uppercase;}
+  .hidden{display:none;}
+  .foot{font-size:10px;color:#999;text-align:right;margin-top:10px;}
+  .slider-wrap{margin-top:4px;}
+  .slider-lab{font-size:11px;color:#777;display:flex;justify-content:space-between;}
+  input[type=range]{accent-color:var(--azul);padding:0;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img src="icons/icon-512.png" alt="Logo" width="42" height="42" onerror="this.style.display='none'">
+  <div>
+    <div class="t1">Simulador de Reposición en el Tiempo</div>
+    <div class="t2">Torre de Control · DINALOG / CEDIS Panamá</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="meta" id="metaTop"></div>
+</div>
+
+<div class="wrap">
+
+  <div id="avisoConexion" class="aviso">Conectando con la Calculadora de Reposición…</div>
+
+  <!-- PASO 1: elegir renglón -->
+  <div class="card">
+    <div class="row">
+      <div style="flex:2">
+        <label>Renglón a simular</label>
+        <input id="inCod" list="dlCod" placeholder="Escribe código o nombre y elígelo…" autocomplete="off" disabled>
+        <datalist id="dlCod"></datalist>
+      </div>
+      <div>
+        <label>Ámbito de inventario</label>
+        <select id="inAmbito">
+          <option value="CEDIS">Solo CEDIS Panamá (bodega)</option>
+          <option value="RED">CEDIS + todas sus UE (red completa)</option>
+        </select>
+      </div>
+      <div style="flex:0 0 auto">
+        <button class="btn-sec" id="btnCargar" disabled>Simular</button>
+      </div>
+    </div>
+    <div id="ejemplos" class="meta" style="margin-top:10px"></div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div id="resultado" class="hidden">
+
+    <!-- controles de simulación -->
+    <div class="card">
+      <div class="row">
+        <div style="flex:2">
+          <label>Factor de crecimiento del consumo · ×<span id="facTxt">1.0</span>
+            → <b id="facTasa" style="font-family:Consolas;color:var(--azul2)"></b></label>
+          <div class="slider-wrap">
+            <input type="range" id="slFactor" min="1" max="12" step="0.5" value="1">
+            <div class="slider-lab"><span>×1 (actual)</span><span>×12</span></div>
+          </div>
+        </div>
+        <div style="flex:0 0 auto">
+          <label>Base de salida</label>
+          <select id="inBase">
+            <option value="dist">Distribuciones</option>
+            <option value="req">Requisiciones F8</option>
+          </select>
+        </div>
+        <div style="flex:0 0 auto">
+          <label>Tránsitos por llegar</label>
+          <button class="btn-sec" id="btnTransitos">Incluir tránsitos: ON</button>
+        </div>
+        <div style="flex:0 0 auto">
+          <label>Correr el tiempo</label>
+          <div style="display:flex;gap:6px">
+            <button class="btn-play" id="btnPlay">▶ Correr</button>
+            <button class="btn-sec" id="btnReset">Reiniciar</button>
+          </div>
+        </div>
+      </div>
+      <div class="meta" id="estadoSim" style="margin-top:8px"></div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="card">
+      <div class="kpis" id="kpis"></div>
+    </div>
+
+    <!-- gráfico proyección -->
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;color:var(--azul2);margin-bottom:8px">
+        Proyección de inventario en el tiempo — con y sin tránsitos
+      </div>
+      <div id="grafico"></div>
+      <div class="meta" id="leyendaGrafico" style="margin-top:6px"></div>
+    </div>
+
+    <!-- tránsitos detectados -->
+    <div class="card" id="cardTransitos">
+      <div style="font-size:13px;font-weight:700;color:var(--azul2);margin-bottom:8px">
+        Tránsitos detectados para este renglón (OC con cita solicitada al proveedor)
+      </div>
+      <div id="tablaTransitos"></div>
+    </div>
+
+    <div class="foot">
+      Modelo lineal de agotamiento con reposición por tránsito. Inventario y ritmos: MATRIZ_REPOSICION (Calculadora).
+      Tránsitos: SIGUELO (OC en tránsito sin cita/agendadas). Elaborado por Torre de Control — CEDIS Panamá.
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   CONFIGURACIÓN — dos Web Apps GAS, ambos vía JSONP
+   ================================================================ */
+const API_CALC = 'https://script.google.com/macros/s/AKfycbzxfCoO5-U008jeE-b99hWwLWFZTZuoxBjR5g225UarppxtptndjB1be_BALEARttlL-w/exec';
+const API_SIGUELO = 'https://script.google.com/macros/s/AKfycbwVw0ACNMhdN6d-JsI1lyP2iKHBVgWXI5nK3rA6blEhF3l8t2Wuwk2TpRmaanB186Dk/exec';
+
+/* ================================================================
+   ESTADO GLOBAL
+   ================================================================ */
+let MATRIZ = { header:[], rows:[], meta:{} };
+let COL = {};
+let TRANSITOS_ALL = [];       // todos los tránsitos sin cita de SIGUELO
+let SIGUELO_OK = false;       // ¿respondió SIGUELO?
+let SEL = null;               // renglón seleccionado {cod, sum, inv, distMes, reqMes, transitos[]}
+let factor = 1, base = 'dist', incluirTransitos = true;
+let playing = false, tiempoMes = 0, rafId = null;
+
+const HOY = new Date();
+const N = v => v==null||v===''?0:(typeof v==='number'?v:Number(String(v).replace(/[^0-9.\-]/g,''))||0);
+const fmt = v => Math.round(N(v)).toLocaleString('en-US');
+// Normalización ESTRICTA común a ambos sistemas: solo dígitos (el árbitro de identidad).
+const codKey = c => String(c==null?'':c).replace(/\.0$/,'').replace(/[^0-9]/g,'');
+
+/* ================================================================
+   JSONP con timeout (patrón del frontend original + resiliencia)
+   ================================================================ */
+function jsonp(api, params, timeoutMs){
+  return new Promise((res,rej)=>{
+    const cb='__cb'+Math.random().toString(36).slice(2);
+    const s=document.createElement('script');
+    let done=false;
+    const cleanup=()=>{ try{delete window[cb];}catch(_){} try{s.remove();}catch(_){} };
+    const to=setTimeout(()=>{ if(done)return; done=true; cleanup(); rej(new Error('timeout')); }, timeoutMs||90000);
+    window[cb]=(d)=>{ if(done)return; done=true; clearTimeout(to); cleanup(); res(d); };
+    s.onerror=()=>{ if(done)return; done=true; clearTimeout(to); cleanup(); rej(new Error('red')); };
+    const q=Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&');
+    s.src=api+'?'+q+'&callback='+cb;
+    document.body.appendChild(s);
+  });
+}
+
+/* ================================================================
+   MAPEO DE COLUMNAS de MATRIZ_REPOSICION
+   ================================================================ */
+function mapCols(){
+  ['UNIDAD_EJECUTORA','CEDIS_RESPONSABLE','COD_ABASTO','SUMINISTRO','INVENTARIO',
+   'CONSUMO_MES','DISTRIB_MES','REQ_MES','COB_CONSUMO','COB_DISTRIB','COB_REQ',
+   'BRECHA_REQ_CONS','EN_CERO'].forEach(n=>{ COL[n]=MATRIZ.header.indexOf(n); });
+}
+
+/* ================================================================
+   CARGA INICIAL: matriz (obligatoria) + tránsitos (best-effort)
+   ================================================================ */
+async function iniciar(){
+  const aviso=document.getElementById('avisoConexion');
+  // 1) Matriz de la Calculadora — imprescindible
+  try{
+    const d=await jsonp(API_CALC, {accion:'matriz'}, 90000);
+    if(!d || !d.rows) throw new Error('sin datos');
+    MATRIZ.header=d.header; MATRIZ.rows=d.rows; MATRIZ.meta=d.meta||{};
+    mapCols();
+    poblarRenglones();
+    document.getElementById('inCod').disabled=false;
+    document.getElementById('btnCargar').disabled=false;
+  }catch(e){
+    aviso.className='aviso err';
+    aviso.textContent='No se pudo conectar con la Calculadora de Reposición ('+e.message+'). Revisa que el Web App esté desplegado y accesible.';
+    return;
+  }
+  // 2) Tránsitos de SIGUELO — opcional; si falla, seguimos sin la capa de tránsitos
+  try{
+    const t=await jsonp(API_SIGUELO, {action:'getTransitosSinCita'}, 120000);
+    if(t && t.success && Array.isArray(t.transitos)){
+      TRANSITOS_ALL=t.transitos; SIGUELO_OK=true;
+      aviso.className='aviso ok';
+      aviso.textContent='Conectado. '+MATRIZ.rows.length.toLocaleString()+' filas de reposición · '+
+        TRANSITOS_ALL.length.toLocaleString()+' tránsitos por llegar (SIGUELO). '+
+        'Generado: '+(MATRIZ.meta.generado?new Date(MATRIZ.meta.generado).toLocaleString():'—');
+      const mt=document.getElementById('metaTop');
+      if(mt) mt.innerHTML='Generado: '+(MATRIZ.meta.generado?new Date(MATRIZ.meta.generado).toLocaleString():'—')+
+        '<br>'+MATRIZ.rows.length.toLocaleString()+' filas · '+TRANSITOS_ALL.length.toLocaleString()+' tránsitos';
+    }else{ throw new Error('respuesta inválida'); }
+  }catch(e){
+    SIGUELO_OK=false;
+    aviso.className='aviso';
+    aviso.textContent='Calculadora conectada, pero SIGUELO no respondió ('+e.message+'). '+
+      'La simulación correrá SIN la capa de tránsitos. Puedes reintentar recargando.';
+  }
+}
+
+/* Poblar el datalist de renglones (únicos, con descripción) */
+function poblarRenglones(){
+  const seen={}, dl=document.getElementById('dlCod');
+  MATRIZ.rows.forEach(r=>{
+    const c=r[COL.COD_ABASTO]; if(!c||seen[c])return; seen[c]=1;
+    const o=document.createElement('option');
+    o.value=c+' — '+(r[COL.SUMINISTRO]||'');
+    dl.appendChild(o);
+  });
+  // Ejemplos: renglones con más inventario total en CEDIS (candidatos a sobre-cobertura)
+  const agg={};
+  MATRIZ.rows.forEach(r=>{
+    const c=r[COL.COD_ABASTO]; if(!c)return;
+    (agg[c]=agg[c]||{sum:r[COL.SUMINISTRO],inv:0});
+    agg[c].inv+=N(r[COL.INVENTARIO]);
+  });
+  const top=Object.keys(agg).map(c=>({c,...agg[c]})).sort((a,b)=>b.inv-a.inv).slice(0,6);
+  const cont=document.getElementById('ejemplos');
+  cont.innerHTML='Ejemplos con más inventario acumulado: '+
+    top.map(o=>'<a href="#" data-c="'+o.c+'" style="color:var(--azul);text-decoration:none;margin-right:10px">'+
+      o.c+'</a>').join('');
+  cont.querySelectorAll('a').forEach(a=>a.onclick=(ev)=>{
+    ev.preventDefault();
+    const r=MATRIZ.rows.find(x=>x[COL.COD_ABASTO]===a.dataset.c);
+    document.getElementById('inCod').value=a.dataset.c+' — '+(r?r[COL.SUMINISTRO]:'');
+    cargarRenglon();
+  });
+}
+
+/* ================================================================
+   AGREGAR el renglón elegido y cruzar tránsitos
+   ================================================================ */
+function cargarRenglon(){
+  const raw=document.getElementById('inCod').value.trim();
+  const cod=raw.split('—')[0].trim();
+  if(!cod){ return; }
+  const ambito=document.getElementById('inAmbito').value; // CEDIS | RED
+
+  // Filas de este renglón
+  const filas=MATRIZ.rows.filter(r=>String(r[COL.COD_ABASTO])===cod);
+  if(!filas.length){ alert('No se encontró el renglón '+cod+' en la matriz.'); return; }
+
+  const esCedis = r => String(r[COL.UNIDAD_EJECUTORA]||'').toUpperCase().indexOf('CEDIS')>=0;
+
+  let inv=0, distMes=0, reqMes=0, sum='';
+  filas.forEach(r=>{
+    sum = sum || r[COL.SUMINISTRO];
+    const enCedis = esCedis(r);
+    if(ambito==='CEDIS'){
+      if(enCedis) inv += N(r[COL.INVENTARIO]);          // solo bodega CEDIS
+    }else{
+      inv += N(r[COL.INVENTARIO]);                        // toda la red
+    }
+    // El ritmo de salida siempre es la demanda de las UE (el CEDIS no consume)
+    if(!enCedis){ distMes += N(r[COL.DISTRIB_MES]); reqMes += N(r[COL.REQ_MES]); }
+  });
+
+  // Tránsitos de este renglón (cruce por código estricto solo-dígitos)
+  const k=codKey(cod);
+  const trans = SIGUELO_OK ? TRANSITOS_ALL.filter(t=>codKey(t.cod_abasto_norm||t.cod_abasto)===k) : [];
+
+  SEL={cod, sum, inv, distMes, reqMes, transitos:trans};
+  tiempoMes=0; playing=false; cancelAnimationFrame(rafId);
+  document.getElementById('resultado').classList.remove('hidden');
+  document.getElementById('facTxt').textContent=factor.toFixed(1);
+  renderTablaTransitos();
+  render();
+}
+
+/* ================================================================
+   MOTOR DE PROYECCIÓN — curva sierra
+   Inventario baja por consumo mensual (tasa×factor) y sube en
+   escalón en el mes de cada tránsito (por su fecha de entrega).
+   ================================================================ */
+function tasaSalida(){ return (base==='dist'?SEL.distMes:SEL.reqMes) * factor; }
+
+// Mes (entero desde hoy) de una fecha ISO 'yyyy-mm-dd'
+function mesDesdeHoy(fechaIso){
+  if(!fechaIso) return null;
+  const f=new Date(fechaIso+'T00:00:00');
+  if(isNaN(f)) return null;
+  const dias=(f-HOY)/86400000;
+  return Math.max(0, Math.round(dias/30));
+}
+
+// Devuelve array de {mes, sinTr, conTr} para 0..HORIZONTE
+function proyectar(){
+  const HOR=60;
+  const tasa=tasaSalida();
+  // Entradas por tránsito agrupadas por mes
+  const entradas={}; // mes -> unidades
+  if(incluirTransitos){
+    SEL.transitos.forEach(t=>{
+      const m=mesDesdeHoy(t.vencimiento_entrega||t.termino_entrega||t.vencimiento_oc);
+      if(m==null) return;
+      entradas[m]=(entradas[m]||0)+N(t.cantidad);
+    });
+  }
+  const rows=[];
+  let sinTr=SEL.inv, conTr=SEL.inv;
+  if(entradas[0]) conTr += entradas[0];   // tránsito inminente (llega en <1 mes): ya cuenta
+  for(let m=0;m<=HOR;m++){
+    if(m>0){
+      sinTr=Math.max(0, sinTr - tasa);
+      conTr=Math.max(0, conTr - tasa);
+      if(entradas[m]) conTr += entradas[m];   // llega el tránsito
+    }
+    rows.push({mes:m, sinTr, conTr, entrada:entradas[m]||0});
+  }
+  return rows;
+}
+
+// Mes de agotamiento de la curva CON tránsitos (para detener la animación)
+function mesAgotamiento(rows){
+  for(let i=0;i<rows.length;i++){ if(rows[i].conTr<=0) return i; }
+  return 60;
+}
+
+/* ================================================================
+   RENDER: KPIs + gráfico + estado
+   ================================================================ */
+function render(){
+  if(!SEL) return;
+  const rows=proyectar();
+  const tasa=tasaSalida();
+  const mAgota=mesAgotamiento(rows);
+  const totalTrans=SEL.transitos.reduce((a,t)=>a+N(t.cantidad),0);
+
+  document.getElementById('facTxt').textContent=factor.toFixed(1);
+  document.getElementById('facTasa').textContent=fmt(tasa)+' u/mes';
+
+  // KPIs
+  const cobActual = tasa>0 ? SEL.inv/tasa : Infinity;
+  const badge = m => m>24?['Riesgo alto','var(--rojo)']:m>12?['Sobre-cobertura','var(--ambar)']:['Rotación sana','var(--verde)'];
+  const bA=badge(cobActual);
+  const k=document.getElementById('kpis');
+  k.innerHTML=[
+    ['Inventario actual', fmt(SEL.inv), document.getElementById('inAmbito').value==='CEDIS'?'solo bodega CEDIS':'red completa','var(--azul2)'],
+    ['Salida mensual (×'+factor+')', fmt(tasa), (base==='dist'?'distribuciones':'requisiciones')+' × factor','var(--azul2)'],
+    ['Cobertura sin tránsitos', isFinite(cobActual)?cobActual.toFixed(1)+' m':'—', bA[0]+' · '+(cobActual/12).toFixed(1)+' años', bA[1]],
+    ['Tránsitos por llegar', fmt(totalTrans), SEL.transitos.length+' entrega(s)'+(SIGUELO_OK?'':' · SIGUELO offline'),'var(--verde)'],
+    ['Se agota (con tránsitos)', mAgota>=60?'>60 m':mAgota+' m', incluirTransitos?'incluye reposición':'tránsitos OFF', mAgota>24?'var(--rojo)':mAgota>12?'var(--ambar)':'var(--verde)']
+  ].map(x=>'<div class="kpi"><div class="lab">'+x[0]+'</div><div class="val" style="color:'+x[3]+'">'+x[1]+
+    '</div><div class="sub" style="color:'+x[3]+'">'+x[2]+'</div></div>').join('');
+
+  document.getElementById('grafico').innerHTML=svgProyeccion(rows);
+  document.getElementById('estadoSim').innerHTML =
+    'Al factor ×'+factor+', el inventario '+(mAgota>=60?'dura más de 60 meses':'se agota en '+mAgota+' meses')+
+    (incluirTransitos && totalTrans>0 ? ' (contando los '+fmt(totalTrans)+' en tránsito)':'')+'.';
+  document.getElementById('leyendaGrafico').innerHTML =
+    'Curva <b style="color:var(--azul)">azul</b>: inventario si NO llegara ningún tránsito. '+
+    'Curva <b style="color:var(--verde)">verde</b>: con las entregas por llegar (escalones hacia arriba). '+
+    'Los saltos verticales son las OC que el proveedor tiene agendadas.';
+}
+
+/* SVG de la curva sierra con marcador de tiempo */
+function svgProyeccion(rows){
+  const W=760,H=320,ml=58,mr=20,mt=16,mb=36;
+  const maxMes=60;
+  const maxY=Math.max(SEL.inv, ...rows.map(r=>r.conTr), 1)*1.05;
+  const px=m=>ml+(m/maxMes)*(W-ml-mr);
+  const py=v=>mt+(1-v/maxY)*(H-mt-mb);
+  const pathSin=rows.map((r,i)=>(i?'L':'M')+px(r.mes).toFixed(1)+' '+py(r.sinTr).toFixed(1)).join(' ');
+  const pathCon=rows.map((r,i)=>(i?'L':'M')+px(r.mes).toFixed(1)+' '+py(r.conTr).toFixed(1)).join(' ');
+  const yt=[0,.25,.5,.75,1].map(f=>Math.round(maxY*f));
+  const xt=[0,12,24,36,48,60];
+  let s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+  // grid Y
+  yt.forEach(v=>{ s+='<line x1="'+ml+'" y1="'+py(v)+'" x2="'+(W-mr)+'" y2="'+py(v)+'" stroke="#ddd" stroke-dasharray="2 2"/>'+
+    '<text x="'+(ml-6)+'" y="'+(py(v)+4)+'" text-anchor="end" font-size="11" font-family="Consolas" fill="#666">'+(v/1000).toFixed(0)+'k</text>'; });
+  // X
+  xt.forEach(m=>{ s+='<text x="'+px(m)+'" y="'+(H-14)+'" text-anchor="middle" font-size="11" font-family="Consolas" fill="#666">'+m+'</text>'; });
+  s+='<text x="'+((ml+W-mr)/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="#666">meses desde hoy</text>';
+  // líneas de año
+  s+='<line x1="'+px(12)+'" y1="'+mt+'" x2="'+px(12)+'" y2="'+(H-mb)+'" stroke="var(--rojo)" stroke-dasharray="4 3"/>'+
+     '<text x="'+(px(12)+3)+'" y="'+(mt+10)+'" font-size="10" fill="var(--rojo)">1 año</text>';
+  s+='<line x1="'+px(24)+'" y1="'+mt+'" x2="'+px(24)+'" y2="'+(H-mb)+'" stroke="var(--ambar)" stroke-dasharray="4 3"/>'+
+     '<text x="'+(px(24)+3)+'" y="'+(mt+10)+'" font-size="10" fill="var(--ambar)">2 años</text>';
+  // marcas de entrada de tránsito (líneas verticales tenues + etiqueta)
+  rows.forEach(r=>{ if(r.entrada>0){
+    s+='<line x1="'+px(r.mes)+'" y1="'+mt+'" x2="'+px(r.mes)+'" y2="'+(H-mb)+'" stroke="var(--verde)" stroke-width="1" stroke-dasharray="1 3" opacity="0.6"/>';
+    s+='<text x="'+px(r.mes)+'" y="'+(mt-2)+'" text-anchor="middle" font-size="9" fill="var(--verde)">+'+(r.entrada/1000).toFixed(0)+'k</text>';
+  }});
+  // curvas
+  s+='<path d="'+pathSin+'" fill="none" stroke="var(--azul)" stroke-width="2.5"/>';
+  s+='<path d="'+pathCon+'" fill="none" stroke="var(--verde)" stroke-width="2.5" stroke-dasharray="6 3"/>';
+  // marcador de tiempo
+  if(tiempoMes>0){
+    const r=rows[Math.min(tiempoMes,rows.length-1)];
+    const val=incluirTransitos?r.conTr:r.sinTr;
+    const agot=val<=0;
+    const cx=px(tiempoMes), cy=py(val);
+    const col=agot?'var(--rojo)':'var(--verde)';
+    const bx=Math.min(cx+8,W-mr-135);
+    s+='<line x1="'+cx+'" y1="'+mt+'" x2="'+cx+'" y2="'+(H-mb)+'" stroke="'+col+'" stroke-width="1" stroke-dasharray="3 3"/>';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" stroke="#fff" stroke-width="2"/>';
+    s+='<rect x="'+bx+'" y="'+(cy-30)+'" width="135" height="24" fill="#fff" stroke="'+col+'" stroke-width="1.5"/>';
+    s+='<text x="'+(bx+6)+'" y="'+(cy-13)+'" font-size="11" font-family="Consolas" fill="var(--azul2)" font-weight="'+(agot?'700':'400')+'">mes '+tiempoMes+': '+(agot?'AGOTADO':fmt(val))+'</text>';
+  }
+  // leyenda
+  s+='<g transform="translate('+(W-mr-220)+','+(mt+6)+')">'+
+     '<line x1="0" y1="0" x2="22" y2="0" stroke="var(--azul)" stroke-width="2.5"/><text x="27" y="4" font-size="12" fill="#333">Sin tránsitos</text>'+
+     '<line x1="0" y1="18" x2="22" y2="18" stroke="var(--verde)" stroke-width="2.5" stroke-dasharray="6 3"/><text x="27" y="22" font-size="12" fill="#333">Con tránsitos por llegar</text></g>';
+  s+='</svg>';
+  return s;
+}
+
+/* Tabla de tránsitos detectados */
+function renderTablaTransitos(){
+  const cont=document.getElementById('tablaTransitos');
+  if(!SIGUELO_OK){ cont.innerHTML='<div class="meta">SIGUELO no está disponible en esta sesión; no se muestran tránsitos.</div>'; return; }
+  if(!SEL.transitos.length){ cont.innerHTML='<div class="meta">No hay tránsitos por llegar para este renglón.</div>'; return; }
+  let h='<table class="transito-list"><thead><tr><th>OC</th><th>Proveedor</th><th>Cantidad</th><th>Entrega estimada</th><th>Mes desde hoy</th><th>Estado</th></tr></thead><tbody>';
+  SEL.transitos.slice().sort((a,b)=>String(a.vencimiento_entrega||'').localeCompare(String(b.vencimiento_entrega||''))).forEach(t=>{
+    const m=mesDesdeHoy(t.vencimiento_entrega||t.termino_entrega||t.vencimiento_oc);
+    h+='<tr><td>'+(t.n_documento||'—')+'</td><td>'+(t.proveedor||'—')+'</td><td style="font-family:Consolas;text-align:right">'+fmt(t.cantidad)+
+       '</td><td>'+(t.vencimiento_entrega||t.termino_entrega||'—')+'</td><td style="text-align:center">'+(m==null?'—':m)+'</td><td>'+(t.estado_transito||'—')+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  cont.innerHTML=h;
+}
+
+/* ================================================================
+   ANIMACIÓN: corre el tiempo hasta el agotamiento (con tránsitos)
+   ================================================================ */
+function play(){
+  const rows=proyectar();
+  const mAgota=mesAgotamiento(rows);
+  const VEL=220; // ms por mes
+  const DUR=Math.max(1,mAgota)*VEL;
+  let t0=null, acc=0;
+  const tick=ts=>{
+    if(t0==null)t0=ts;
+    acc+=ts-t0; t0=ts;
+    const p=Math.min(1,acc/DUR);
+    tiempoMes=Math.round(p*mAgota);
+    render();
+    if(p>=1){ playing=false; tiempoMes=mAgota; setPlayBtn(); render(); return; }
+    rafId=requestAnimationFrame(tick);
+  };
+  rafId=requestAnimationFrame(tick);
+}
+function setPlayBtn(){
+  const b=document.getElementById('btnPlay');
+  b.textContent=playing?'❚❚ Pausar':'▶ Correr';
+  b.classList.toggle('on',playing);
+}
+
+/* ================================================================
+   EVENTOS
+   ================================================================ */
+document.getElementById('btnCargar').onclick=cargarRenglon;
+document.getElementById('inCod').addEventListener('change',cargarRenglon);
+document.getElementById('inAmbito').onchange=()=>{ if(SEL) cargarRenglon(); };
+document.getElementById('slFactor').oninput=e=>{
+  playing=false; cancelAnimationFrame(rafId); tiempoMes=0; setPlayBtn();
+  factor=parseFloat(e.target.value); render();
+};
+document.getElementById('inBase').onchange=e=>{ base=e.target.value; tiempoMes=0; render(); };
+document.getElementById('btnTransitos').onclick=e=>{
+  incluirTransitos=!incluirTransitos;
+  e.target.textContent='Incluir tránsitos: '+(incluirTransitos?'ON':'OFF');
+  e.target.classList.toggle('btn-play',false);
+  tiempoMes=0; render();
+};
+document.getElementById('btnPlay').onclick=()=>{
+  if(!SEL) return;
+  playing=!playing; setPlayBtn();
+  if(playing){ tiempoMes=0; play(); } else { cancelAnimationFrame(rafId); }
+};
+document.getElementById('btnReset').onclick=()=>{
+  playing=false; cancelAnimationFrame(rafId); tiempoMes=0; setPlayBtn(); render();
+};
+
+/* ARRANQUE */
+iniciar();
+
+</script>
+</body>
+</html>
