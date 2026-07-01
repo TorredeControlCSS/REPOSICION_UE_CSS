@@ -619,8 +619,11 @@ document.getElementById('slFactor').oninput=e=>{
 document.getElementById('inBase').onchange=e=>{ base=e.target.value; tiempoMes=0; render(); };
 document.getElementById('btnTransitos').onclick=e=>{
   incluirTransitos=!incluirTransitos;
-  e.target.textContent='Incluir tránsitos: '+(incluirTransitos?'ON':'OFF');
-  e.target.classList.toggle('btn-play',false);
+  const b=e.target;
+  b.textContent='Incluir tránsitos: '+(incluirTransitos?'ON':'OFF');
+  b.style.background=incluirTransitos?'var(--verde)':'#f4f4f4';
+  b.style.color=incluirTransitos?'#fff':'#333';
+  b.style.fontWeight=incluirTransitos?'700':'400';
   tiempoMes=0; render();
 };
 document.getElementById('btnPlay').onclick=()=>{
@@ -634,6 +637,11 @@ document.getElementById('btnReset').onclick=()=>{
 
 /* ARRANQUE */
 iniciar();
+  // Estado visual inicial del toggle de tránsitos (arranca en ON = verde)
+(function(){
+  const b=document.getElementById('btnTransitos');
+  if(b){ b.style.background='var(--verde)'; b.style.color='#fff'; b.style.fontWeight='700'; }
+})();
 
 </script>
 </body>
