@@ -209,6 +209,9 @@
    CONFIGURACIÓN — dos Web Apps GAS, ambos vía JSONP
    ================================================================ */
 const API_CALC = 'https://script.google.com/macros/s/AKfycbzxfCoO5-U008jeE-b99hWwLWFZTZuoxBjR5g225UarppxtptndjB1be_BALEARttlL-w/exec';
+// Snapshot estático diario (rápido, ligero, funciona en móvil). Se carga primero;
+// si falla, se cae al Web App en vivo (API_CALC). Ruta relativa dentro del mismo repo.
+const SNAPSHOT_URL = 'matriz_snapshot.json';
 const API_SIGUELO = 'https://script.google.com/macros/s/AKfycbwVw0ACNMhdN6d-JsI1lyP2iKHBVgWXI5nK3rA6blEhF3l8t2Wuwk2TpRmaanB186Dk/exec';
 
 /* ================================================================
@@ -297,20 +300,34 @@ function filtrarTransitoVivo_(solicitudes){
    ================================================================ */
 async function iniciar(){
   const aviso=document.getElementById('avisoConexion');
-  // 1) Matriz de la Calculadora — imprescindible
+  // 1) Inventario/ritmos: primero SNAPSHOT estático (rápido, móvil), luego GAS en vivo
+  let origen='';
   try{
-    const d=await jsonp(API_CALC, {accion:'matriz'}, 90000);
-    if(!d || !d.rows) throw new Error('sin datos');
-    MATRIZ.header=d.header; MATRIZ.rows=d.rows; MATRIZ.meta=d.meta||{};
-    mapCols();
-    poblarRenglones();
-    document.getElementById('inCod').disabled=false;
-    document.getElementById('btnCargar').disabled=false;
-  }catch(e){
-    aviso.className='aviso err';
-    aviso.textContent='No se pudo conectar con la Calculadora de Reposición ('+e.message+'). Revisa que el Web App esté desplegado y accesible.';
-    return;
+    // Intento A: snapshot JSON estático (mismo repo, ~200 KB)
+    const resp=await fetch(SNAPSHOT_URL, {cache:'no-cache'});
+    if(!resp.ok) throw new Error('snapshot '+resp.status);
+    const snap=await resp.json();
+    if(!snap || !Array.isArray(snap.renglones)) throw new Error('snapshot inválido');
+    cargarDesdeSnapshot_(snap);
+    origen='snapshot ('+new Date(snap.generado).toLocaleDateString()+')';
+  }catch(eSnap){
+    // Intento B: Web App en vivo (fallback)
+    try{
+      const d=await jsonp(API_CALC, {accion:'matriz'}, 90000);
+      if(!d || !d.rows) throw new Error('sin datos');
+      MATRIZ.header=d.header; MATRIZ.rows=d.rows; MATRIZ.meta=d.meta||{};
+      mapCols();
+      origen='GAS en vivo';
+    }catch(eGas){
+      aviso.className='aviso err';
+      aviso.textContent='No se pudo cargar el inventario. Ni el snapshot ('+eSnap.message+') ni el Web App ('+eGas.message+') respondieron.';
+      return;
+    }
   }
+  poblarRenglones();
+  document.getElementById('inCod').disabled=false;
+  document.getElementById('btnCargar').disabled=false;
+  window._ORIGEN_DATOS=origen;
   // 2) Solicitudes/OC en tránsito de SIGUELO — opcional; si falla, seguimos sin la capa
   // Fuente: getSolicitudesPriorizadas (hoja SOLICITUDES con estados de cita).
   // Se incluye todo lo VIVO (OC emitida aún no recibida): PENDIENTE, SOLICITADA,
@@ -341,22 +358,33 @@ async function iniciar(){
 
 /* Construir lista de renglones únicos para el combo custom */
 let RENGLONES=[];   // [{cod, sum}]
+let SNAP_RENG={};   // código -> agregado del snapshot {sum,iC,iR,d,r}. Vacío si GAS en vivo.
 function poblarRenglones(){
-  const seen={};
-  RENGLONES=[];
-  MATRIZ.rows.forEach(r=>{
-    const c=r[COL.COD_ABASTO]; if(!c||seen[c])return; seen[c]=1;
-    RENGLONES.push({cod:String(c), sum:String(r[COL.SUMINISTRO]||'')});
-  });
-  RENGLONES.sort((a,b)=>a.cod.localeCompare(b.cod));
-  // Ejemplos: renglones con más inventario total en CEDIS
-  const agg={};
-  MATRIZ.rows.forEach(r=>{
-    const c=r[COL.COD_ABASTO]; if(!c)return;
-    (agg[c]=agg[c]||{sum:r[COL.SUMINISTRO],inv:0});
-    agg[c].inv+=N(r[COL.INVENTARIO]);
-  });
-  const top=Object.keys(agg).map(c=>({c,...agg[c]})).sort((a,b)=>b.inv-a.inv).slice(0,6);
+  // Con snapshot, RENGLONES y SNAP_RENG ya están poblados por cargarDesdeSnapshot_.
+  // Con GAS en vivo, se construye desde MATRIZ.rows.
+  const usandoSnapshot = Object.keys(SNAP_RENG).length>0;
+  if(!usandoSnapshot){
+    const seen={};
+    RENGLONES=[];
+    MATRIZ.rows.forEach(r=>{
+      const c=r[COL.COD_ABASTO]; if(!c||seen[c])return; seen[c]=1;
+      RENGLONES.push({cod:String(c), sum:String(r[COL.SUMINISTRO]||'')});
+    });
+    RENGLONES.sort((a,b)=>a.cod.localeCompare(b.cod));
+  }
+  // Ejemplos: renglones con más inventario CEDIS
+  let top;
+  if(usandoSnapshot){
+    top=Object.keys(SNAP_RENG).map(c=>({c, inv:SNAP_RENG[c].iC}))
+        .sort((a,b)=>b.inv-a.inv).slice(0,6);
+  }else{
+    const agg={};
+    MATRIZ.rows.forEach(r=>{
+      const c=r[COL.COD_ABASTO]; if(!c)return;
+      (agg[c]=agg[c]||{inv:0}); agg[c].inv+=N(r[COL.INVENTARIO]);
+    });
+    top=Object.keys(agg).map(c=>({c,inv:agg[c].inv})).sort((a,b)=>b.inv-a.inv).slice(0,6);
+  }
   const cont=document.getElementById('ejemplos');
   cont.innerHTML='Ejemplos con más inventario acumulado: '+
     top.map(o=>'<a href="#" data-c="'+o.c+'" style="color:var(--azul);text-decoration:none;margin-right:10px">'+
@@ -414,30 +442,47 @@ function moverCombo(dir){
 /* ================================================================
    AGREGAR el renglón elegido y cruzar tránsitos
    ================================================================ */
+// Mapa código -> agregado del snapshot. Poblado por cargarDesdeSnapshot_ (declarado arriba).
+function cargarDesdeSnapshot_(snap){
+  SNAP_RENG={};
+  MATRIZ.meta={ generado: snap.generado, mesesReq: snap.mesesReq, mesesDist: snap.mesesDist };
+  snap.renglones.forEach(o=>{
+    SNAP_RENG[String(o.c)]={ sum:o.s||'', iC:o.iC||0, iR:o.iR||0, d:o.d||0, r:o.r||0 };
+  });
+  // Construir RENGLONES (para el combo y ejemplos) directamente del snapshot
+  RENGLONES=snap.renglones.map(o=>({cod:String(o.c), sum:o.s||''}))
+                          .sort((a,b)=>a.cod.localeCompare(b.cod));
+}
+
 function cargarRenglon(){
   const raw=document.getElementById('inCod').value.trim();
   const cod=raw.split('—')[0].trim();
   if(!cod){ return; }
   const ambito=document.getElementById('inAmbito').value; // CEDIS | RED
 
-  // Filas de este renglón
-  const filas=MATRIZ.rows.filter(r=>String(r[COL.COD_ABASTO])===cod);
-  if(!filas.length){ alert('No se encontró el renglón '+cod+' en la matriz.'); return; }
-
-  const esCedis = r => String(r[COL.UNIDAD_EJECUTORA]||'').toUpperCase().indexOf('CEDIS')>=0;
-
   let inv=0, distMes=0, reqMes=0, sum='';
-  filas.forEach(r=>{
-    sum = sum || r[COL.SUMINISTRO];
-    const enCedis = esCedis(r);
-    if(ambito==='CEDIS'){
-      if(enCedis) inv += N(r[COL.INVENTARIO]);          // solo bodega CEDIS
-    }else{
-      inv += N(r[COL.INVENTARIO]);                        // toda la red
-    }
-    // El ritmo de salida siempre es la demanda de las UE (el CEDIS no consume)
-    if(!enCedis){ distMes += N(r[COL.DISTRIB_MES]); reqMes += N(r[COL.REQ_MES]); }
-  });
+
+  if(SNAP_RENG[cod]){
+    // --- Fuente: snapshot agregado ---
+    const o=SNAP_RENG[cod];
+    sum=o.sum;
+    inv=(ambito==='CEDIS')?o.iC:o.iR;
+    distMes=o.d; reqMes=o.r;
+  }else if(MATRIZ.rows && MATRIZ.rows.length){
+    // --- Fuente: GAS en vivo (filas UE×renglón) ---
+    const filas=MATRIZ.rows.filter(r=>String(r[COL.COD_ABASTO])===cod);
+    if(!filas.length){ alert('No se encontró el renglón '+cod+' en la matriz.'); return; }
+    const esCedis = r => String(r[COL.UNIDAD_EJECUTORA]||'').toUpperCase().indexOf('CEDIS')>=0;
+    filas.forEach(r=>{
+      sum = sum || r[COL.SUMINISTRO];
+      const enCedis = esCedis(r);
+      if(ambito==='CEDIS'){ if(enCedis) inv += N(r[COL.INVENTARIO]); }
+      else { inv += N(r[COL.INVENTARIO]); }
+      if(!enCedis){ distMes += N(r[COL.DISTRIB_MES]); reqMes += N(r[COL.REQ_MES]); }
+    });
+  }else{
+    alert('No hay datos cargados para el renglón '+cod+'.'); return;
+  }
 
   // Tránsitos de este renglón (cruce por código estricto solo-dígitos)
   const k=codKey(cod);
