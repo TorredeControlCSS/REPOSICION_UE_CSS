@@ -219,6 +219,43 @@ function mapCols(){
 }
 
 /* ================================================================
+   FILTRO DE TRÁNSITO VIVO
+   De las solicitudes de SIGUELO, conserva solo las OC que representan
+   inventario que AÚN VA A LLEGAR (no lo entregado), y las normaliza al
+   formato que usa el motor de proyección.
+   ================================================================ */
+// Estados que cuentan como "en tránsito por llegar" (OC emitida, aún no recibida).
+// NO incluye ENTREGADO/ENTREGADA (ya es inventario) ni cierres (CANCELADA, HISTORICA...).
+const ESTADOS_TRANSITO = ['PENDIENTE','SOLICITADA','EN ANALISIS','AGENDADA',
+                          'DIFERIDA','REPROGRAMADA','REMANENTE','ASISTIO','PARCIAL','NO_ASISTIO'];
+function filtrarTransitoVivo_(solicitudes){
+  const out=[];
+  solicitudes.forEach(s=>{
+    const est=String(s.estado||'').toUpperCase().trim();
+    if(ESTADOS_TRANSITO.indexOf(est)<0) return;              // descarta entregado/cerrado
+    // Cantidad que realmente falta por llegar: saldo pendiente si existe (>0),
+    // si no, las unidades de la OC. Así una entrega parcial solo suma lo que resta.
+    let cant=N(s.saldo_pendiente);
+    if(!(cant>0)) cant=N(s.cant_unidades);
+    if(!(cant>0)) return;                                     // sin cantidad útil
+    out.push({
+      n_documento: s.oc||'',
+      proveedor: s.empresa||'',
+      cod_abasto: s.cod_abasto||'',
+      cod_abasto_norm: s.cod_abasto||'',
+      descripcion: s.descripcion||'',
+      cantidad: cant,
+      estado_transito: est,
+      // fecha de llegada estimada: confirmada si la hay, si no la solicitada
+      vencimiento_entrega: s.fecha_confirmada || s.fecha_solicitada || '',
+      termino_entrega: s.fecha_solicitada || '',
+      vencimiento_oc: (s.venc && s.venc.fecha) ? s.venc.fecha : ''
+    });
+  });
+  return out;
+}
+
+/* ================================================================
    CARGA INICIAL: matriz (obligatoria) + tránsitos (best-effort)
    ================================================================ */
 async function iniciar(){
@@ -237,18 +274,22 @@ async function iniciar(){
     aviso.textContent='No se pudo conectar con la Calculadora de Reposición ('+e.message+'). Revisa que el Web App esté desplegado y accesible.';
     return;
   }
-  // 2) Tránsitos de SIGUELO — opcional; si falla, seguimos sin la capa de tránsitos
+  // 2) Solicitudes/OC en tránsito de SIGUELO — opcional; si falla, seguimos sin la capa
+  // Fuente: getSolicitudesPriorizadas (hoja SOLICITUDES con estados de cita).
+  // Se incluye todo lo VIVO (OC emitida aún no recibida): PENDIENTE, SOLICITADA,
+  // EN ANALISIS, AGENDADA, DIFERIDA, REPROGRAMADA, ASISTIO/PARCIAL con saldo.
+  // Se EXCLUYE lo ENTREGADO (ya es inventario) y estados de cierre.
   try{
-    const t=await jsonp(API_SIGUELO, {action:'getTransitosSinCita'}, 120000);
-    if(t && t.success && Array.isArray(t.transitos)){
-      TRANSITOS_ALL=t.transitos; SIGUELO_OK=true;
+    const t=await jsonp(API_SIGUELO, {action:'getSolicitudesPriorizadas'}, 120000);
+    if(t && t.success && Array.isArray(t.solicitudes)){
+      TRANSITOS_ALL=filtrarTransitoVivo_(t.solicitudes); SIGUELO_OK=true;
       aviso.className='aviso ok';
       aviso.textContent='Conectado. '+MATRIZ.rows.length.toLocaleString()+' filas de reposición · '+
-        TRANSITOS_ALL.length.toLocaleString()+' tránsitos por llegar (SIGUELO). '+
+        TRANSITOS_ALL.length.toLocaleString()+' OC en tránsito (SIGUELO, pendientes + agendadas). '+
         'Generado: '+(MATRIZ.meta.generado?new Date(MATRIZ.meta.generado).toLocaleString():'—');
       const mt=document.getElementById('metaTop');
       if(mt) mt.innerHTML='Generado: '+(MATRIZ.meta.generado?new Date(MATRIZ.meta.generado).toLocaleString():'—')+
-        '<br>'+MATRIZ.rows.length.toLocaleString()+' filas · '+TRANSITOS_ALL.length.toLocaleString()+' tránsitos';
+        '<br>'+MATRIZ.rows.length.toLocaleString()+' filas · '+TRANSITOS_ALL.length.toLocaleString()+' en tránsito';
     }else{ throw new Error('respuesta inválida'); }
   }catch(e){
     SIGUELO_OK=false;
