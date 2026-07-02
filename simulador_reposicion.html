@@ -174,18 +174,12 @@
           </select>
         </div>
         <div style="flex:0 0 auto">
-          <label>Media móvil (días)</label>
-          <div style="display:flex;gap:4px;align-items:center">
-            <select id="inMM">
-              <option value="30">30 días</option>
-              <option value="60">60 días</option>
-              <option value="90" selected>90 días</option>
-              <option value="120">120 días</option>
-              <option value="custom">Personalizado…</option>
-            </select>
-            <input id="inMMdias" type="number" min="7" max="365" value="90"
-              style="width:70px;display:none" title="días personalizados">
-          </div>
+          <label>Media móvil</label>
+          <select id="inMM">
+            <option value="60">Últimos 60 días</option>
+            <option value="90" selected>Últimos 90 días</option>
+            <option value="120">Últimos 120 días</option>
+          </select>
         </div>
         <div style="flex:0 0 auto">
           <label>Tránsitos por llegar</label>
@@ -465,17 +459,15 @@ function moverCombo(dir){
 /* ================================================================
    AGREGAR el renglón elegido y cruzar tránsitos
    ================================================================ */
-// Mapa código -> agregado del snapshot. Poblado por cargarDesdeSnapshot_.
-let FECHA_DATOS=null;   // 'hoy' de los datos = última fecha observada (snap.fechaMax)
-let FECHA_MIN=null;     // primera fecha observada; base para descomprimir offsets diarios
+// Mapa código -> agregado del snapshot con MM pre-calculadas.
+let VENTANAS_MM=[60,90,120];   // ventanas disponibles (del snapshot)
 function cargarDesdeSnapshot_(snap){
   SNAP_RENG={};
   MATRIZ.meta={ generado: snap.generado, mesesReq: snap.mesesReq, mesesDist: snap.mesesDist };
-  FECHA_DATOS = snap.fechaMax ? new Date(snap.fechaMax+'T00:00:00') : new Date();
-  FECHA_MIN   = snap.fechaMin ? new Date(snap.fechaMin+'T00:00:00') : null;
+  VENTANAS_MM = Array.isArray(snap.ventanas) ? snap.ventanas : [60,90,120];
   snap.renglones.forEach(o=>{
     SNAP_RENG[String(o.c)]={ sum:o.s||'', iC:o.iC||0, iR:o.iR||0, d:o.d||0, r:o.r||0,
-                             dd:o.dd||{}, dr:o.dr||{} };   // series diarias {offset:unidades}
+                             md:o.md||[], mr:o.mr||[] };   // medias móviles pre-calculadas
   });
   RENGLONES=snap.renglones.map(o=>({cod:String(o.c), sum:o.s||''}))
                           .sort((a,b)=>a.cod.localeCompare(b.cod));
@@ -487,7 +479,7 @@ function cargarRenglon(){
   if(!cod){ return; }
   const ambito=document.getElementById('inAmbito').value; // CEDIS | RED
 
-  let inv=0, distMes=0, reqMes=0, sum='', dd={}, dr={};
+  let inv=0, distMes=0, reqMes=0, sum='', md=[], mr=[];
 
   if(SNAP_RENG[cod]){
     // --- Fuente: snapshot agregado ---
@@ -495,7 +487,7 @@ function cargarRenglon(){
     sum=o.sum;
     inv=(ambito==='CEDIS')?o.iC:o.iR;
     distMes=o.d; reqMes=o.r;
-    dd=o.dd||{}; dr=o.dr||{};       // series diarias para media móvil
+    md=o.md||[]; mr=o.mr||[];       // medias móviles pre-calculadas
   }else if(MATRIZ.rows && MATRIZ.rows.length){
     // --- Fuente: GAS en vivo (filas UE×renglón) --- (sin serie mensual: usa promedio)
     const filas=MATRIZ.rows.filter(r=>String(r[COL.COD_ABASTO])===cod);
@@ -516,7 +508,7 @@ function cargarRenglon(){
   const k=codKey(cod);
   const trans = SIGUELO_OK ? TRANSITOS_ALL.filter(t=>codKey(t.cod_abasto_norm||t.cod_abasto)===k) : [];
 
-  SEL={cod, sum, inv, distMes, reqMes, dd, dr, transitos:trans};
+  SEL={cod, sum, inv, distMes, reqMes, md, mr, transitos:trans};
   tiempoMes=0; playing=false; cancelAnimationFrame(rafId);
   document.getElementById('resultado').classList.remove('hidden');
   document.getElementById('facTxt').textContent=factor.toFixed(1);
@@ -529,31 +521,17 @@ function cargarRenglon(){
    Inventario baja por consumo mensual (tasa×factor) y sube en
    escalón en el mes de cada tránsito (por su fecha de entrega).
    ================================================================ */
-// Ventana de la media móvil EN DÍAS (selector del usuario).
+// Ventana de media móvil elegida (días). Debe existir en VENTANAS_MM.
 let diasMM = 90;
-// Suma las unidades de la serie diaria en los últimos N días desde FECHA_DATOS,
-// y devuelve la tasa en unidades/MES (×30/N). Las claves de la serie son OFFSETS
-// de días desde FECHA_MIN (compresión del snapshot); se reconstruye la fecha real.
-function mediaMovilDias_(serieDiaria, dias){
-  if(!serieDiaria || typeof serieDiaria!=='object') return null;
-  const ref = FECHA_DATOS || new Date();
-  const base = FECHA_MIN;
-  const corte = new Date(ref.getTime() - dias*86400000);
-  let suma=0, hubo=false;
-  for(const off in serieDiaria){
-    // reconstruir la fecha: FECHA_MIN + offset días (o interpretar clave como fecha si no hay base)
-    const f = base ? new Date(base.getTime() + Number(off)*86400000)
-                   : new Date(off+'T00:00:00');
-    if(f>=corte && f<=ref){ suma+=Number(serieDiaria[off])||0; hubo=true; }
-  }
-  if(!hubo) return 0;
-  return (suma/dias)*30;
-}
 function tasaSalida(){
-  const serie = (base==='dist') ? SEL.dd : SEL.dr;
-  const mm = mediaMovilDias_(serie, diasMM);
-  // Con serie diaria usa la media móvil; si no (GAS en vivo), cae al promedio plano del snapshot
-  const baseMes = (mm!=null) ? mm : (base==='dist'?SEL.distMes:SEL.reqMes);
+  const arr = (base==='dist') ? SEL.md : SEL.mr;   // [tasa60, tasa90, tasa120] u/mes
+  const idx = VENTANAS_MM.indexOf(diasMM);
+  let baseMes;
+  if(Array.isArray(arr) && arr.length && idx>=0 && arr[idx]!=null){
+    baseMes = arr[idx];                             // media móvil pre-calculada
+  }else{
+    baseMes = (base==='dist'?SEL.distMes:SEL.reqMes); // fallback: promedio del snapshot/GAS
+  }
   return baseMes * factor;
 }
 
@@ -635,9 +613,8 @@ function render(){
     'Curva <b style="color:var(--verde)">verde</b>: con las entregas por llegar (escalones hacia arriba). '+
     'Los saltos verticales son las OC en tránsito. '+
     '<br><span style="color:#777">El ritmo de salida es la media móvil de los últimos '+diasMM+' días de '+
-    (base==='dist'?'distribuciones':'requisiciones')+' (hasta '+
-    (FECHA_DATOS?FECHA_DATOS.toLocaleDateString():'hoy')+', el corte de los datos). '+
-    'Ajusta «Media móvil» y «Base de salida» para ver otros escenarios.</span>';
+    (base==='dist'?'distribuciones':'requisiciones')+'. '+
+    'Cambia «Media móvil» (60/90/120) para ver escenarios con más o menos memoria.</span>';
 }
 
 /* SVG de la curva sierra con marcador de tiempo */
@@ -768,17 +745,7 @@ document.getElementById('slFactor').oninput=e=>{
   factor=parseFloat(e.target.value); render();
 };
 document.getElementById('inBase').onchange=e=>{ base=e.target.value; tiempoMes=0; render(); };
-(function(){
-  const sel=document.getElementById('inMM'), inp=document.getElementById('inMMdias');
-  sel.onchange=()=>{
-    if(sel.value==='custom'){ inp.style.display='inline-block'; diasMM=parseInt(inp.value)||90; }
-    else { inp.style.display='none'; diasMM=parseInt(sel.value)||90; }
-    tiempoMes=0; render();
-  };
-  inp.oninput=()=>{ clearTimeout(window._mmt); window._mmt=setTimeout(()=>{
-    diasMM=Math.max(7,Math.min(365,parseInt(inp.value)||90)); tiempoMes=0; render();
-  },200); };
-})();
+document.getElementById('inMM').onchange=e=>{ diasMM=parseInt(e.target.value)||90; tiempoMes=0; render(); };
 document.getElementById('btnTransitos').onclick=e=>{
   incluirTransitos=!incluirTransitos;
   const b=e.target;
