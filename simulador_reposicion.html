@@ -174,6 +174,14 @@
           </select>
         </div>
         <div style="flex:0 0 auto">
+          <label>Media móvil (meses)</label>
+          <select id="inMM">
+            <option value="3">Últimos 3 meses</option>
+            <option value="4">Últimos 4 meses</option>
+            <option value="6">Últimos 6 meses</option>
+          </select>
+        </div>
+        <div style="flex:0 0 auto">
           <label>Tránsitos por llegar</label>
           <button class="btn-sec" id="btnTransitos">Incluir tránsitos: ON</button>
         </div>
@@ -452,13 +460,15 @@ function moverCombo(dir){
    AGREGAR el renglón elegido y cruzar tránsitos
    ================================================================ */
 // Mapa código -> agregado del snapshot. Poblado por cargarDesdeSnapshot_ (declarado arriba).
+let MESES_SERIE=[];   // etiquetas de meses de las series (ej. ['2026-01',...])
 function cargarDesdeSnapshot_(snap){
   SNAP_RENG={};
   MATRIZ.meta={ generado: snap.generado, mesesReq: snap.mesesReq, mesesDist: snap.mesesDist };
+  MESES_SERIE = Array.isArray(snap.meses) ? snap.meses : [];
   snap.renglones.forEach(o=>{
-    SNAP_RENG[String(o.c)]={ sum:o.s||'', iC:o.iC||0, iR:o.iR||0, d:o.d||0, r:o.r||0 };
+    SNAP_RENG[String(o.c)]={ sum:o.s||'', iC:o.iC||0, iR:o.iR||0, d:o.d||0, r:o.r||0,
+                             sd:o.sd||[], sr:o.sr||[] };
   });
-  // Construir RENGLONES (para el combo y ejemplos) directamente del snapshot
   RENGLONES=snap.renglones.map(o=>({cod:String(o.c), sum:o.s||''}))
                           .sort((a,b)=>a.cod.localeCompare(b.cod));
 }
@@ -469,7 +479,7 @@ function cargarRenglon(){
   if(!cod){ return; }
   const ambito=document.getElementById('inAmbito').value; // CEDIS | RED
 
-  let inv=0, distMes=0, reqMes=0, sum='';
+  let inv=0, distMes=0, reqMes=0, sum='', sd=[], sr=[];
 
   if(SNAP_RENG[cod]){
     // --- Fuente: snapshot agregado ---
@@ -477,8 +487,9 @@ function cargarRenglon(){
     sum=o.sum;
     inv=(ambito==='CEDIS')?o.iC:o.iR;
     distMes=o.d; reqMes=o.r;
+    sd=o.sd||[]; sr=o.sr||[];       // series mensuales para media móvil
   }else if(MATRIZ.rows && MATRIZ.rows.length){
-    // --- Fuente: GAS en vivo (filas UE×renglón) ---
+    // --- Fuente: GAS en vivo (filas UE×renglón) --- (sin serie mensual: usa promedio)
     const filas=MATRIZ.rows.filter(r=>String(r[COL.COD_ABASTO])===cod);
     if(!filas.length){ alert('No se encontró el renglón '+cod+' en la matriz.'); return; }
     const esCedis = r => String(r[COL.UNIDAD_EJECUTORA]||'').toUpperCase().indexOf('CEDIS')>=0;
@@ -497,7 +508,7 @@ function cargarRenglon(){
   const k=codKey(cod);
   const trans = SIGUELO_OK ? TRANSITOS_ALL.filter(t=>codKey(t.cod_abasto_norm||t.cod_abasto)===k) : [];
 
-  SEL={cod, sum, inv, distMes, reqMes, transitos:trans};
+  SEL={cod, sum, inv, distMes, reqMes, sd, sr, transitos:trans};
   tiempoMes=0; playing=false; cancelAnimationFrame(rafId);
   document.getElementById('resultado').classList.remove('hidden');
   document.getElementById('facTxt').textContent=factor.toFixed(1);
@@ -510,7 +521,22 @@ function cargarRenglon(){
    Inventario baja por consumo mensual (tasa×factor) y sube en
    escalón en el mes de cada tránsito (por su fecha de entrega).
    ================================================================ */
-function tasaSalida(){ return (base==='dist'?SEL.distMes:SEL.reqMes) * factor; }
+// Nº de meses para la media móvil (selector del usuario). 0 = usar promedio plano del snapshot.
+let mesesMM = 3;
+function mediaMovil_(serie, n){
+  if(!Array.isArray(serie) || !serie.length) return null;
+  const ult=serie.slice(-n);                 // últimos n meses disponibles
+  if(!ult.length) return null;
+  const suma=ult.reduce((a,b)=>a+(Number(b)||0),0);
+  return suma/ult.length;
+}
+function tasaSalida(){
+  const serie = (base==='dist') ? SEL.sd : SEL.sr;
+  const mm = mediaMovil_(serie, mesesMM);
+  // Si hay serie mensual usa la media móvil; si no (GAS en vivo), cae al promedio plano
+  const baseMes = (mm!=null) ? mm : (base==='dist'?SEL.distMes:SEL.reqMes);
+  return baseMes * factor;
+}
 
 // Mes (entero desde hoy) de una fecha ISO 'yyyy-mm-dd'
 function mesDesdeHoy(fechaIso){
@@ -574,7 +600,7 @@ function render(){
   const k=document.getElementById('kpis');
   k.innerHTML=[
     ['Inventario actual', fmt(SEL.inv), document.getElementById('inAmbito').value==='CEDIS'?'en mi bodega CEDIS':'total en mi red','var(--azul2)'],
-    ['Salida mensual (×'+factor+')', fmt(tasa), (base==='dist'?'distribuciones':'requisiciones')+' × factor','var(--azul2)'],
+    ['Salida mensual (×'+factor+')', fmt(tasa), 'media móvil '+mesesMM+'m · '+(base==='dist'?'distrib':'req')+' × factor','var(--azul2)'],
     ['Cobertura sin tránsitos', isFinite(cobActual)?cobActual.toFixed(1)+' m':'—', bA[0]+' · '+(cobActual/12).toFixed(1)+' años', bA[1]],
     ['Tránsitos por llegar', fmt(totalTrans), SEL.transitos.length+' entrega(s)'+(SIGUELO_OK?'':' · SIGUELO offline'),'var(--verde)'],
     ['Se agota (con tránsitos)', mAgota>=60?'>60 m':mAgota+' m', incluirTransitos?'incluye reposición':'tránsitos OFF', mAgota>24?'var(--rojo)':mAgota>12?'var(--ambar)':'var(--verde)']
@@ -589,8 +615,9 @@ function render(){
     'Curva <b style="color:var(--azul)">azul</b>: inventario si NO llegara ningún tránsito. '+
     'Curva <b style="color:var(--verde)">verde</b>: con las entregas por llegar (escalones hacia arriba). '+
     'Los saltos verticales son las OC en tránsito. '+
-    '<br><span style="color:var(--ambar)">Nota: la caída se proyecta a ritmo constante (promedio mensual). '+
-    'El consumo real es estacional; una versión futura usará media móvil para reflejarlo.</span>';
+    '<br><span style="color:#777">El ritmo de salida es la media móvil de los últimos '+mesesMM+' meses de '+
+    (base==='dist'?'distribuciones':'requisiciones')+' ('+MESES_SERIE.slice(-mesesMM).join(', ')+'). '+
+    'Ajusta «Media móvil» y «Base de salida» para ver otros escenarios.</span>';
 }
 
 /* SVG de la curva sierra con marcador de tiempo */
@@ -721,6 +748,7 @@ document.getElementById('slFactor').oninput=e=>{
   factor=parseFloat(e.target.value); render();
 };
 document.getElementById('inBase').onchange=e=>{ base=e.target.value; tiempoMes=0; render(); };
+document.getElementById('inMM').onchange=e=>{ mesesMM=parseInt(e.target.value)||3; tiempoMes=0; render(); };
 document.getElementById('btnTransitos').onclick=e=>{
   incluirTransitos=!incluirTransitos;
   const b=e.target;
