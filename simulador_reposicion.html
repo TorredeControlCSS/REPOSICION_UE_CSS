@@ -174,12 +174,18 @@
           </select>
         </div>
         <div style="flex:0 0 auto">
-          <label>Media móvil (meses)</label>
-          <select id="inMM">
-            <option value="3">Últimos 3 meses</option>
-            <option value="4">Últimos 4 meses</option>
-            <option value="6">Últimos 6 meses</option>
-          </select>
+          <label>Media móvil (días)</label>
+          <div style="display:flex;gap:4px;align-items:center">
+            <select id="inMM">
+              <option value="30">30 días</option>
+              <option value="60">60 días</option>
+              <option value="90" selected>90 días</option>
+              <option value="120">120 días</option>
+              <option value="custom">Personalizado…</option>
+            </select>
+            <input id="inMMdias" type="number" min="7" max="365" value="90"
+              style="width:70px;display:none" title="días personalizados">
+          </div>
         </div>
         <div style="flex:0 0 auto">
           <label>Tránsitos por llegar</label>
@@ -459,15 +465,15 @@ function moverCombo(dir){
 /* ================================================================
    AGREGAR el renglón elegido y cruzar tránsitos
    ================================================================ */
-// Mapa código -> agregado del snapshot. Poblado por cargarDesdeSnapshot_ (declarado arriba).
-let MESES_SERIE=[];   // etiquetas de meses de las series (ej. ['2026-01',...])
+// Mapa código -> agregado del snapshot. Poblado por cargarDesdeSnapshot_.
+let FECHA_DATOS=null;   // 'hoy' de los datos = última fecha observada (snap.fechaMax)
 function cargarDesdeSnapshot_(snap){
   SNAP_RENG={};
   MATRIZ.meta={ generado: snap.generado, mesesReq: snap.mesesReq, mesesDist: snap.mesesDist };
-  MESES_SERIE = Array.isArray(snap.meses) ? snap.meses : [];
+  FECHA_DATOS = snap.fechaMax ? new Date(snap.fechaMax+'T00:00:00') : new Date();
   snap.renglones.forEach(o=>{
     SNAP_RENG[String(o.c)]={ sum:o.s||'', iC:o.iC||0, iR:o.iR||0, d:o.d||0, r:o.r||0,
-                             sd:o.sd||[], sr:o.sr||[] };
+                             dd:o.dd||{}, dr:o.dr||{} };   // series diarias {fecha:unidades}
   });
   RENGLONES=snap.renglones.map(o=>({cod:String(o.c), sum:o.s||''}))
                           .sort((a,b)=>a.cod.localeCompare(b.cod));
@@ -479,7 +485,7 @@ function cargarRenglon(){
   if(!cod){ return; }
   const ambito=document.getElementById('inAmbito').value; // CEDIS | RED
 
-  let inv=0, distMes=0, reqMes=0, sum='', sd=[], sr=[];
+  let inv=0, distMes=0, reqMes=0, sum='', dd={}, dr={};
 
   if(SNAP_RENG[cod]){
     // --- Fuente: snapshot agregado ---
@@ -487,7 +493,7 @@ function cargarRenglon(){
     sum=o.sum;
     inv=(ambito==='CEDIS')?o.iC:o.iR;
     distMes=o.d; reqMes=o.r;
-    sd=o.sd||[]; sr=o.sr||[];       // series mensuales para media móvil
+    dd=o.dd||{}; dr=o.dr||{};       // series diarias para media móvil
   }else if(MATRIZ.rows && MATRIZ.rows.length){
     // --- Fuente: GAS en vivo (filas UE×renglón) --- (sin serie mensual: usa promedio)
     const filas=MATRIZ.rows.filter(r=>String(r[COL.COD_ABASTO])===cod);
@@ -508,7 +514,7 @@ function cargarRenglon(){
   const k=codKey(cod);
   const trans = SIGUELO_OK ? TRANSITOS_ALL.filter(t=>codKey(t.cod_abasto_norm||t.cod_abasto)===k) : [];
 
-  SEL={cod, sum, inv, distMes, reqMes, sd, sr, transitos:trans};
+  SEL={cod, sum, inv, distMes, reqMes, dd, dr, transitos:trans};
   tiempoMes=0; playing=false; cancelAnimationFrame(rafId);
   document.getElementById('resultado').classList.remove('hidden');
   document.getElementById('facTxt').textContent=factor.toFixed(1);
@@ -521,19 +527,26 @@ function cargarRenglon(){
    Inventario baja por consumo mensual (tasa×factor) y sube en
    escalón en el mes de cada tránsito (por su fecha de entrega).
    ================================================================ */
-// Nº de meses para la media móvil (selector del usuario). 0 = usar promedio plano del snapshot.
-let mesesMM = 3;
-function mediaMovil_(serie, n){
-  if(!Array.isArray(serie) || !serie.length) return null;
-  const ult=serie.slice(-n);                 // últimos n meses disponibles
-  if(!ult.length) return null;
-  const suma=ult.reduce((a,b)=>a+(Number(b)||0),0);
-  return suma/ult.length;
+// Ventana de la media móvil EN DÍAS (selector del usuario).
+let diasMM = 90;
+// Suma las unidades de la serie diaria {fecha:unidades} en los últimos N días
+// desde FECHA_DATOS, y devuelve la tasa en unidades/MES (×30/N) para la proyección.
+function mediaMovilDias_(serieDiaria, dias){
+  if(!serieDiaria || typeof serieDiaria!=='object') return null;
+  const ref = FECHA_DATOS || new Date();
+  const corte = new Date(ref.getTime() - dias*86400000);
+  let suma=0, hubo=false;
+  for(const ymd in serieDiaria){
+    const f=new Date(ymd+'T00:00:00');
+    if(f>=corte && f<=ref){ suma+=Number(serieDiaria[ymd])||0; hubo=true; }
+  }
+  if(!hubo) return 0;                 // hubo ventana pero sin movimiento → tasa 0
+  return (suma/dias)*30;              // unidades/día × 30 = unidades/mes
 }
 function tasaSalida(){
-  const serie = (base==='dist') ? SEL.sd : SEL.sr;
-  const mm = mediaMovil_(serie, mesesMM);
-  // Si hay serie mensual usa la media móvil; si no (GAS en vivo), cae al promedio plano
+  const serie = (base==='dist') ? SEL.dd : SEL.dr;
+  const mm = mediaMovilDias_(serie, diasMM);
+  // Con serie diaria usa la media móvil; si no (GAS en vivo), cae al promedio plano del snapshot
   const baseMes = (mm!=null) ? mm : (base==='dist'?SEL.distMes:SEL.reqMes);
   return baseMes * factor;
 }
@@ -600,7 +613,7 @@ function render(){
   const k=document.getElementById('kpis');
   k.innerHTML=[
     ['Inventario actual', fmt(SEL.inv), document.getElementById('inAmbito').value==='CEDIS'?'en mi bodega CEDIS':'total en mi red','var(--azul2)'],
-    ['Salida mensual (×'+factor+')', fmt(tasa), 'media móvil '+mesesMM+'m · '+(base==='dist'?'distrib':'req')+' × factor','var(--azul2)'],
+    ['Salida mensual (×'+factor+')', fmt(tasa), 'media móvil '+diasMM+'d · '+(base==='dist'?'distrib':'req')+' × factor','var(--azul2)'],
     ['Cobertura sin tránsitos', isFinite(cobActual)?cobActual.toFixed(1)+' m':'—', bA[0]+' · '+(cobActual/12).toFixed(1)+' años', bA[1]],
     ['Tránsitos por llegar', fmt(totalTrans), SEL.transitos.length+' entrega(s)'+(SIGUELO_OK?'':' · SIGUELO offline'),'var(--verde)'],
     ['Se agota (con tránsitos)', mAgota>=60?'>60 m':mAgota+' m', incluirTransitos?'incluye reposición':'tránsitos OFF', mAgota>24?'var(--rojo)':mAgota>12?'var(--ambar)':'var(--verde)']
@@ -615,8 +628,9 @@ function render(){
     'Curva <b style="color:var(--azul)">azul</b>: inventario si NO llegara ningún tránsito. '+
     'Curva <b style="color:var(--verde)">verde</b>: con las entregas por llegar (escalones hacia arriba). '+
     'Los saltos verticales son las OC en tránsito. '+
-    '<br><span style="color:#777">El ritmo de salida es la media móvil de los últimos '+mesesMM+' meses de '+
-    (base==='dist'?'distribuciones':'requisiciones')+' ('+MESES_SERIE.slice(-mesesMM).join(', ')+'). '+
+    '<br><span style="color:#777">El ritmo de salida es la media móvil de los últimos '+diasMM+' días de '+
+    (base==='dist'?'distribuciones':'requisiciones')+' (hasta '+
+    (FECHA_DATOS?FECHA_DATOS.toLocaleDateString():'hoy')+', el corte de los datos). '+
     'Ajusta «Media móvil» y «Base de salida» para ver otros escenarios.</span>';
 }
 
@@ -748,7 +762,17 @@ document.getElementById('slFactor').oninput=e=>{
   factor=parseFloat(e.target.value); render();
 };
 document.getElementById('inBase').onchange=e=>{ base=e.target.value; tiempoMes=0; render(); };
-document.getElementById('inMM').onchange=e=>{ mesesMM=parseInt(e.target.value)||3; tiempoMes=0; render(); };
+(function(){
+  const sel=document.getElementById('inMM'), inp=document.getElementById('inMMdias');
+  sel.onchange=()=>{
+    if(sel.value==='custom'){ inp.style.display='inline-block'; diasMM=parseInt(inp.value)||90; }
+    else { inp.style.display='none'; diasMM=parseInt(sel.value)||90; }
+    tiempoMes=0; render();
+  };
+  inp.oninput=()=>{ clearTimeout(window._mmt); window._mmt=setTimeout(()=>{
+    diasMM=Math.max(7,Math.min(365,parseInt(inp.value)||90)); tiempoMes=0; render();
+  },200); };
+})();
 document.getElementById('btnTransitos').onclick=e=>{
   incluirTransitos=!incluirTransitos;
   const b=e.target;
