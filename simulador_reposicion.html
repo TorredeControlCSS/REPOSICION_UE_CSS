@@ -61,6 +61,18 @@
   .combo-item .desc{color:var(--sub);}
   .combo-item:hover .desc,.combo-item.active .desc{color:#eaf1f8;}
   .combo-empty{padding:10px;font-size:12px;color:var(--sub);text-align:center;}
+  /* Tabla de detalle por UE */
+  .det-tbl{border-collapse:collapse;width:100%;font-size:11px;}
+  .det-tbl th,.det-tbl td{border:1px solid #ddd;padding:4px 8px;white-space:nowrap;}
+  .det-tbl th{background:#f4f7fb;color:var(--azul2);font-size:10px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0;}
+  .det-tbl th.ue,.det-tbl td.ue{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:180px;}
+  .det-tbl th.ue{background:#f4f7fb;}
+  .det-tbl .num{text-align:right;font-family:Consolas,monospace;}
+  .det-tbl .tot{font-weight:700;background:#fafafa;}
+  .det-tbl tr:hover td{background:#f4f7fb;}
+  .det-tbl tr:hover td.ue{background:#eef3fa;}
+  .det-tbl .tot-row td{font-weight:700;background:#eef;border-top:2px solid var(--azul);}
+  .det-tbl .tot-row td.ue{background:#e0e8f5;}
   /* Pestañas */
   .tabs{display:flex;gap:2px;margin-bottom:10px;border-bottom:2px solid var(--bord);}
   .tab{padding:9px 18px;cursor:pointer;font-size:13px;font-weight:600;color:var(--sub);
@@ -204,6 +216,24 @@
       </div>
       <div id="grafico"></div>
       <div class="meta" id="leyendaGrafico" style="margin-top:6px"></div>
+    </div>
+
+    <!-- detalle por Unidad Ejecutora (mes a mes) -->
+    <div class="card" id="cardDetalleUE">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--azul2)">
+          Detalle por Unidad Ejecutora — mes a mes
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <label style="margin:0">Ver:</label>
+          <select id="detalleTipo" style="width:auto;padding:4px 8px">
+            <option value="req">Requisiciones F8</option>
+            <option value="dist">Distribuciones</option>
+            <option value="ambos">Ambos</option>
+          </select>
+        </div>
+      </div>
+      <div id="tablaDetalleUE"><div class="meta">Selecciona un renglón para ver el detalle.</div></div>
     </div>
 
     <!-- tránsitos detectados -->
@@ -514,6 +544,7 @@ function cargarRenglon(){
   document.getElementById('facTxt').textContent=factor.toFixed(1);
   renderTablaTransitos();
   render();
+  cargarDetalleUE(cod);
 }
 
 /* ================================================================
@@ -678,6 +709,63 @@ function svgProyeccion(rows){
 }
 
 /* Tabla de tránsitos detectados */
+/* ================================================================
+   DETALLE POR UNIDAD EJECUTORA (bajo demanda desde GAS)
+   ================================================================ */
+let DETALLE_UE=null;   // último detalle cargado {cod, meses, filas[]}
+async function cargarDetalleUE(cod){
+  const cont=document.getElementById('tablaDetalleUE');
+  cont.innerHTML='<div class="meta">Cargando detalle por Unidad Ejecutora…</div>';
+  DETALLE_UE=null;
+  try{
+    const d=await jsonp(API_CALC, {accion:'detalleUE', cod:cod}, 60000);
+    if(!d || !d.ok) throw new Error(d&&d.error?d.error:'sin datos');
+    DETALLE_UE=d;
+    renderDetalleUE();
+  }catch(e){
+    cont.innerHTML='<div class="aviso err" style="margin:0">No se pudo cargar el detalle por UE ('+e.message+'). '+
+      'Requiere conexión con la Calculadora.</div>';
+  }
+}
+function renderDetalleUE(){
+  const cont=document.getElementById('tablaDetalleUE');
+  if(!DETALLE_UE || !DETALLE_UE.filas.length){
+    cont.innerHTML='<div class="meta">No hay movimientos por UE para este renglón.</div>'; return;
+  }
+  const tipo=document.getElementById('detalleTipo').value;  // req | dist | ambos
+  const meses=DETALLE_UE.meses;
+  const mesLbl=m=>{ const p=m.split('-'); const nn=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return nn[+p[1]]+' '+p[0].slice(2); };
+
+  // construir encabezado
+  function tabla(campo, titulo, colTotal, colProm, color){
+    let h='<div style="font-size:12px;font-weight:700;color:'+color+';margin:8px 0 4px">'+titulo+'</div>';
+    h+='<div style="overflow-x:auto"><table class="det-tbl"><thead><tr>'+
+       '<th class="ue">Unidad Ejecutora</th>'+
+       meses.map(m=>'<th class="num">'+mesLbl(m)+'</th>').join('')+
+       '<th class="num tot">Total</th><th class="num tot">Prom/mes</th></tr></thead><tbody>';
+    DETALLE_UE.filas.forEach(f=>{
+      const serie=f[campo];
+      h+='<tr><td class="ue">'+f.ue+'</td>'+
+         serie.map(x=>'<td class="num">'+(x?fmt(x):'·')+'</td>').join('')+
+         '<td class="num tot">'+fmt(f[colTotal])+'</td>'+
+         '<td class="num tot">'+fmt(f[colProm])+'</td></tr>';
+    });
+    // fila de totales por mes
+    const totMes=meses.map((m,i)=>DETALLE_UE.filas.reduce((a,f)=>a+f[campo][i],0));
+    const granTot=totMes.reduce((a,b)=>a+b,0);
+    h+='<tr class="tot-row"><td class="ue">TOTAL renglón</td>'+
+       totMes.map(x=>'<td class="num">'+fmt(x)+'</td>').join('')+
+       '<td class="num tot">'+fmt(granTot)+'</td><td class="num tot">'+fmt(Math.round(granTot/meses.length))+'</td></tr>';
+    h+='</tbody></table></div>';
+    return h;
+  }
+  let html='';
+  if(tipo==='req'||tipo==='ambos') html+=tabla('req','Requisiciones F8 (solicitado por UE)','totReq','promReq','var(--azul2)');
+  if(tipo==='dist'||tipo==='ambos') html+=tabla('dist','Distribuciones (despachado a la UE)','totDist','promDist','var(--verde)');
+  cont.innerHTML=html;
+}
+document.addEventListener('change', e=>{ if(e.target && e.target.id==='detalleTipo') renderDetalleUE(); });
+
 function renderTablaTransitos(){
   const cont=document.getElementById('tablaTransitos');
   if(!SIGUELO_OK){ cont.innerHTML='<div class="meta">SIGUELO no está disponible en esta sesión; no se muestran tránsitos.</div>'; return; }
