@@ -73,8 +73,8 @@
   .prov-head .cnt{font-size:11px;font-weight:400;opacity:.9;}
   .prov-body{display:none;}
   .prov-group.open .prov-body{display:block;}
-  .tr-row{display:grid;grid-template-columns:1.4fr 3fr 1fr 1fr 1.1fr auto;gap:8px;align-items:center;
-    padding:7px 12px;border-top:1px solid #eee;font-size:12px;}
+  .tr-row,.tr-head-row{display:grid;grid-template-columns:110px 1fr 90px 90px 130px 90px;gap:10px;align-items:center;}
+  .tr-row{padding:7px 12px;border-top:1px solid #eee;font-size:12px;}
   .tr-row:hover{background:#f4f7fb;}
   .tr-row .cod{font-family:Consolas,monospace;font-weight:700;color:var(--azul2);}
   .tr-row .desc{color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -84,9 +84,10 @@
   .est-soli{background:#fff3cd;color:#7a5a00;}
   .est-otro{background:#eef;color:var(--azul2);}
   .tr-venc{font-size:11px;text-align:center;}
-  .tr-btn{padding:4px 10px;font-size:11px;background:var(--azul);color:#fff;border:none;cursor:pointer;}
-  .tr-head-row{display:grid;grid-template-columns:1.4fr 3fr 1fr 1fr 1.1fr auto;gap:8px;
-    padding:5px 12px;font-size:10px;text-transform:uppercase;color:var(--sub);background:#fafafa;border-top:1px solid #eee;letter-spacing:.3px;}
+  .tr-btn{padding:4px 10px;font-size:11px;background:var(--azul);color:#fff;border:none;cursor:pointer;width:100%;}
+  .tr-head-row{padding:5px 12px;font-size:10px;text-transform:uppercase;color:var(--sub);background:#fafafa;border-top:1px solid #eee;letter-spacing:.3px;}
+  .tr-head-row .r{text-align:right;} .tr-head-row .c{text-align:center;}
+
 </style>
 </head>
 <body>
@@ -116,6 +117,14 @@
       OC en tránsito agrupadas por proveedor
     </div>
     <div class="meta" style="margin-bottom:10px">Toca cualquier renglón para simular cómo su llegada afecta el inventario. Ordenado por proveedor.</div>
+    <div class="row" style="margin-bottom:10px">
+      <div style="flex:1"><label>Filtrar por proveedor</label>
+        <select id="filtroProv"><option value="">Todos los proveedores</option></select></div>
+      <div style="flex:1"><label>Buscar renglón o descripción</label>
+        <input id="filtroReng" placeholder="código o nombre…" autocomplete="off"></div>
+      <div style="flex:0 0 auto"><label>&nbsp;</label>
+        <button class="btn-sec" id="filtroLimpiar">Limpiar</button></div>
+    </div>
     <div id="listaTransitos"><div class="meta">Cargando tránsitos…</div></div>
   </div>
 
@@ -130,10 +139,10 @@
         </div>
       </div>
       <div>
-        <label>Ámbito de inventario</label>
+        <label>¿Qué inventario proyectar?</label>
         <select id="inAmbito">
-          <option value="CEDIS">Solo CEDIS Panamá (bodega)</option>
-          <option value="RED">CEDIS + todas sus UE (red completa)</option>
+          <option value="CEDIS">Existencia en mi bodega (CEDIS Panamá)</option>
+          <option value="RED">Existencia total en mi red (bodega + UE)</option>
         </select>
       </div>
       <div style="flex:0 0 auto">
@@ -160,8 +169,8 @@
         <div style="flex:0 0 auto">
           <label>Base de salida</label>
           <select id="inBase">
-            <option value="dist">Distribuciones</option>
             <option value="req">Requisiciones F8</option>
+            <option value="dist">Distribuciones</option>
           </select>
         </div>
         <div style="flex:0 0 auto">
@@ -169,9 +178,9 @@
           <button class="btn-sec" id="btnTransitos">Incluir tránsitos: ON</button>
         </div>
         <div style="flex:0 0 auto">
-          <label>Correr el tiempo</label>
+          <label>Simular avance del tiempo</label>
           <div style="display:flex;gap:6px">
-            <button class="btn-play" id="btnPlay">▶ Correr</button>
+            <button class="btn-play" id="btnPlay">▶ Reproducir</button>
             <button class="btn-sec" id="btnReset">Reiniciar</button>
           </div>
         </div>
@@ -222,7 +231,7 @@ let COL = {};
 let TRANSITOS_ALL = [];       // todos los tránsitos sin cita de SIGUELO
 let SIGUELO_OK = false;       // ¿respondió SIGUELO?
 let SEL = null;               // renglón seleccionado {cod, sum, inv, distMes, reqMes, transitos[]}
-let factor = 1, base = 'dist', incluirTransitos = true;
+let factor = 1, base = 'req', incluirTransitos = true;
 let playing = false, tiempoMes = 0, rafId = null;
 
 const HOY = new Date();
@@ -564,7 +573,7 @@ function render(){
   const bA=badge(cobActual);
   const k=document.getElementById('kpis');
   k.innerHTML=[
-    ['Inventario actual', fmt(SEL.inv), document.getElementById('inAmbito').value==='CEDIS'?'solo bodega CEDIS':'red completa','var(--azul2)'],
+    ['Inventario actual', fmt(SEL.inv), document.getElementById('inAmbito').value==='CEDIS'?'en mi bodega CEDIS':'total en mi red','var(--azul2)'],
     ['Salida mensual (×'+factor+')', fmt(tasa), (base==='dist'?'distribuciones':'requisiciones')+' × factor','var(--azul2)'],
     ['Cobertura sin tránsitos', isFinite(cobActual)?cobActual.toFixed(1)+' m':'—', bA[0]+' · '+(cobActual/12).toFixed(1)+' años', bA[1]],
     ['Tránsitos por llegar', fmt(totalTrans), SEL.transitos.length+' entrega(s)'+(SIGUELO_OK?'':' · SIGUELO offline'),'var(--verde)'],
@@ -579,20 +588,30 @@ function render(){
   document.getElementById('leyendaGrafico').innerHTML =
     'Curva <b style="color:var(--azul)">azul</b>: inventario si NO llegara ningún tránsito. '+
     'Curva <b style="color:var(--verde)">verde</b>: con las entregas por llegar (escalones hacia arriba). '+
-    'Los saltos verticales son las OC que el proveedor tiene agendadas.';
+    'Los saltos verticales son las OC en tránsito. '+
+    '<br><span style="color:var(--ambar)">Nota: la caída se proyecta a ritmo constante (promedio mensual). '+
+    'El consumo real es estacional; una versión futura usará media móvil para reflejarlo.</span>';
 }
 
 /* SVG de la curva sierra con marcador de tiempo */
 function svgProyeccion(rows){
   const W=760,H=300,ml=58,mr=20,mt=16,mb=36;
-  const maxMes=60;
-  const maxY=Math.max(SEL.inv, ...rows.map(r=>r.conTr), 1)*1.05;
+  // --- Autoescala del eje X: horizonte = cuándo se agota (con margen), no fijo en 60 ---
+  let mAgotaVis=rows.length-1;
+  for(let i=0;i<rows.length;i++){ const v=incluirTransitos?rows[i].conTr:rows[i].sinTr; if(v<=0){ mAgotaVis=i; break; } }
+  // margen del 25% después del agotamiento, mínimo 6 meses de ventana, máximo 60
+  const maxMes=Math.min(60, Math.max(6, Math.ceil(mAgotaVis*1.25)));
+  const rowsVis=rows.filter(r=>r.mes<=maxMes);
+  // --- Autoescala del eje Y al máximo real visible ---
+  const maxY=Math.max(SEL.inv, ...rowsVis.map(r=>r.conTr), 1)*1.05;
   const px=m=>ml+(m/maxMes)*(W-ml-mr);
   const py=v=>mt+(1-v/maxY)*(H-mt-mb);
-  const pathSin=rows.map((r,i)=>(i?'L':'M')+px(r.mes).toFixed(1)+' '+py(r.sinTr).toFixed(1)).join(' ');
-  const pathCon=rows.map((r,i)=>(i?'L':'M')+px(r.mes).toFixed(1)+' '+py(r.conTr).toFixed(1)).join(' ');
+  const pathSin=rowsVis.map((r,i)=>(i?'L':'M')+px(r.mes).toFixed(1)+' '+py(r.sinTr).toFixed(1)).join(' ');
+  const pathCon=rowsVis.map((r,i)=>(i?'L':'M')+px(r.mes).toFixed(1)+' '+py(r.conTr).toFixed(1)).join(' ');
   const yt=[0,.25,.5,.75,1].map(f=>Math.round(maxY*f));
-  const xt=[0,12,24,36,48,60];
+  // ticks X dinámicos: ~6 marcas repartidas en el horizonte
+  const stepX=Math.max(1,Math.round(maxMes/6));
+  const xt=[]; for(let m=0;m<=maxMes;m+=stepX) xt.push(m);
   let s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
   // grid Y
   yt.forEach(v=>{ s+='<line x1="'+ml+'" y1="'+py(v)+'" x2="'+(W-mr)+'" y2="'+py(v)+'" stroke="#ddd" stroke-dasharray="2 2"/>'+
@@ -600,13 +619,13 @@ function svgProyeccion(rows){
   // X
   xt.forEach(m=>{ s+='<text x="'+px(m)+'" y="'+(H-14)+'" text-anchor="middle" font-size="11" font-family="Consolas" fill="#666">'+m+'</text>'; });
   s+='<text x="'+((ml+W-mr)/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="#666">meses desde hoy</text>';
-  // líneas de año
-  s+='<line x1="'+px(12)+'" y1="'+mt+'" x2="'+px(12)+'" y2="'+(H-mb)+'" stroke="var(--rojo)" stroke-dasharray="4 3"/>'+
+  // líneas de año — solo si caen dentro del horizonte visible
+  if(maxMes>=12) s+='<line x1="'+px(12)+'" y1="'+mt+'" x2="'+px(12)+'" y2="'+(H-mb)+'" stroke="var(--rojo)" stroke-dasharray="4 3"/>'+
      '<text x="'+(px(12)+3)+'" y="'+(mt+10)+'" font-size="10" fill="var(--rojo)">1 año</text>';
-  s+='<line x1="'+px(24)+'" y1="'+mt+'" x2="'+px(24)+'" y2="'+(H-mb)+'" stroke="var(--ambar)" stroke-dasharray="4 3"/>'+
+  if(maxMes>=24) s+='<line x1="'+px(24)+'" y1="'+mt+'" x2="'+px(24)+'" y2="'+(H-mb)+'" stroke="var(--ambar)" stroke-dasharray="4 3"/>'+
      '<text x="'+(px(24)+3)+'" y="'+(mt+10)+'" font-size="10" fill="var(--ambar)">2 años</text>';
   // marcas de entrada de tránsito (líneas verticales tenues + etiqueta)
-  rows.forEach(r=>{ if(r.entrada>0){
+  rowsVis.forEach(r=>{ if(r.entrada>0){
     s+='<line x1="'+px(r.mes)+'" y1="'+mt+'" x2="'+px(r.mes)+'" y2="'+(H-mb)+'" stroke="var(--verde)" stroke-width="1" stroke-dasharray="1 3" opacity="0.6"/>';
     s+='<text x="'+px(r.mes)+'" y="'+(mt-2)+'" text-anchor="middle" font-size="9" fill="var(--verde)">+'+(r.entrada/1000).toFixed(0)+'k</text>';
   }});
@@ -671,7 +690,7 @@ function play(){
 }
 function setPlayBtn(){
   const b=document.getElementById('btnPlay');
-  b.textContent=playing?'❚❚ Pausar':'▶ Correr';
+  b.textContent=playing?'❚❚ Pausar':'▶ Reproducir';
   b.classList.toggle('on',playing);
 }
 
@@ -728,13 +747,27 @@ function renderListaTransitos(){
   if(!SIGUELO_OK || !TRANSITOS_ALL.length){
     cont.innerHTML='<div class="meta">No hay OC en tránsito para mostrar.</div>'; return;
   }
+  // Poblar el filtro de proveedores (una sola vez)
+  const selProv=document.getElementById('filtroProv');
+  if(selProv && selProv.options.length<=1){
+    const provsU=[...new Set(TRANSITOS_ALL.map(t=>(t.proveedor||'(sin proveedor)').trim()))].sort();
+    provsU.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; selProv.appendChild(o); });
+  }
+  // Aplicar filtros activos
+  const fProv=(document.getElementById('filtroProv')||{}).value||'';
+  const fReng=String((document.getElementById('filtroReng')||{}).value||'').toLowerCase().trim();
+  let data=TRANSITOS_ALL;
+  if(fProv) data=data.filter(t=>(t.proveedor||'(sin proveedor)').trim()===fProv);
+  if(fReng) data=data.filter(t=>{
+    const cod=String(t.cod_abasto||t.cod_abasto_norm||'').toLowerCase();
+    const desc=String(t.descripcion||'').toLowerCase();
+    return cod.indexOf(fReng)>=0 || desc.indexOf(fReng)>=0;
+  });
+  if(!data.length){ cont.innerHTML='<div class="meta">Ningún tránsito coincide con el filtro.</div>'; return; }
+
   // Agrupar por proveedor
   const grupos={};
-  TRANSITOS_ALL.forEach(t=>{
-    const p=(t.proveedor||'(sin proveedor)').trim();
-    (grupos[p]=grupos[p]||[]).push(t);
-  });
-  // Orden: proveedores con más unidades en tránsito primero
+  data.forEach(t=>{ const p=(t.proveedor||'(sin proveedor)').trim(); (grupos[p]=grupos[p]||[]).push(t); });
   const provs=Object.keys(grupos).sort((a,b)=>{
     const sa=grupos[a].reduce((s,t)=>s+N(t.cantidad),0);
     const sb=grupos[b].reduce((s,t)=>s+N(t.cantidad),0);
@@ -742,33 +775,38 @@ function renderListaTransitos(){
   });
   const estClase=e=>{ e=String(e).toUpperCase();
     return e==='AGENDADA'?'est-agen':(e==='SOLICITADA'||e==='PENDIENTE')?'est-soli':'est-otro'; };
+  const esFirme=e=>String(e).toUpperCase()==='AGENDADA';
+  // Si hay filtro activo, abrir todos los grupos; si no, solo el primero
+  const abrirTodos = !!(fProv||fReng);
   let html='';
   provs.forEach((p,gi)=>{
     const items=grupos[p].slice().sort((a,b)=>String(a.vencimiento_entrega||'').localeCompare(String(b.vencimiento_entrega||'')));
     const totU=items.reduce((s,t)=>s+N(t.cantidad),0);
-    html+='<div class="prov-group'+(gi===0?' open':'')+'">'+
+    html+='<div class="prov-group'+((abrirTodos||gi===0)?' open':'')+'">'+
       '<div class="prov-head" onclick="this.parentNode.classList.toggle(\'open\')">'+
         '<span>'+p+'</span>'+
         '<span class="cnt">'+items.length+' OC · '+fmt(totU)+' u</span>'+
       '</div>'+
       '<div class="prov-body">'+
-        '<div class="tr-head-row"><span>Renglón</span><span>Descripción</span><span style="text-align:right">Unidades</span><span style="text-align:center">Estado</span><span style="text-align:center">Entrega</span><span></span></div>';
+        '<div class="tr-head-row"><span>Renglón</span><span>Descripción</span><span class="r">Unidades</span><span class="c">Estado</span><span class="c">Fecha estimada</span><span></span></div>';
     items.forEach(t=>{
       const cod=t.cod_abasto||t.cod_abasto_norm||'';
-      const m=mesDesdeHoy(t.vencimiento_entrega||t.termino_entrega||t.vencimiento_oc);
+      const firme=esFirme(t.estado_transito);
+      const fecha=t.vencimiento_entrega||t.termino_entrega||'—';
+      const nota=firme?'<br><span style="color:var(--verde);font-size:9px">confirmada</span>'
+                      :'<br><span style="color:var(--ambar);font-size:9px">tentativa</span>';
       html+='<div class="tr-row">'+
         '<span class="cod">'+cod+'</span>'+
         '<span class="desc" title="'+(t.descripcion||'').replace(/"/g,'')+'">'+(t.descripcion||'—')+'</span>'+
         '<span class="cant">'+fmt(t.cantidad)+'</span>'+
         '<span class="est '+estClase(t.estado_transito)+'">'+(t.estado_transito||'—')+'</span>'+
-        '<span class="tr-venc">'+(t.vencimiento_entrega||'—')+(m!=null?'<br><span style="color:#999">mes '+m+'</span>':'')+'</span>'+
+        '<span class="tr-venc">'+fecha+(fecha!=='—'?nota:'')+'</span>'+
         '<button class="tr-btn" data-cod="'+cod+'">Simular</button>'+
       '</div>';
     });
     html+='</div></div>';
   });
   cont.innerHTML=html;
-  // Conectar botones "Simular"
   cont.querySelectorAll('.tr-btn').forEach(b=>b.onclick=()=>{
     const cod=b.dataset.cod;
     const r=RENGLONES.find(x=>x.cod===cod);
@@ -785,6 +823,13 @@ function activarTab(nombre){
   document.getElementById('panelBuscar').classList.toggle('hidden',nombre!=='buscar');
 }
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>activarTab(t.dataset.tab));
+// Filtros de la vista de tránsitos
+(function(){
+  const p=document.getElementById('filtroProv'), r=document.getElementById('filtroReng'), l=document.getElementById('filtroLimpiar');
+  if(p) p.onchange=renderListaTransitos;
+  if(r) r.addEventListener('input', ()=>{ clearTimeout(window._ftmr); window._ftmr=setTimeout(renderListaTransitos,180); });
+  if(l) l.onclick=()=>{ if(p)p.value=''; if(r)r.value=''; renderListaTransitos(); };
+})();
 
 /* ARRANQUE */
 iniciar();
