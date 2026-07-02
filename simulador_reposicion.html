@@ -467,13 +467,15 @@ function moverCombo(dir){
    ================================================================ */
 // Mapa código -> agregado del snapshot. Poblado por cargarDesdeSnapshot_.
 let FECHA_DATOS=null;   // 'hoy' de los datos = última fecha observada (snap.fechaMax)
+let FECHA_MIN=null;     // primera fecha observada; base para descomprimir offsets diarios
 function cargarDesdeSnapshot_(snap){
   SNAP_RENG={};
   MATRIZ.meta={ generado: snap.generado, mesesReq: snap.mesesReq, mesesDist: snap.mesesDist };
   FECHA_DATOS = snap.fechaMax ? new Date(snap.fechaMax+'T00:00:00') : new Date();
+  FECHA_MIN   = snap.fechaMin ? new Date(snap.fechaMin+'T00:00:00') : null;
   snap.renglones.forEach(o=>{
     SNAP_RENG[String(o.c)]={ sum:o.s||'', iC:o.iC||0, iR:o.iR||0, d:o.d||0, r:o.r||0,
-                             dd:o.dd||{}, dr:o.dr||{} };   // series diarias {fecha:unidades}
+                             dd:o.dd||{}, dr:o.dr||{} };   // series diarias {offset:unidades}
   });
   RENGLONES=snap.renglones.map(o=>({cod:String(o.c), sum:o.s||''}))
                           .sort((a,b)=>a.cod.localeCompare(b.cod));
@@ -529,19 +531,23 @@ function cargarRenglon(){
    ================================================================ */
 // Ventana de la media móvil EN DÍAS (selector del usuario).
 let diasMM = 90;
-// Suma las unidades de la serie diaria {fecha:unidades} en los últimos N días
-// desde FECHA_DATOS, y devuelve la tasa en unidades/MES (×30/N) para la proyección.
+// Suma las unidades de la serie diaria en los últimos N días desde FECHA_DATOS,
+// y devuelve la tasa en unidades/MES (×30/N). Las claves de la serie son OFFSETS
+// de días desde FECHA_MIN (compresión del snapshot); se reconstruye la fecha real.
 function mediaMovilDias_(serieDiaria, dias){
   if(!serieDiaria || typeof serieDiaria!=='object') return null;
   const ref = FECHA_DATOS || new Date();
+  const base = FECHA_MIN;
   const corte = new Date(ref.getTime() - dias*86400000);
   let suma=0, hubo=false;
-  for(const ymd in serieDiaria){
-    const f=new Date(ymd+'T00:00:00');
-    if(f>=corte && f<=ref){ suma+=Number(serieDiaria[ymd])||0; hubo=true; }
+  for(const off in serieDiaria){
+    // reconstruir la fecha: FECHA_MIN + offset días (o interpretar clave como fecha si no hay base)
+    const f = base ? new Date(base.getTime() + Number(off)*86400000)
+                   : new Date(off+'T00:00:00');
+    if(f>=corte && f<=ref){ suma+=Number(serieDiaria[off])||0; hubo=true; }
   }
-  if(!hubo) return 0;                 // hubo ventana pero sin movimiento → tasa 0
-  return (suma/dias)*30;              // unidades/día × 30 = unidades/mes
+  if(!hubo) return 0;
+  return (suma/dias)*30;
 }
 function tasaSalida(){
   const serie = (base==='dist') ? SEL.dd : SEL.dr;
