@@ -750,7 +750,16 @@ function cargarDetalleUE(cod){
   if(!reng){
     cont.innerHTML='<div class="meta">No hay movimientos por UE para este renglón.</div>'; return;
   }
-  DETALLE_UE={ cod:cod, meses:DETALLE_ALL.meses, filas:reng.filas };
+  const meses=DETALLE_ALL.meses;
+  const nM=meses.length;
+  // Descomprimir: series dispersas [[i,v]] → arreglos completos; claves cortas → largas
+  const expandir = disp => { const a=new Array(nM).fill(0); (disp||[]).forEach(p=>{ a[p[0]]=p[1]; }); return a; };
+  const filas=(reng.f||[]).map(f=>({
+    ue:f.u, req:expandir(f.q), dist:expandir(f.d),
+    totReq:f.tR||0, totDist:f.tD||0, promReq:f.pR||0, promDist:f.pD||0,
+    saldo:f.s||0, region:f.g||'', cedis:f.x||'OTRAS'
+  }));
+  DETALLE_UE={ cod:cod, meses:meses, filas:filas };
   renderDetalleUE();
 }
 function renderDetalleUE(){
