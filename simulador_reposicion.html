@@ -174,9 +174,6 @@
         </div>
         <input type="hidden" id="inCedis" value="PA">
       </div>
-      <div style="flex:0 0 auto">
-        <button class="btn-sec" id="btnCargar" disabled>Simular</button>
-      </div>
     </div>
     <div id="ejemplos" class="meta" style="margin-top:10px"></div>
   </div>
@@ -187,12 +184,12 @@
     <!-- controles de simulación -->
     <div class="card">
       <div class="row">
-        <div style="flex:2">
-          <label>Factor de crecimiento del consumo · ×<span id="facTxt">1.0</span>
+        <div style="flex:0 0 260px">
+          <label>Factor de crecimiento · ×<span id="facTxt">1.0</span>
             → <b id="facTasa" style="font-family:Consolas;color:var(--azul2)"></b></label>
           <div class="slider-wrap">
-            <input type="range" id="slFactor" min="1" max="12" step="0.5" value="1">
-            <div class="slider-lab"><span>×1 (actual)</span><span>×12</span></div>
+            <input type="range" id="slFactor" min="1" max="12" step="0.5" value="1" style="max-width:240px">
+            <div class="slider-lab" style="max-width:240px"><span>×1</span><span>×12</span></div>
           </div>
         </div>
         <div style="flex:0 0 auto">
@@ -201,15 +198,15 @@
         </div>
         <div style="flex:0 0 auto">
           <label>Media móvil</label>
-          <select id="inMM">
-            <option value="60">Últimos 60 días</option>
-            <option value="90" selected>Últimos 90 días</option>
-            <option value="120">Últimos 120 días</option>
+          <select id="inMM" style="width:auto">
+            <option value="60">60 días</option>
+            <option value="90" selected>90 días</option>
+            <option value="120">120 días</option>
           </select>
         </div>
         <div style="flex:0 0 auto">
           <label>Tránsitos por llegar</label>
-          <button class="btn-sec" id="btnTransitos">Incluir tránsitos: ON</button>
+          <button class="btn-sec" id="btnTransitos">Tránsitos: ON</button>
         </div>
         <div style="flex:0 0 auto">
           <label>Simular avance del tiempo</label>
@@ -389,7 +386,6 @@ async function iniciar(){
   }
   poblarRenglones();
   document.getElementById('inCod').disabled=false;
-  document.getElementById('btnCargar').disabled=false;
   window._ORIGEN_DATOS=origen;
   // Cargar el detalle UE (JSON estático diario) en segundo plano
   fetch(DETALLE_URL, {cache:'no-cache'}).then(r=>r.ok?r.json():null).then(d=>{
@@ -697,8 +693,9 @@ function svgProyeccion(rows){
   // marca del PUNTO DE PARTIDA (hoy = fecha del inventario en línea)
   s+='<line x1="'+px(0)+'" y1="'+mt+'" x2="'+px(0)+'" y2="'+(H-mb)+'" stroke="var(--azul2)" stroke-width="1.5"/>';
   const hoyStr = new Date().toLocaleDateString('es-PA',{day:'2-digit',month:'2-digit',year:'numeric'});
-  s+='<text x="'+(px(0)+4)+'" y="'+(mt+10)+'" font-size="9" fill="var(--azul2)" font-weight="700">Hoy · '+hoyStr+'</text>';
-  s+='<text x="'+(px(0)+4)+'" y="'+(mt+20)+'" font-size="8" fill="var(--azul2)">saldo en línea</text>';
+  s+='<rect x="'+(px(0)+3)+'" y="'+(mt+1)+'" width="118" height="24" fill="#fff" fill-opacity="0.85"/>';
+  s+='<text x="'+(px(0)+6)+'" y="'+(mt+11)+'" font-size="9" fill="var(--azul2)" font-weight="700">Hoy · '+hoyStr+'</text>';
+  s+='<text x="'+(px(0)+6)+'" y="'+(mt+21)+'" font-size="8" fill="var(--azul2)">saldo en línea</text>';
   // líneas de año — solo si caen dentro del horizonte visible
   if(maxMes>=12) s+='<line x1="'+px(12)+'" y1="'+mt+'" x2="'+px(12)+'" y2="'+(H-mb)+'" stroke="var(--rojo)" stroke-dasharray="4 3"/>'+
      '<text x="'+(px(12)+3)+'" y="'+(mt+10)+'" font-size="10" fill="var(--rojo)">1 año</text>';
@@ -894,15 +891,6 @@ function setPlayBtn(){
 /* ================================================================
    EVENTOS
    ================================================================ */
-document.getElementById('btnCargar').onclick=()=>{
-  cerrarCombo();
-  const val=document.getElementById('inCod').value.trim();
-  if(!val){ document.getElementById('inCod').focus(); return; }
-  cargarRenglon();
-  // llevar la vista al resultado
-  const res=document.getElementById('resultado');
-  if(res) res.scrollIntoView({behavior:'smooth', block:'start'});
-};
 // Combo custom: filtrar mientras escribe
 const _inCod=document.getElementById('inCod');
 _inCod.addEventListener('input',e=>filtrarCombo(e.target.value));
@@ -963,7 +951,7 @@ document.getElementById('inMM').onchange=e=>{ diasMM=parseInt(e.target.value)||9
 document.getElementById('btnTransitos').onclick=e=>{
   incluirTransitos=!incluirTransitos;
   const b=e.target;
-  b.textContent='Incluir tránsitos: '+(incluirTransitos?'ON':'OFF');
+  b.textContent='Tránsitos: '+(incluirTransitos?'ON':'OFF');
   b.style.background=incluirTransitos?'var(--verde)':'#f4f4f4';
   b.style.color=incluirTransitos?'#fff':'#333';
   b.style.fontWeight=incluirTransitos?'700':'400';
