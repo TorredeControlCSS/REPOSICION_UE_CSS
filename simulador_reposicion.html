@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulador de Reposición en el Tiempo | Torre de Control CEDIS Panamá</title>
+<title>Simulador de Reposición en el Tiempo · Torre de Control CEDIS Panamá</title>
 <style>
   :root{
     --azul:#1e5a9e; --azul2:#0C447C; --bg:#ececec; --card:#fff;
@@ -81,8 +81,12 @@
   .det-tbl .tot-row td{font-weight:700;background:#eef;border-top:2px solid var(--azul);}
   .det-tbl .tot-row td.ue{background:#e0e8f5;}
   .det-tbl .grp-row td{background:#f0f4f9;font-weight:700;font-size:11px;border-top:2px solid #c8d4e2;}
+  .det-tbl .grp-row.grp-sel td{background:#e2ecf7;border-top:2px solid var(--azul);}
+  .det-tbl .grp-caret{font-size:9px;color:#888;}
+  .det-tbl .grp-sel .grp-caret{color:var(--azul);}
   .det-tbl .sub-row td{background:#f7f9fc;font-weight:700;font-style:italic;color:#444;}
   .det-tbl .sub-row td.ue{background:#eef2f8;}
+  .det-tbl .sub-row.sub-sel td{background:#eaf1fa;color:var(--azul2);border-bottom:2px solid var(--azul);}
   .det-tbl td.saldo{color:var(--azul2);font-weight:700;}
   /* Pestañas */
   .tabs{display:flex;gap:2px;margin-bottom:10px;border-bottom:2px solid var(--bord);}
@@ -756,11 +760,14 @@ function renderDetalleUE(){
 
   // Orden y etiquetas de los bloques por CEDIS
   const BLOQUES=[
-    {key:'CEDIS PANAMA',  lbl:'Mi zona — CEDIS Panamá',  col:'#0C447C'},
-    {key:'CEDIS DIVISA',  lbl:'CEDIS Divisa',            col:'#5a6a7a'},
-    {key:'CEDIS CHIRIQUI',lbl:'CEDIS Chiriquí',          col:'#5a6a7a'},
-    {key:'OTRAS',         lbl:'Otras / excepciones',      col:'#8a5a2a'}
+    {key:'CEDIS PANAMA',  lbl:'CEDIS Panamá',        col:'#0C447C'},
+    {key:'CEDIS DIVISA',  lbl:'CEDIS Divisa',         col:'#5a6a7a'},
+    {key:'CEDIS CHIRIQUI',lbl:'CEDIS Chiriquí',       col:'#5a6a7a'},
+    {key:'OTRAS',         lbl:'Otras / excepciones',  col:'#8a5a2a'}
   ];
+  // CEDIS seleccionado arriba → su bloque será el protagonista (abierto + resaltado)
+  const cedSel=document.getElementById('inCedis').value; // PA | DI | CH
+  const keySel = cedSel==='PA'?'CEDIS PANAMA':cedSel==='DI'?'CEDIS DIVISA':'CEDIS CHIRIQUI';
 
   function tabla(campo, titulo, colTotal, colProm, color){
     let h='<div style="font-size:12px;font-weight:700;color:'+color+';margin:10px 0 4px">'+titulo+'</div>';
@@ -775,13 +782,18 @@ function renderDetalleUE(){
     BLOQUES.forEach(bl=>{
       const filasBl=DETALLE_UE.filas.filter(f=>(f.cedis||'OTRAS')===bl.key);
       if(!filasBl.length) return;
-      // encabezado de bloque
-      h+='<tr class="grp-row"><td class="ue" style="color:'+bl.col+'">'+bl.lbl+'</td>'+
-         '<td class="num" colspan="'+(nCol+3)+'"></td></tr>';
+      const esSel = (bl.key===keySel);
+      const gid='grp_'+campo+'_'+bl.key.replace(/\s/g,'');
+      // encabezado de bloque (clic para expandir/colapsar)
+      h+='<tr class="grp-row'+(esSel?' grp-sel':'')+'" data-grp="'+gid+'" style="cursor:pointer">'+
+         '<td class="ue" style="color:'+(esSel?bl.col:'#888')+'">'+
+           '<span class="grp-caret">'+(esSel?'▼':'▶')+'</span> '+bl.lbl+
+           (esSel?' &nbsp;<span style="font-size:9px;background:'+bl.col+';color:#fff;padding:1px 6px;border-radius:2px">PROYECTANDO</span>':'')+
+         '</td><td class="num" colspan="'+(nCol+3)+'"></td></tr>';
       const subMes=meses.map(()=>0); let subTot=0, subSaldo=0;
       filasBl.forEach(f=>{
         const serie=f[campo];
-        h+='<tr><td class="ue">'+f.ue+'</td>'+
+        h+='<tr class="grp-body '+gid+'"'+(esSel?'':' style="display:none"')+'><td class="ue">'+f.ue+'</td>'+
            '<td class="num saldo">'+(f.saldo?fmt(f.saldo):'·')+'</td>'+
            serie.map(x=>'<td class="num">'+(x?fmt(x):'·')+'</td>').join('')+
            '<td class="num tot">'+fmt(f[colTotal])+'</td>'+
@@ -790,8 +802,8 @@ function renderDetalleUE(){
         subTot+=f[colTotal]; granTot+=f[colTotal];
         subSaldo+=f.saldo||0; granSaldo+=f.saldo||0;
       });
-      // subtotal del bloque
-      h+='<tr class="sub-row"><td class="ue">Subtotal '+bl.lbl+'</td>'+
+      // subtotal del bloque (siempre visible)
+      h+='<tr class="sub-row'+(esSel?' sub-sel':'')+'"><td class="ue">Subtotal '+bl.lbl+'</td>'+
          '<td class="num">'+fmt(subSaldo)+'</td>'+
          subMes.map(x=>'<td class="num">'+fmt(x)+'</td>').join('')+
          '<td class="num tot">'+fmt(subTot)+'</td>'+
@@ -814,6 +826,17 @@ function renderDetalleUE(){
   cont.innerHTML=html;
 }
 document.addEventListener('change', e=>{ if(e.target && e.target.id==='detalleTipo') renderDetalleUE(); });
+// Expandir/colapsar bloques CEDIS al hacer clic en su encabezado
+document.addEventListener('click', e=>{
+  const gr=e.target.closest && e.target.closest('.grp-row');
+  if(!gr || !gr.dataset.grp) return;
+  const gid=gr.dataset.grp;
+  const filas=document.querySelectorAll('.'+gid);
+  const caret=gr.querySelector('.grp-caret');
+  let abierto=false;
+  filas.forEach(f=>{ const vis=f.style.display!=='none'; f.style.display=vis?'none':''; abierto=!vis; });
+  if(caret) caret.textContent=abierto?'▼':'▶';
+});
 
 function renderTablaTransitos(){
   const cont=document.getElementById('tablaTransitos');
@@ -910,7 +933,7 @@ function poblarBaseSalida(){
     b.classList.add('active');
     document.getElementById('inCedis').value=b.dataset.val;
     poblarBaseSalida();
-    if(SEL) cargarRenglon();   // re-simular con el nuevo CEDIS
+    if(SEL){ cargarRenglon(); if(DETALLE_UE) renderDetalleUE(); }
   });
 })();
 poblarBaseSalida();  // estado inicial
