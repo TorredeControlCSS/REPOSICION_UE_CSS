@@ -61,6 +61,13 @@
   .combo-item .desc{color:var(--sub);}
   .combo-item:hover .desc,.combo-item.active .desc{color:#eaf1f8;}
   .combo-empty{padding:10px;font-size:12px;color:var(--sub);text-align:center;}
+  /* Segmented control (toggle profesional) */
+  .seg{display:inline-flex;border:1px solid var(--bord);border-radius:3px;overflow:hidden;background:#f4f4f4;}
+  .seg-btn{border:none;background:transparent;padding:7px 14px;font-size:12px;font-weight:600;
+    color:var(--sub);cursor:pointer;transition:background .12s;white-space:nowrap;}
+  .seg-btn+.seg-btn{border-left:1px solid var(--bord);}
+  .seg-btn:hover{background:#eaeaea;}
+  .seg-btn.active{background:var(--azul);color:#fff;}
   /* Tabla de detalle por UE */
   .det-tbl{border-collapse:collapse;width:100%;font-size:11px;}
   .det-tbl th,.det-tbl td{border:1px solid #ddd;padding:4px 8px;white-space:nowrap;}
@@ -155,11 +162,12 @@
         </div>
       </div>
       <div>
-        <label>¿Qué inventario proyectar?</label>
-        <select id="inAmbito">
-          <option value="CEDIS">Existencia en mi bodega (CEDIS Panamá)</option>
-          <option value="RED">Existencia total en mi red (bodega + UE)</option>
-        </select>
+        <label>Inventario a proyectar</label>
+        <div class="seg" id="segAmbito">
+          <button type="button" class="seg-btn active" data-val="CEDIS">Bodega CEDIS</button>
+          <button type="button" class="seg-btn" data-val="RED">Red completa</button>
+        </div>
+        <input type="hidden" id="inAmbito" value="CEDIS">
       </div>
       <div style="flex:0 0 auto">
         <button class="btn-sec" id="btnCargar" disabled>Simular</button>
@@ -504,7 +512,7 @@ function cargarDesdeSnapshot_(snap){
   VENTANAS_MM = Array.isArray(snap.ventanas) ? snap.ventanas : [60,90,120];
   snap.renglones.forEach(o=>{
     SNAP_RENG[String(o.c)]={ sum:o.s||'', iC:o.iC||0, iR:o.iR||0, d:o.d||0, r:o.r||0,
-                             md:o.md||[], mr:o.mr||[], mrMi:o.mrMi||[] };  // MM pre-calculadas
+                             r_mi:o.rMi||0, md:o.md||[], mr:o.mr||[], mrMi:o.mrMi||[] };
   });
   RENGLONES=snap.renglones.map(o=>({cod:String(o.c), sum:o.s||''}))
                           .sort((a,b)=>a.cod.localeCompare(b.cod));
@@ -516,14 +524,14 @@ function cargarRenglon(){
   if(!cod){ return; }
   const ambito=document.getElementById('inAmbito').value; // CEDIS | RED
 
-  let inv=0, distMes=0, reqMes=0, sum='', md=[], mr=[], mrMi=[];
+  let inv=0, distMes=0, reqMes=0, reqMiMes=0, sum='', md=[], mr=[], mrMi=[];
 
   if(SNAP_RENG[cod]){
     // --- Fuente: snapshot agregado ---
     const o=SNAP_RENG[cod];
     sum=o.sum;
     inv=(ambito==='CEDIS')?o.iC:o.iR;
-    distMes=o.d; reqMes=o.r;
+    distMes=o.d; reqMes=o.r; reqMiMes=o.r_mi||0;
     md=o.md||[]; mr=o.mr||[]; mrMi=o.mrMi||[];  // MM pre-calculadas
   }else if(MATRIZ.rows && MATRIZ.rows.length){
     // --- Fuente: GAS en vivo (filas UE×renglón) --- (sin serie mensual: usa promedio)
@@ -545,7 +553,7 @@ function cargarRenglon(){
   const k=codKey(cod);
   const trans = SIGUELO_OK ? TRANSITOS_ALL.filter(t=>codKey(t.cod_abasto_norm||t.cod_abasto)===k) : [];
 
-  SEL={cod, sum, inv, distMes, reqMes, md, mr, mrMi, transitos:trans};
+  SEL={cod, sum, inv, distMes, reqMes, reqMiMes, md, mr, mrMi, transitos:trans};
   tiempoMes=0; playing=false; cancelAnimationFrame(rafId);
   document.getElementById('resultado').classList.remove('hidden');
   document.getElementById('facTxt').textContent=factor.toFixed(1);
@@ -569,7 +577,8 @@ function tasaSalida(){
   if(Array.isArray(arr) && arr.length && idx>=0 && arr[idx]!=null){
     baseMes = arr[idx];                              // media móvil pre-calculada
   }else{
-    baseMes = (base==='dist'?SEL.distMes:SEL.reqMes); // fallback: promedio del snapshot/GAS
+    // fallback estricto: cada base cae a SU promedio (mi zona / nacional / distribución)
+    baseMes = (base==='dist') ? SEL.distMes : (base==='reqmi') ? SEL.reqMiMes : SEL.reqMes;
   }
   return baseMes * factor;
 }
@@ -882,6 +891,17 @@ document.getElementById('slFactor').oninput=e=>{
   factor=parseFloat(e.target.value); render();
 };
 document.getElementById('inBase').onchange=e=>{ base=e.target.value; tiempoMes=0; render(); };
+// Segmented control: ámbito de inventario (bodega vs red)
+(function(){
+  const seg=document.getElementById('segAmbito');
+  if(!seg) return;
+  seg.querySelectorAll('.seg-btn').forEach(b=>b.onclick=()=>{
+    seg.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('inAmbito').value=b.dataset.val;
+    if(SEL) cargarRenglon();   // re-simular con el nuevo ámbito
+  });
+})();
 document.getElementById('inMM').onchange=e=>{ diasMM=parseInt(e.target.value)||90; tiempoMes=0; render(); };
 document.getElementById('btnTransitos').onclick=e=>{
   incluirTransitos=!incluirTransitos;
