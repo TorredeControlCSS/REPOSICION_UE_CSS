@@ -273,6 +273,8 @@ const API_CALC = 'https://script.google.com/macros/s/AKfycbzxfCoO5-U008jeE-b99hW
 // Snapshot estático diario (rápido, ligero, funciona en móvil). Se carga primero;
 // si falla, se cae al Web App en vivo (API_CALC). Ruta relativa dentro del mismo repo.
 const SNAPSHOT_URL = 'matriz_snapshot.json';
+const DETALLE_URL  = 'detalle_ue.json';
+let DETALLE_ALL = null;   // {generado, meses, r:{cod:{descripcion,filas[]}}}
 const API_SIGUELO = 'https://script.google.com/macros/s/AKfycbwVw0ACNMhdN6d-JsI1lyP2iKHBVgWXI5nK3rA6blEhF3l8t2Wuwk2TpRmaanB186Dk/exec';
 
 /* ================================================================
@@ -389,6 +391,10 @@ async function iniciar(){
   document.getElementById('inCod').disabled=false;
   document.getElementById('btnCargar').disabled=false;
   window._ORIGEN_DATOS=origen;
+  // Cargar el detalle UE (JSON estático diario) en segundo plano
+  fetch(DETALLE_URL, {cache:'no-cache'}).then(r=>r.ok?r.json():null).then(d=>{
+    if(d && d.r){ DETALLE_ALL=d; if(SEL) renderDetalleUE(); }
+  }).catch(()=>{});
   // 2) Solicitudes/OC en tránsito de SIGUELO — opcional; si falla, seguimos sin la capa
   // Fuente: getSolicitudesPriorizadas (hoja SOLICITUDES con estados de cita).
   // Se incluye todo lo VIVO (OC emitida aún no recibida): PENDIENTE, SOLICITADA,
@@ -664,7 +670,7 @@ function render(){
 
 /* SVG de la curva sierra con marcador de tiempo */
 function svgProyeccion(rows){
-  const W=760,H=300,ml=58,mr=20,mt=16,mb=36;
+  const W=960,H=300,ml=58,mr=20,mt=16,mb=36;
   // --- Autoescala del eje X: horizonte = cuándo se agota (con margen), no fijo en 60 ---
   let mAgotaVis=rows.length-1;
   for(let i=0;i<rows.length;i++){ const v=incluirTransitos?rows[i].conTr:rows[i].sinTr; if(v<=0){ mAgotaVis=i; break; } }
@@ -690,8 +696,8 @@ function svgProyeccion(rows){
   s+='<text x="'+((ml+W-mr)/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="#666">meses desde hoy</text>';
   // marca del PUNTO DE PARTIDA (hoy = fecha del inventario en línea)
   s+='<line x1="'+px(0)+'" y1="'+mt+'" x2="'+px(0)+'" y2="'+(H-mb)+'" stroke="var(--azul2)" stroke-width="1.5"/>';
-  s+='<text x="'+(px(0)+4)+'" y="'+(mt+10)+'" font-size="9" fill="var(--azul2)" font-weight="700">Hoy'+
-     (FECHA_INVENTARIO?' · '+FECHA_INVENTARIO:'')+'</text>';
+  const hoyStr = new Date().toLocaleDateString('es-PA',{day:'2-digit',month:'2-digit',year:'numeric'});
+  s+='<text x="'+(px(0)+4)+'" y="'+(mt+10)+'" font-size="9" fill="var(--azul2)" font-weight="700">Hoy · '+hoyStr+'</text>';
   s+='<text x="'+(px(0)+4)+'" y="'+(mt+20)+'" font-size="8" fill="var(--azul2)">saldo en línea</text>';
   // líneas de año — solo si caen dentro del horizonte visible
   if(maxMes>=12) s+='<line x1="'+px(12)+'" y1="'+mt+'" x2="'+px(12)+'" y2="'+(H-mb)+'" stroke="var(--rojo)" stroke-dasharray="4 3"/>'+
@@ -731,22 +737,21 @@ function svgProyeccion(rows){
 
 /* Tabla de tránsitos detectados */
 /* ================================================================
-   DETALLE POR UNIDAD EJECUTORA (bajo demanda desde GAS)
+   DETALLE POR UNIDAD EJECUTORA (desde JSON estático diario)
    ================================================================ */
-let DETALLE_UE=null;   // último detalle cargado {cod, meses, filas[]}
-async function cargarDetalleUE(cod){
+let DETALLE_UE=null;   // detalle del renglón actual {cod, meses, filas[]}
+function cargarDetalleUE(cod){
   const cont=document.getElementById('tablaDetalleUE');
-  cont.innerHTML='<div class="meta">Cargando detalle por Unidad Ejecutora…</div>';
   DETALLE_UE=null;
-  try{
-    const d=await jsonp(API_CALC, {accion:'detalleUE', cod:cod}, 60000);
-    if(!d || !d.ok) throw new Error(d&&d.error?d.error:'sin datos');
-    DETALLE_UE=d;
-    renderDetalleUE();
-  }catch(e){
-    cont.innerHTML='<div class="aviso err" style="margin:0">No se pudo cargar el detalle por UE ('+e.message+'). '+
-      'Requiere conexión con la Calculadora.</div>';
+  if(!DETALLE_ALL || !DETALLE_ALL.r){
+    cont.innerHTML='<div class="meta">Cargando detalle…</div>'; return;
   }
+  const reng=DETALLE_ALL.r[String(cod)];
+  if(!reng){
+    cont.innerHTML='<div class="meta">No hay movimientos por UE para este renglón.</div>'; return;
+  }
+  DETALLE_UE={ cod:cod, meses:DETALLE_ALL.meses, filas:reng.filas };
+  renderDetalleUE();
 }
 function renderDetalleUE(){
   const cont=document.getElementById('tablaDetalleUE');
@@ -880,7 +885,15 @@ function setPlayBtn(){
 /* ================================================================
    EVENTOS
    ================================================================ */
-document.getElementById('btnCargar').onclick=()=>{ cerrarCombo(); cargarRenglon(); };
+document.getElementById('btnCargar').onclick=()=>{
+  cerrarCombo();
+  const val=document.getElementById('inCod').value.trim();
+  if(!val){ document.getElementById('inCod').focus(); return; }
+  cargarRenglon();
+  // llevar la vista al resultado
+  const res=document.getElementById('resultado');
+  if(res) res.scrollIntoView({behavior:'smooth', block:'start'});
+};
 // Combo custom: filtrar mientras escribe
 const _inCod=document.getElementById('inCod');
 _inCod.addEventListener('input',e=>filtrarCombo(e.target.value));
