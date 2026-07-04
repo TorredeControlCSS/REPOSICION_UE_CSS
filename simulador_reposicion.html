@@ -77,6 +77,10 @@
   .combo-item .desc{color:var(--sub);}
   .combo-item:hover .desc,.combo-item.active .desc{color:#eaf1f8;}
   .combo-empty{padding:10px;font-size:12px;color:var(--sub);text-align:center;}
+  /* Alertas de cobertura */
+  .alerta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;}
+  .alerta-card{border:1px solid var(--bord);background:#fff;padding:8px 10px;cursor:pointer;transition:box-shadow .12s,transform .12s;}
+  .alerta-card:hover{box-shadow:0 2px 8px rgba(12,68,124,.15);transform:translateY(-1px);}
   /* Segmented control (toggle profesional) */
   .seg{display:inline-flex;border:1px solid var(--bord);border-radius:3px;overflow:hidden;background:#f4f4f4;}
   .seg-btn{border:none;background:transparent;padding:7px 14px;font-size:12px;font-weight:600;
@@ -158,6 +162,7 @@
   <div class="tabs">
     <div class="tab active" data-tab="transitos">Tránsitos en camino</div>
     <div class="tab" data-tab="buscar">Buscar renglón</div>
+    <div class="tab" data-tab="alertas">Alertas de cobertura</div>
   </div>
 
   <!-- PANEL: TRÁNSITOS EN CAMINO (por proveedor) -->
@@ -197,7 +202,25 @@
         <input type="hidden" id="inCedis" value="PA">
       </div>
     </div>
-    <!-- (los renglones destacados por cobertura irán en una sección propia, a diseñar) -->
+  </div>
+
+  <!-- PANEL: ALERTAS DE COBERTURA -->
+  <div id="panelAlertas" class="card hidden">
+    <div class="row" style="align-items:center;margin-bottom:10px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--azul2)">Alertas de cobertura</div>
+        <div class="meta">Casos que merecen atención en el CEDIS seleccionado. Toca una tarjeta para simular ese renglón.</div>
+      </div>
+      <div style="flex:0 0 auto">
+        <label>CEDIS</label>
+        <div class="seg" id="segCedisAlertas">
+          <button type="button" class="seg-btn active" data-val="PA">Panamá</button>
+          <button type="button" class="seg-btn" data-val="DI">Divisa</button>
+          <button type="button" class="seg-btn" data-val="CH">Chiriquí</button>
+        </div>
+      </div>
+    </div>
+    <div id="alertasContenido"><div class="meta">Cargando alertas…</div></div>
   </div>
 
   <!-- RESULTADO -->
@@ -1036,17 +1059,114 @@ function renderListaTransitos(){
   });
 }
 
+/* ================================================================
+   ALERTAS DE COBERTURA: desabasto urgente (<1 mes sin tránsito) y
+   exceso de inventario (>6 meses; rojo si >12). Del CEDIS seleccionado.
+   ================================================================ */
+let cedAlertas='PA';
+function coberturaRenglon_(cod, ced){
+  const o=SNAP_RENG[cod]; if(!o) return null;
+  const inv = ced==='PA'?o.iPA : ced==='DI'?o.iDI : o.iCH;
+  const mr  = ced==='PA'?o.mrPA : ced==='DI'?o.mrDI : o.mrCH;
+  const rr  = ced==='PA'?o.rPA  : ced==='DI'?o.rDI  : o.rCH;
+  // salida mensual: media móvil 90d (índice 1) con fallback al promedio
+  let salida = (Array.isArray(mr)&&mr[1]!=null)?mr[1]:rr;
+  salida = salida||0;
+  const cobertura = salida>0 ? inv/salida : (inv>0?Infinity:0);
+  return { inv, salida, cobertura, sum:o.sum||'' };
+}
+function tieneTransito_(cod){
+  if(!SIGUELO_OK) return false;
+  const k=codKey(cod);
+  return TRANSITOS_ALL.some(t=>codKey(t.cod_abasto_norm||t.cod_abasto)===k);
+}
+function renderAlertas(){
+  const cont=document.getElementById('alertasContenido');
+  if(!Object.keys(SNAP_RENG).length){ cont.innerHTML='<div class="meta">Aún no hay datos cargados.</div>'; return; }
+  const ced=cedAlertas;
+  const desabasto=[], exceso=[];
+  Object.keys(SNAP_RENG).forEach(cod=>{
+    const c=coberturaRenglon_(cod, ced); if(!c) return;
+    if(c.inv<=0 && c.salida<=0) return;         // renglón inerte en este CEDIS
+    // Desabasto urgente: cobertura < 1 mes Y sin tránsito en camino
+    if(c.salida>0 && c.cobertura<1 && !tieneTransito_(cod))
+      desabasto.push({cod, ...c});
+    // Exceso: cobertura > 6 meses (Infinity = sin salida pero con inventario también cuenta)
+    if(c.inv>0 && (c.cobertura>6))
+      exceso.push({cod, ...c, cob:isFinite(c.cobertura)?c.cobertura:999});
+  });
+  desabasto.sort((a,b)=>a.cobertura-b.cobertura);
+  exceso.sort((a,b)=>b.cob-a.cob);
+
+  const cedNom = ced==='PA'?'CEDIS Panamá':ced==='DI'?'CEDIS Divisa':'CEDIS Chiriquí';
+  const tarjeta = (r, tipo) => {
+    const cobTxt = isFinite(r.cobertura) ? r.cobertura.toFixed(1)+' m' : 'sin salida';
+    let color, badge;
+    if(tipo==='desabasto'){ color='var(--rojo)'; badge='Desabasto'; }
+    else { const rojo=r.cob>12; color=rojo?'var(--rojo)':'var(--ambar)'; badge=rojo?'Exceso alto':'Exceso'; }
+    return '<div class="alerta-card" data-cod="'+r.cod+'" style="border-left:4px solid '+color+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'+
+        '<span style="font-weight:700;font-size:12px;color:var(--azul2)">'+r.cod+'</span>'+
+        '<span style="font-size:9px;background:'+color+';color:#fff;padding:1px 6px;border-radius:2px">'+badge+'</span>'+
+      '</div>'+
+      '<div style="font-size:11px;color:#444;margin:3px 0;line-height:1.3">'+(r.sum||'').slice(0,46)+'</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:10.5px;color:#666;font-family:Consolas">'+
+        '<span>Inv: '+fmt(r.inv)+'</span><span>Sal/mes: '+fmt(Math.round(r.salida))+'</span>'+
+        '<span style="font-weight:700;color:'+color+'">'+cobTxt+'</span>'+
+      '</div></div>';
+  };
+
+  let h='';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--rojo);margin:6px 0 6px">'+
+     '⚠ Riesgo de desabasto — cobertura menor a 1 mes, sin tránsitos ('+desabasto.length+')</div>';
+  h+= desabasto.length
+    ? '<div class="alerta-grid">'+desabasto.slice(0,30).map(r=>tarjeta(r,'desabasto')).join('')+'</div>'
+    : '<div class="meta">Ninguno en '+cedNom+'. Nada por agotarse sin reposición.</div>';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--ambar);margin:16px 0 6px">'+
+     '▲ Exceso de inventario — cobertura mayor a 6 meses, baja rotación ('+exceso.length+')</div>';
+  h+= exceso.length
+    ? '<div class="alerta-grid">'+exceso.slice(0,30).map(r=>tarjeta(r,'exceso')).join('')+'</div>'
+    : '<div class="meta">Ninguno en '+cedNom+'.</div>';
+  if(desabasto.length>30||exceso.length>30)
+    h+='<div class="meta" style="margin-top:8px">Mostrando los 30 casos más relevantes de cada grupo.</div>';
+  cont.innerHTML=h;
+
+  // clic en tarjeta → cargar renglón en el simulador
+  cont.querySelectorAll('.alerta-card').forEach(el=>el.onclick=()=>{
+    const cod=el.dataset.cod;
+    // sincronizar CEDIS del simulador con el de alertas
+    document.getElementById('inCedis').value=ced;
+    document.querySelectorAll('#segCedis .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===ced));
+    poblarBaseSalida();
+    const r=RENGLONES.find(x=>x.cod===cod);
+    document.getElementById('inCod').value=cod+(r?' — '+r.sum:'');
+    activarTab('buscar');
+    cargarRenglon();
+  });
+}
+// Segmented control del CEDIS en alertas
+(function(){
+  const seg=document.getElementById('segCedisAlertas'); if(!seg) return;
+  seg.querySelectorAll('.seg-btn').forEach(b=>b.onclick=()=>{
+    seg.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); cedAlertas=b.dataset.val; renderAlertas();
+  });
+})();
+
 /* Switch de pestañas */
 function activarTab(nombre){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===nombre));
   document.getElementById('panelTransitos').classList.toggle('hidden',nombre!=='transitos');
   document.getElementById('panelBuscar').classList.toggle('hidden',nombre!=='buscar');
+  const pa=document.getElementById('panelAlertas');
+  if(pa) pa.classList.toggle('hidden',nombre!=='alertas');
   // El resultado (gráfico + KPIs + detalle) solo pertenece a la pestaña "buscar".
   const res=document.getElementById('resultado');
   if(res){
-    if(nombre==='transitos') res.classList.add('hidden');
-    else if(SEL) res.classList.remove('hidden');
+    if(nombre==='buscar' && SEL) res.classList.remove('hidden');
+    else res.classList.add('hidden');
   }
+  if(nombre==='alertas') renderAlertas();
 }
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>activarTab(t.dataset.tab));
 // Filtros de la vista de tránsitos
