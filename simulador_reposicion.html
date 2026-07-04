@@ -123,7 +123,7 @@
   <div>
     <div class="t1">Simulador de Reposición en el Tiempo</div>
     <div class="t2">Torre de Control · DINALOG / CEDIS Panamá
-      <span id="statusConexion" style="opacity:.85"></span>
+      <span id="statusConexion" style="opacity:.9;margin-left:6px"></span>
     </div>
   </div>
   <div class="spacer"></div>
@@ -131,6 +131,8 @@
 </div>
 
 <div class="wrap">
+
+  <!-- estado de conexión ahora vive en el subtítulo del encabezado -->
 
   <!-- PESTAÑAS -->
   <div class="tabs">
@@ -403,7 +405,7 @@ async function iniciar(){
       const gen=MATRIZ.meta.generado?new Date(MATRIZ.meta.generado).toLocaleDateString():'—';
       setStatus(MATRIZ.rows.length.toLocaleString()+' renglones · '+
         TRANSITOS_ALL.length.toLocaleString()+' OC en tránsito · datos al '+gen, '#cfe8d4');
-            const mt=document.getElementById('metaTop');
+      const mt=document.getElementById('metaTop');
       if(mt) mt.innerHTML='Generado: '+(MATRIZ.meta.generado?new Date(MATRIZ.meta.generado).toLocaleString():'—')+
         '<br>'+MATRIZ.rows.length.toLocaleString()+' filas · '+TRANSITOS_ALL.length.toLocaleString()+' en tránsito';
     }else{ throw new Error('respuesta inválida'); }
@@ -866,7 +868,7 @@ function renderTablaTransitos(){
 function play(){
   const rows=proyectar();
   const mAgota=mesAgotamiento(rows);
-  const VEL=400; // ms por mes
+  const VEL=220; // ms por mes
   const DUR=Math.max(1,mAgota)*VEL;
   let t0=null, acc=0;
   const tick=ts=>{
