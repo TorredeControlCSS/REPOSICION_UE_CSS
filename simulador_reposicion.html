@@ -95,6 +95,8 @@
   .esc-swatch{width:11px;height:11px;border-radius:2px;display:inline-block;}
   .btn-limpiar{font-size:11px;padding:3px 12px;border:1px solid var(--bord);background:#fff;color:var(--azul2);cursor:pointer;border-radius:12px;font-weight:600;}
   .btn-limpiar:hover{background:#eef3fa;}
+  .chk-transito{font-size:11px;color:#555;display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:3px 8px;border:1px solid var(--bord);border-radius:12px;background:#fff;}
+  .chk-transito input{width:auto;margin:0;}
   /* Segmented control (toggle profesional) */
   .seg{display:inline-flex;border:1px solid var(--bord);border-radius:3px;overflow:hidden;background:#f4f4f4;}
   .seg-btn{border:none;background:transparent;padding:7px 14px;font-size:12px;font-weight:600;
@@ -430,7 +432,7 @@ function mapCols(){
 // Estados que cuentan como "en tránsito por llegar" (OC emitida, aún no recibida).
 // NO incluye ENTREGADO/ENTREGADA (ya es inventario) ni cierres (CANCELADA, HISTORICA...).
 const ESTADOS_TRANSITO = ['PENDIENTE','SOLICITADA','EN ANALISIS','AGENDADA',
-                          'DIFERIDA','REPROGRAMADA','REMANENTE','ASISTIO','PARCIAL','NO_ASISTIO'];
+                          'DIFERIDA','REPROGRAMADA','REMANENTE','ASISTIO','PARCIAL'];
 function filtrarTransitoVivo_(solicitudes){
   const out=[];
   solicitudes.forEach(s=>{
@@ -1267,6 +1269,7 @@ const ESCALA=[
 ];
 function nivelDe(cob){ for(const n of ESCALA) if(n.test(cob)) return n; return ESCALA[ESCALA.length-1]; }
 let filtroChip='todos';
+let soloTransito=false;
 let ordenCol='cobertura', ordenDir='asc';   // ordenamiento de la tabla
 function renderAlertas(){
   const cont=document.getElementById('alertasContenido');
@@ -1281,12 +1284,13 @@ function renderAlertas(){
   Object.keys(SNAP_RENG).forEach(cod=>{
     const c=coberturaRenglon_(cod, ced, baseAlertas); if(!c) return;
     if(c.inv<=0 && c.salida<=0) return;   // sin inventario ni movimiento: no aplica
-    const cob = c.cobertura; // puede ser Infinity (inventario sin salida)
-    // Clasificación EXCLUSIVAMENTE por cobertura (los umbrales de la escala).
-    const niv = nivelDe(cob);
-    // El tránsito NO cambia el nivel; solo se marca como dato informativo.
+    const cobExacta = c.cobertura; // puede ser Infinity (inventario sin salida)
+    // Clasificar por la cobertura REDONDEADA a 1 decimal, para que el nivel
+    // coincida siempre con el número que ve el usuario (3.0 m → Óptimo, no Bajo).
+    const cobRed = isFinite(cobExacta) ? Math.round(cobExacta*10)/10 : Infinity;
+    const niv = nivelDe(cobRed);
     const conTransito = tieneTransito_(cod);
-    filas.push({cod, ...c, cob:isFinite(cob)?cob:99999, nivel:niv, conTransito:conTransito});
+    filas.push({cod, ...c, cobertura:cobExacta, cob:isFinite(cobExacta)?cobExacta:99999, nivel:niv, conTransito:conTransito});
   });
 
   const cnt=k=>filas.filter(f=>f.nivel.k===k).length;
@@ -1297,9 +1301,11 @@ function renderAlertas(){
   // 6 chips (todas las categorías) + "Todas" + botón limpiar
   const chip=(id,txt,col)=>'<span class="chip'+(filtroChip===id?' chip-on':'')+'" data-chip="'+id+'" '+
     'style="background:'+col+'">'+txt+'</span>';
+  const nTrans=filas.filter(f=>f.conTransito).length;
   resumen.innerHTML=
     '<span class="chip'+(filtroChip==='todos'?' chip-on':'')+'" data-chip="todos" style="background:#6a7683">Todas ('+nTot+')</span>'+
     ESCALA.map(n=>chip(n.k, cnt(n.k)+' '+n.lbl.toLowerCase(), n.col)).join('')+
+    '<label class="chk-transito"><input type="checkbox" id="soloTransito"'+(soloTransito?' checked':'')+'> Solo con tránsito ('+nTrans+')</label>'+
     '<button class="btn-limpiar" id="btnLimpiarAlertas">Limpiar / ver todo</button>'+
     '<span style="color:#888;font-size:11px;margin-left:6px">en '+cedNom+' · cobertura sobre '+baseNom+'</span>';
 
@@ -1308,6 +1314,7 @@ function renderAlertas(){
       n.lbl+' <b>'+n.rango+'</b></span>').join('')+'</div>';
 
   let vis=filas.filter(f=>{
+    if(soloTransito && !f.conTransito) return false;   // toggle: solo renglones con OC en tránsito
     // El buscador tiene prioridad: si busco, muestro el renglón sin importar el chip
     if(buscar){ const s=(f.cod+' '+(f.sum||'')).toLowerCase(); return s.indexOf(buscar)>=0; }
     if(filtroChip!=='todos' && f.nivel.k!==filtroChip) return false;
@@ -1369,9 +1376,11 @@ function enlazarChips(){
   document.querySelectorAll('#alertasResumen .chip').forEach(c=>c.onclick=()=>{
     filtroChip=c.dataset.chip; renderAlertas();
   });
+  const st=document.getElementById('soloTransito');
+  if(st) st.onchange=()=>{ soloTransito=st.checked; renderAlertas(); };
   const bl=document.getElementById('btnLimpiarAlertas');
   if(bl) bl.onclick=()=>{
-    filtroChip='todos';
+    filtroChip='todos'; soloTransito=false;
     const inp=document.getElementById('inCodAlertas'); if(inp) inp.value='';
     ordenCol='cobertura'; ordenDir='asc';
     renderAlertas();
