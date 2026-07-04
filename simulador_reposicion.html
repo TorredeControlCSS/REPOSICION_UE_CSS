@@ -46,11 +46,10 @@
   .kpi .val{font-family:Consolas,monospace;font-size:21px;font-weight:700;color:var(--azul2);line-height:1.1;}
   .kpi .sub{font-size:11px;margin-top:2px;}
   svg{display:block;width:100%;height:auto;max-width:100%;}
-  #grafico{flex:1;display:flex;align-items:stretch;min-height:0;overflow:hidden;}
-  #grafico svg{width:100%;height:100%;}
-  .split-right .card{display:flex;flex-direction:column;overflow:hidden;}
-  .split-left{display:flex;}
-  .split-left>.card{flex:1;display:flex;flex-direction:column;}
+  #grafico{width:100%;}
+  #grafico svg{width:100%;height:auto;}
+  .split{align-items:flex-start;}
+  .split-right .card{display:flex;flex-direction:column;}
   .meta{font-size:11px;color:var(--sub);}
   .aviso{font-size:12px;padding:7px 12px;border:1px solid var(--ambar);background:#fff8e6;color:#7a5a00;margin-bottom:10px;}
   .aviso.err{border-color:var(--rojo);background:#fdecec;color:#7a1010;}
@@ -77,10 +76,15 @@
   .combo-item .desc{color:var(--sub);}
   .combo-item:hover .desc,.combo-item.active .desc{color:#eaf1f8;}
   .combo-empty{padding:10px;font-size:12px;color:var(--sub);text-align:center;}
-  /* Alertas de cobertura */
-  .alerta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;}
-  .alerta-card{border:1px solid var(--bord);background:#fff;padding:8px 10px;cursor:pointer;transition:box-shadow .12s,transform .12s;}
-  .alerta-card:hover{box-shadow:0 2px 8px rgba(12,68,124,.15);transform:translateY(-1px);}
+  /* Alertas de cobertura: resumen con chips + tabla compacta */
+  .alerta-resumen{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;}
+  .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;color:#fff;}
+  .chip-rojo{background:var(--rojo);}
+  .chip-ambar{background:var(--ambar);}
+  .chip-rojo2{background:#8a1a1a;}
+  .alerta-tbl td,.alerta-tbl th{padding:4px 8px;}
+  .alerta-fila:hover td{background:#f4f7fb;}
+  .alerta-badge{font-size:9px;color:#fff;padding:1px 7px;border-radius:2px;white-space:nowrap;}
   /* Segmented control (toggle profesional) */
   .seg{display:inline-flex;border:1px solid var(--bord);border-radius:3px;overflow:hidden;background:#f4f4f4;}
   .seg-btn{border:none;background:transparent;padding:7px 14px;font-size:12px;font-weight:600;
@@ -94,6 +98,12 @@
   .det-dual .sub-f8{border-left:2px solid #cfd8e3;color:var(--azul2);}
   .det-dual .sub-di{color:var(--verde);}
   .det-dual thead th{font-size:9.5px;}
+  .det-tri .grp3{border-left:2px solid #cfd8e3;}
+  .det-tri .sub-co{border-left:2px solid #cfd8e3;color:#8a5a2a;}
+  .det-tri .sub-f8{color:var(--azul2);}
+  .det-tri .sub-di{color:var(--verde);}
+  .det-tri .srep{color:#bbb;font-style:italic;font-size:9px;}
+  .det-tri thead th{font-size:9px;}
   .det-tbl th,.det-tbl td{border:1px solid #ddd;padding:3px 6px;white-space:nowrap;}
   .det-tbl th{background:#f4f7fb;color:var(--azul2);font-size:10px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0;}
   .det-tbl th.ue,.det-tbl td.ue{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:180px;}
@@ -206,10 +216,10 @@
 
   <!-- PANEL: ALERTAS DE COBERTURA -->
   <div id="panelAlertas" class="card hidden">
-    <div class="row" style="align-items:center;margin-bottom:10px">
-      <div style="flex:1">
+    <div class="row" style="align-items:flex-end;margin-bottom:12px;gap:12px">
+      <div style="flex:1 1 auto;min-width:200px">
         <div style="font-size:13px;font-weight:700;color:var(--azul2)">Alertas de cobertura</div>
-        <div class="meta">Casos que merecen atención en el CEDIS seleccionado. Toca una tarjeta para simular ese renglón.</div>
+        <div class="meta">Renglones que requieren atención en el CEDIS seleccionado. Toca una fila para simular.</div>
       </div>
       <div style="flex:0 0 auto">
         <label>CEDIS</label>
@@ -219,7 +229,20 @@
           <button type="button" class="seg-btn" data-val="CH">Chiriquí</button>
         </div>
       </div>
+      <div style="flex:0 0 auto">
+        <label>Mostrar</label>
+        <select id="alertaTipo" style="width:auto">
+          <option value="todos">Todas las alertas</option>
+          <option value="desabasto">Solo desabasto</option>
+          <option value="exceso">Solo exceso</option>
+        </select>
+      </div>
+      <div style="flex:0 0 180px">
+        <label>Buscar renglón</label>
+        <input id="alertaBuscar" placeholder="código o nombre…" autocomplete="off">
+      </div>
     </div>
+    <div id="alertasResumen" class="alerta-resumen"></div>
     <div id="alertasContenido"><div class="meta">Cargando alertas…</div></div>
   </div>
 
@@ -692,7 +715,7 @@ function render(){
 
 /* SVG de la curva sierra con marcador de tiempo */
 function svgProyeccion(rows){
-  const W=640,H=440,ml=54,mr=18,mt=18,mb=40;
+  const W=760,H=340,ml=54,mr=18,mt=18,mb=40;
   // --- Autoescala del eje X: horizonte = cuándo se agota (con margen), no fijo en 60 ---
   let mAgotaVis=rows.length-1;
   for(let i=0;i<rows.length;i++){ const v=incluirTransitos?rows[i].conTr:rows[i].sinTr; if(v<=0){ mAgotaVis=i; break; } }
@@ -775,7 +798,8 @@ function cargarDetalleUE(cod){
   const filas=(reng.f||[]).map(f=>({
     ue:f.u, req:expandir(f.q), dist:expandir(f.d),
     totReq:f.tR||0, totDist:f.tD||0, promReq:f.pR||0, promDist:f.pD||0,
-    saldo:f.s||0, region:f.g||'', cedis:f.x||'OTRAS'
+    saldo:f.s||0, region:f.g||'', cedis:f.x||'OTRAS',
+    consumo: (f.co!=null?f.co:null)
   }));
   DETALLE_UE={ cod:cod, meses:meses, filas:filas };
   renderDetalleUE();
@@ -798,59 +822,70 @@ function renderDetalleUE(){
   const cedSel=document.getElementById('inCedis').value;
   const keySel = cedSel==='PA'?'CEDIS PANAMA':cedSel==='DI'?'CEDIS DIVISA':'CEDIS CHIRIQUI';
 
-  // encabezado: cada mes con dos sub-columnas (F8 | Dist) + total (F8|Dist)
-  const totCols = nM+1; // meses + total
-  let h='<div style="overflow-x:auto"><table class="det-tbl det-dual"><thead>';
-  // fila 1: nombres de mes con colspan 2
+  // Encabezado: cada mes con 3 sub-columnas (Cons | F8 | Dist)
+  let h='<div style="overflow-x:auto"><table class="det-tbl det-tri"><thead>';
   h+='<tr><th class="ue" rowspan="2">Unidad Ejecutora</th><th class="num" rowspan="2">Saldo hoy</th>'+
-     meses.map(m=>'<th class="num grp2" colspan="2">'+mesLbl(m)+'</th>').join('')+
-     '<th class="num grp2 tot" colspan="2">∑ Total</th></tr>';
-  // fila 2: F8 | Dist bajo cada mes
-  h+='<tr>'+meses.map(()=>'<th class="num sub-f8">F8</th><th class="num sub-di">Dist</th>').join('')+
-     '<th class="num sub-f8 tot">F8</th><th class="num sub-di tot">Dist</th></tr></thead><tbody>';
+     meses.map(m=>'<th class="num grp3" colspan="3">'+mesLbl(m)+'</th>').join('')+
+     '<th class="num grp3 tot" colspan="3">∑ Total</th></tr>';
+  h+='<tr>'+meses.map(()=>'<th class="num sub-co">Cons</th><th class="num sub-f8">F8</th><th class="num sub-di">Dist</th>').join('')+
+     '<th class="num sub-co tot">Cons</th><th class="num sub-f8 tot">F8</th><th class="num sub-di tot">Dist</th></tr></thead><tbody>';
 
   const gReqMes=meses.map(()=>0), gDistMes=meses.map(()=>0);
   let gReqTot=0, gDistTot=0, gSaldo=0;
+  const nSub = nM*3+3+1; // 3 sub-cols por mes + 3 del total + saldo
+  // celda de consumo: teórico repetido; "s/rep" si no hay pero sí hay F8/Dist
+  const celdaCons = (cons, hayMov) =>
+    cons!=null ? '<td class="num sub-co">'+fmt(cons)+'</td>'
+    : (hayMov ? '<td class="num sub-co srep">s/rep</td>' : '<td class="num sub-co">·</td>');
 
   BLOQUES.forEach(bl=>{
     const filasBl=DETALLE_UE.filas.filter(f=>(f.cedis||'OTRAS')===bl.key);
     if(!filasBl.length) return;
     const esSel=(bl.key===keySel);
     const gid='grp_'+bl.key.replace(/\s/g,'');
-    const totColspan = nM*2+2+1; // sub-cols + saldo
     h+='<tr class="grp-row'+(esSel?' grp-sel':'')+'" data-grp="'+gid+'" style="cursor:pointer">'+
        '<td class="ue" style="color:'+(esSel?bl.col:'#888')+'">'+
          '<span class="grp-caret">'+(esSel?'▼':'▶')+'</span> '+bl.lbl+
          (esSel?' &nbsp;<span style="font-size:9px;background:'+bl.col+';color:#fff;padding:1px 6px;border-radius:2px">PROYECTANDO</span>':'')+
-       '</td><td colspan="'+totColspan+'"></td></tr>';
+       '</td><td colspan="'+nSub+'"></td></tr>';
     const sReqMes=meses.map(()=>0), sDistMes=meses.map(()=>0);
-    let sReqTot=0, sDistTot=0, sSaldo=0;
+    let sReqTot=0, sDistTot=0, sSaldo=0, sCons=0;
     filasBl.forEach(f=>{
+      const hayMov = f.totReq>0 || f.totDist>0;
       h+='<tr class="grp-body '+gid+'"'+(esSel?'':' style="display:none"')+'>'+
          '<td class="ue">'+f.ue+'</td>'+
          '<td class="num saldo">'+(f.saldo?fmt(f.saldo):'·')+'</td>';
       for(let i=0;i<nM;i++){
         const rq=f.req[i]||0, ds=f.dist[i]||0;
-        h+='<td class="num sub-f8">'+(rq?fmt(rq):'·')+'</td><td class="num sub-di">'+(ds?fmt(ds):'·')+'</td>';
+        h+=celdaCons(f.consumo, hayMov)+
+           '<td class="num sub-f8">'+(rq?fmt(rq):'·')+'</td>'+
+           '<td class="num sub-di">'+(ds?fmt(ds):'·')+'</td>';
         sReqMes[i]+=rq; sDistMes[i]+=ds; gReqMes[i]+=rq; gDistMes[i]+=ds;
       }
-      h+='<td class="num sub-f8 tot">'+fmt(f.totReq)+'</td><td class="num sub-di tot">'+fmt(f.totDist)+'</td></tr>';
+      // total: consumo total = consumo teórico × nº meses (referencia anual del reportado)
+      const consTot = f.consumo!=null ? f.consumo*nM : null;
+      h+=celdaCons(consTot, hayMov)+
+         '<td class="num sub-f8 tot">'+fmt(f.totReq)+'</td>'+
+         '<td class="num sub-di tot">'+fmt(f.totDist)+'</td></tr>';
       sReqTot+=f.totReq; sDistTot+=f.totDist; sSaldo+=f.saldo||0;
+      if(f.consumo!=null) sCons+=f.consumo;
       gReqTot+=f.totReq; gDistTot+=f.totDist; gSaldo+=f.saldo||0;
     });
-    // subtotal bloque
     h+='<tr class="sub-row'+(esSel?' sub-sel':'')+'"><td class="ue">∑ Subtotal '+bl.lbl+'</td>'+
        '<td class="num">'+fmt(sSaldo)+'</td>';
-    for(let i=0;i<nM;i++) h+='<td class="num sub-f8">'+fmt(sReqMes[i])+'</td><td class="num sub-di">'+fmt(sDistMes[i])+'</td>';
-    h+='<td class="num sub-f8 tot">'+fmt(sReqTot)+'</td><td class="num sub-di tot">'+fmt(sDistTot)+'</td></tr>';
+    for(let i=0;i<nM;i++) h+='<td class="num sub-co">'+(sCons?fmt(sCons):'·')+'</td><td class="num sub-f8">'+fmt(sReqMes[i])+'</td><td class="num sub-di">'+fmt(sDistMes[i])+'</td>';
+    h+='<td class="num sub-co tot">'+(sCons?fmt(sCons*nM):'·')+'</td><td class="num sub-f8 tot">'+fmt(sReqTot)+'</td><td class="num sub-di tot">'+fmt(sDistTot)+'</td></tr>';
   });
 
-  // total renglón
   h+='<tr class="tot-row"><td class="ue">∑ TOTAL renglón</td><td class="num">'+fmt(gSaldo)+'</td>';
-  for(let i=0;i<nM;i++) h+='<td class="num sub-f8">'+fmt(gReqMes[i])+'</td><td class="num sub-di">'+fmt(gDistMes[i])+'</td>';
-  h+='<td class="num sub-f8 tot">'+fmt(gReqTot)+'</td><td class="num sub-di tot">'+fmt(gDistTot)+'</td></tr>';
+  for(let i=0;i<nM;i++) h+='<td class="num sub-co">·</td><td class="num sub-f8">'+fmt(gReqMes[i])+'</td><td class="num sub-di">'+fmt(gDistMes[i])+'</td>';
+  h+='<td class="num sub-co tot">·</td><td class="num sub-f8 tot">'+fmt(gReqTot)+'</td><td class="num sub-di tot">'+fmt(gDistTot)+'</td></tr>';
   h+='</tbody></table></div>';
-  h+='<div class="meta" style="margin-top:6px">F8 = requisiciones recibidas · Dist = distribuciones despachadas (solo CEDIS Panamá; Divisa y Chiriquí sin dato aún).</div>';
+  h+='<div class="meta" style="margin-top:6px">'+
+     '<b style="color:#8a5a2a">Cons</b> = consumo mensual teórico reportado por la UE · '+
+     '<b style="color:var(--azul2)">F8</b> = requisiciones recibidas · '+
+     '<b style="color:var(--verde)">Dist</b> = distribuciones despachadas. '+
+     '«s/rep» = sin consumo reportado. Distribuciones solo CEDIS Panamá.</div>';
   cont.innerHTML=h;
 }
 // Expandir/colapsar bloques CEDIS al hacer clic en su encabezado
@@ -1082,59 +1117,71 @@ function tieneTransito_(cod){
 }
 function renderAlertas(){
   const cont=document.getElementById('alertasContenido');
+  const resumen=document.getElementById('alertasResumen');
   if(!Object.keys(SNAP_RENG).length){ cont.innerHTML='<div class="meta">Aún no hay datos cargados.</div>'; return; }
   const ced=cedAlertas;
-  const desabasto=[], exceso=[];
+  const filtroTipo=(document.getElementById('alertaTipo')||{}).value||'todos';
+  const buscar=((document.getElementById('alertaBuscar')||{}).value||'').toLowerCase().trim();
+
+  const filas=[];
   Object.keys(SNAP_RENG).forEach(cod=>{
     const c=coberturaRenglon_(cod, ced); if(!c) return;
-    if(c.inv<=0 && c.salida<=0) return;         // renglón inerte en este CEDIS
-    // Desabasto urgente: cobertura < 1 mes Y sin tránsito en camino
-    if(c.salida>0 && c.cobertura<1 && !tieneTransito_(cod))
-      desabasto.push({cod, ...c});
-    // Exceso: cobertura > 6 meses (Infinity = sin salida pero con inventario también cuenta)
-    if(c.inv>0 && (c.cobertura>6))
-      exceso.push({cod, ...c, cob:isFinite(c.cobertura)?c.cobertura:999});
+    if(c.inv<=0 && c.salida<=0) return;
+    let tipo=null, sev=0;
+    // Desabasto: cobertura < 1 mes sin tránsito
+    if(c.salida>0 && c.cobertura<1 && !tieneTransito_(cod)){ tipo='desabasto'; sev=3; }
+    // Exceso: >6 meses (sev 2), >12 meses (sev 3)
+    else if(c.inv>0 && c.cobertura>6){ tipo='exceso'; sev = c.cobertura>12?3:2; }
+    if(!tipo) return;
+    filas.push({cod, tipo, sev, ...c, cob:isFinite(c.cobertura)?c.cobertura:9999});
   });
-  desabasto.sort((a,b)=>a.cobertura-b.cobertura);
-  exceso.sort((a,b)=>b.cob-a.cob);
 
+  const nDes=filas.filter(f=>f.tipo==='desabasto').length;
+  const nExc=filas.filter(f=>f.tipo==='exceso').length;
+  const nExcAlto=filas.filter(f=>f.tipo==='exceso'&&f.sev===3).length;
+
+  // Resumen tipo "chips" clicables
   const cedNom = ced==='PA'?'CEDIS Panamá':ced==='DI'?'CEDIS Divisa':'CEDIS Chiriquí';
-  const tarjeta = (r, tipo) => {
-    const cobTxt = isFinite(r.cobertura) ? r.cobertura.toFixed(1)+' m' : 'sin salida';
-    let color, badge;
-    if(tipo==='desabasto'){ color='var(--rojo)'; badge='Desabasto'; }
-    else { const rojo=r.cob>12; color=rojo?'var(--rojo)':'var(--ambar)'; badge=rojo?'Exceso alto':'Exceso'; }
-    return '<div class="alerta-card" data-cod="'+r.cod+'" style="border-left:4px solid '+color+'">'+
-      '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'+
-        '<span style="font-weight:700;font-size:12px;color:var(--azul2)">'+r.cod+'</span>'+
-        '<span style="font-size:9px;background:'+color+';color:#fff;padding:1px 6px;border-radius:2px">'+badge+'</span>'+
-      '</div>'+
-      '<div style="font-size:11px;color:#444;margin:3px 0;line-height:1.3">'+(r.sum||'').slice(0,46)+'</div>'+
-      '<div style="display:flex;justify-content:space-between;font-size:10.5px;color:#666;font-family:Consolas">'+
-        '<span>Inv: '+fmt(r.inv)+'</span><span>Sal/mes: '+fmt(Math.round(r.salida))+'</span>'+
-        '<span style="font-weight:700;color:'+color+'">'+cobTxt+'</span>'+
-      '</div></div>';
-  };
+  resumen.innerHTML=
+    '<span class="chip chip-rojo">'+nDes+' desabasto</span>'+
+    '<span class="chip chip-ambar">'+(nExc-nExcAlto)+' exceso</span>'+
+    '<span class="chip chip-rojo2">'+nExcAlto+' exceso alto (&gt;12m)</span>'+
+    '<span style="color:#888;font-size:11px;margin-left:6px">en '+cedNom+'</span>';
 
-  let h='';
-  h+='<div style="font-size:12px;font-weight:700;color:var(--rojo);margin:6px 0 6px">'+
-     '⚠ Riesgo de desabasto — cobertura menor a 1 mes, sin tránsitos ('+desabasto.length+')</div>';
-  h+= desabasto.length
-    ? '<div class="alerta-grid">'+desabasto.slice(0,30).map(r=>tarjeta(r,'desabasto')).join('')+'</div>'
-    : '<div class="meta">Ninguno en '+cedNom+'. Nada por agotarse sin reposición.</div>';
-  h+='<div style="font-size:12px;font-weight:700;color:var(--ambar);margin:16px 0 6px">'+
-     '▲ Exceso de inventario — cobertura mayor a 6 meses, baja rotación ('+exceso.length+')</div>';
-  h+= exceso.length
-    ? '<div class="alerta-grid">'+exceso.slice(0,30).map(r=>tarjeta(r,'exceso')).join('')+'</div>'
-    : '<div class="meta">Ninguno en '+cedNom+'.</div>';
-  if(desabasto.length>30||exceso.length>30)
-    h+='<div class="meta" style="margin-top:8px">Mostrando los 30 casos más relevantes de cada grupo.</div>';
+  // aplicar filtros
+  let vis=filas.filter(f=>{
+    if(filtroTipo!=='todos' && f.tipo!==filtroTipo) return false;
+    if(buscar){ const s=(f.cod+' '+(f.sum||'')).toLowerCase(); if(s.indexOf(buscar)<0) return false; }
+    return true;
+  });
+  // orden: primero desabasto (más crítico), luego exceso por cobertura desc
+  vis.sort((a,b)=> a.tipo!==b.tipo ? (a.tipo==='desabasto'?-1:1)
+    : (a.tipo==='desabasto' ? a.cobertura-b.cobertura : b.cob-a.cob));
+
+  if(!vis.length){ cont.innerHTML='<div class="meta">Sin resultados para el filtro actual.</div>'; return; }
+
+  const sevColor=s=> s===3?'var(--rojo)':s===2?'var(--ambar)':'var(--verde)';
+  const tipoLbl=f=> f.tipo==='desabasto'?'Desabasto':(f.sev===3?'Exceso alto':'Exceso');
+  let h='<div style="overflow-x:auto"><table class="det-tbl alerta-tbl"><thead><tr>'+
+    '<th style="width:4px;padding:0"></th>'+
+    '<th class="ue">Renglón</th><th class="num">Inventario</th>'+
+    '<th class="num">Salida/mes</th><th class="num">Cobertura</th><th>Alerta</th></tr></thead><tbody>';
+  vis.slice(0,200).forEach(f=>{
+    const cobTxt=isFinite(f.cobertura)?f.cobertura.toFixed(1)+' m':'sin salida';
+    h+='<tr class="alerta-fila" data-cod="'+f.cod+'" style="cursor:pointer">'+
+      '<td style="background:'+sevColor(f.sev)+';padding:0;width:4px"></td>'+
+      '<td class="ue"><b>'+f.cod+'</b> <span style="color:#666;font-weight:400">'+(f.sum||'').slice(0,42)+'</span></td>'+
+      '<td class="num">'+fmt(f.inv)+'</td>'+
+      '<td class="num">'+(f.salida>0?fmt(Math.round(f.salida)):'·')+'</td>'+
+      '<td class="num" style="font-weight:700;color:'+sevColor(f.sev)+'">'+cobTxt+'</td>'+
+      '<td><span class="alerta-badge" style="background:'+sevColor(f.sev)+'">'+tipoLbl(f)+'</span></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  if(vis.length>200) h+='<div class="meta" style="margin-top:6px">Mostrando 200 de '+vis.length+'. Usa el buscador para acotar.</div>';
   cont.innerHTML=h;
 
-  // clic en tarjeta → cargar renglón en el simulador
-  cont.querySelectorAll('.alerta-card').forEach(el=>el.onclick=()=>{
+  cont.querySelectorAll('.alerta-fila').forEach(el=>el.onclick=()=>{
     const cod=el.dataset.cod;
-    // sincronizar CEDIS del simulador con el de alertas
     document.getElementById('inCedis').value=ced;
     document.querySelectorAll('#segCedis .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===ced));
     poblarBaseSalida();
@@ -1144,7 +1191,12 @@ function renderAlertas(){
     cargarRenglon();
   });
 }
-// Segmented control del CEDIS en alertas
+// Filtros de alertas
+['alertaTipo','alertaBuscar'].forEach(id=>{
+  document.addEventListener('input', e=>{ if(e.target && e.target.id===id) renderAlertas(); });
+  document.addEventListener('change', e=>{ if(e.target && e.target.id===id) renderAlertas(); });
+});
+// Segmento CEDIS en alertas
 (function(){
   const seg=document.getElementById('segCedisAlertas'); if(!seg) return;
   seg.querySelectorAll('.seg-btn').forEach(b=>b.onclick=()=>{
