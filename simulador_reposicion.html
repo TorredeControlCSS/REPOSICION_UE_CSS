@@ -78,7 +78,10 @@
   .combo-empty{padding:10px;font-size:12px;color:var(--sub);text-align:center;}
   /* Alertas de cobertura: resumen con chips + tabla compacta */
   .alerta-resumen{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;}
-  .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;color:#fff;}
+  .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;color:#fff;cursor:pointer;opacity:.72;transition:opacity .12s,box-shadow .12s;}
+  .chip:hover{opacity:.9;}
+  .chip.chip-on{opacity:1;box-shadow:0 0 0 2px rgba(12,68,124,.35);}
+  .chip-gris{background:#6a7683;}
   .chip-rojo{background:var(--rojo);}
   .chip-ambar{background:var(--ambar);}
   .chip-rojo2{background:#8a1a1a;}
@@ -216,11 +219,9 @@
 
   <!-- PANEL: ALERTAS DE COBERTURA -->
   <div id="panelAlertas" class="card hidden">
-    <div class="row" style="align-items:flex-end;margin-bottom:12px;gap:12px">
-      <div style="flex:1 1 auto;min-width:200px">
-        <div style="font-size:13px;font-weight:700;color:var(--azul2)">Alertas de cobertura</div>
-        <div class="meta">Renglones que requieren atención en el CEDIS seleccionado. Toca una fila para simular.</div>
-      </div>
+    <div style="font-size:13px;font-weight:700;color:var(--azul2)">Alertas de cobertura</div>
+    <div class="meta" style="margin-bottom:12px">Renglones que requieren atención. La cobertura se calcula sobre la base elegida. Toca una fila para simular.</div>
+    <div class="row" style="align-items:flex-end;gap:12px;margin-bottom:10px">
       <div style="flex:0 0 auto">
         <label>CEDIS</label>
         <div class="seg" id="segCedisAlertas">
@@ -230,16 +231,19 @@
         </div>
       </div>
       <div style="flex:0 0 auto">
-        <label>Mostrar</label>
-        <select id="alertaTipo" style="width:auto">
-          <option value="todos">Todas las alertas</option>
-          <option value="desabasto">Solo desabasto</option>
-          <option value="exceso">Solo exceso</option>
-        </select>
+        <label>Base de cálculo de cobertura</label>
+        <div class="seg" id="segBaseAlertas">
+          <button type="button" class="seg-btn active" data-val="req">Req F8</button>
+          <button type="button" class="seg-btn" data-val="dist">Distribuciones</button>
+          <button type="button" class="seg-btn" data-val="consumo">Consumo</button>
+        </div>
       </div>
-      <div style="flex:0 0 180px">
+      <div style="flex:1 1 220px;min-width:180px">
         <label>Buscar renglón</label>
-        <input id="alertaBuscar" placeholder="código o nombre…" autocomplete="off">
+        <div class="combo">
+          <input id="inCodAlertas" placeholder="Escribe código o nombre…" autocomplete="off">
+          <div id="comboListAlertas" class="combo-list"></div>
+        </div>
       </div>
     </div>
     <div id="alertasResumen" class="alerta-resumen"></div>
@@ -558,7 +562,8 @@ function cargarDesdeSnapshot_(snap){
       iPA:o.iPA||0, iDI:o.iDI||0, iCH:o.iCH||0, iR:o.iR||0,
       d:o.d||0, md:o.md||[],
       mrPA:o.mrPA||[], mrDI:o.mrDI||[], mrCH:o.mrCH||[],
-      rPA:o.rPA||0, rDI:o.rDI||0, rCH:o.rCH||0 };
+      rPA:o.rPA||0, rDI:o.rDI||0, rCH:o.rCH||0,
+      coPA:o.coPA||0, coDI:o.coDI||0, coCH:o.coCH||0 };
   });
   RENGLONES=snap.renglones.map(o=>({cod:String(o.c), sum:o.s||''}))
                           .sort((a,b)=>a.cod.localeCompare(b.cod));
@@ -1099,13 +1104,21 @@ function renderListaTransitos(){
    exceso de inventario (>6 meses; rojo si >12). Del CEDIS seleccionado.
    ================================================================ */
 let cedAlertas='PA';
-function coberturaRenglon_(cod, ced){
+let baseAlertas='req';  // 'req' | 'dist' | 'consumo'
+function coberturaRenglon_(cod, ced, base){
   const o=SNAP_RENG[cod]; if(!o) return null;
   const inv = ced==='PA'?o.iPA : ced==='DI'?o.iDI : o.iCH;
-  const mr  = ced==='PA'?o.mrPA : ced==='DI'?o.mrDI : o.mrCH;
-  const rr  = ced==='PA'?o.rPA  : ced==='DI'?o.rDI  : o.rCH;
-  // salida mensual: media móvil 90d (índice 1) con fallback al promedio
-  let salida = (Array.isArray(mr)&&mr[1]!=null)?mr[1]:rr;
+  let salida=0;
+  if(base==='dist'){
+    // distribución: solo Panamá despacha (media móvil 90d)
+    salida = ced==='PA' ? ((Array.isArray(o.md)&&o.md[1]!=null)?o.md[1]:0) : 0;
+  }else if(base==='consumo'){
+    salida = ced==='PA'?o.coPA : ced==='DI'?o.coDI : o.coCH;
+  }else{ // req (F8)
+    const mr = ced==='PA'?o.mrPA : ced==='DI'?o.mrDI : o.mrCH;
+    const rr = ced==='PA'?o.rPA  : ced==='DI'?o.rDI  : o.rCH;
+    salida = (Array.isArray(mr)&&mr[1]!=null)?mr[1]:rr;
+  }
   salida = salida||0;
   const cobertura = salida>0 ? inv/salida : (inv>0?Infinity:0);
   return { inv, salida, cobertura, sum:o.sum||'' };
@@ -1115,50 +1128,52 @@ function tieneTransito_(cod){
   const k=codKey(cod);
   return TRANSITOS_ALL.some(t=>codKey(t.cod_abasto_norm||t.cod_abasto)===k);
 }
+let filtroChip='todos';  // 'todos' | 'desabasto' | 'exceso' | 'excesoAlto'
 function renderAlertas(){
   const cont=document.getElementById('alertasContenido');
   const resumen=document.getElementById('alertasResumen');
   if(!Object.keys(SNAP_RENG).length){ cont.innerHTML='<div class="meta">Aún no hay datos cargados.</div>'; return; }
   const ced=cedAlertas;
-  const filtroTipo=(document.getElementById('alertaTipo')||{}).value||'todos';
-  const buscar=((document.getElementById('alertaBuscar')||{}).value||'').toLowerCase().trim();
+  const buscar=((document.getElementById('inCodAlertas')||{}).value||'').toLowerCase().trim();
 
   const filas=[];
   Object.keys(SNAP_RENG).forEach(cod=>{
-    const c=coberturaRenglon_(cod, ced); if(!c) return;
+    const c=coberturaRenglon_(cod, ced, baseAlertas); if(!c) return;
     if(c.inv<=0 && c.salida<=0) return;
     let tipo=null, sev=0;
-    // Desabasto: cobertura < 1 mes sin tránsito
     if(c.salida>0 && c.cobertura<1 && !tieneTransito_(cod)){ tipo='desabasto'; sev=3; }
-    // Exceso: >6 meses (sev 2), >12 meses (sev 3)
     else if(c.inv>0 && c.cobertura>6){ tipo='exceso'; sev = c.cobertura>12?3:2; }
     if(!tipo) return;
     filas.push({cod, tipo, sev, ...c, cob:isFinite(c.cobertura)?c.cobertura:9999});
   });
 
   const nDes=filas.filter(f=>f.tipo==='desabasto').length;
-  const nExc=filas.filter(f=>f.tipo==='exceso').length;
+  const nExc=filas.filter(f=>f.tipo==='exceso'&&f.sev===2).length;
   const nExcAlto=filas.filter(f=>f.tipo==='exceso'&&f.sev===3).length;
-
-  // Resumen tipo "chips" clicables
+  const nTot=filas.length;
   const cedNom = ced==='PA'?'CEDIS Panamá':ced==='DI'?'CEDIS Divisa':'CEDIS Chiriquí';
-  resumen.innerHTML=
-    '<span class="chip chip-rojo">'+nDes+' desabasto</span>'+
-    '<span class="chip chip-ambar">'+(nExc-nExcAlto)+' exceso</span>'+
-    '<span class="chip chip-rojo2">'+nExcAlto+' exceso alto (&gt;12m)</span>'+
-    '<span style="color:#888;font-size:11px;margin-left:6px">en '+cedNom+'</span>';
+  const baseNom = baseAlertas==='dist'?'distribuciones':baseAlertas==='consumo'?'consumo teórico':'Req F8';
 
-  // aplicar filtros
+  // Chips CLICABLES que filtran (reemplazan al dropdown MOSTRAR)
+  const chip=(id,txt,cls)=>'<span class="chip '+cls+(filtroChip===id?' chip-on':'')+'" data-chip="'+id+'">'+txt+'</span>';
+  resumen.innerHTML=
+    chip('todos', 'Todas ('+nTot+')','chip-gris')+
+    chip('desabasto', nDes+' desabasto','chip-rojo')+
+    chip('exceso', nExc+' exceso','chip-ambar')+
+    chip('excesoAlto', nExcAlto+' exceso alto','chip-rojo2')+
+    '<span style="color:#888;font-size:11px;margin-left:6px">en '+cedNom+' · cobertura sobre '+baseNom+'</span>';
+
   let vis=filas.filter(f=>{
-    if(filtroTipo!=='todos' && f.tipo!==filtroTipo) return false;
+    if(filtroChip==='desabasto' && f.tipo!=='desabasto') return false;
+    if(filtroChip==='exceso' && !(f.tipo==='exceso'&&f.sev===2)) return false;
+    if(filtroChip==='excesoAlto' && !(f.tipo==='exceso'&&f.sev===3)) return false;
     if(buscar){ const s=(f.cod+' '+(f.sum||'')).toLowerCase(); if(s.indexOf(buscar)<0) return false; }
     return true;
   });
-  // orden: primero desabasto (más crítico), luego exceso por cobertura desc
   vis.sort((a,b)=> a.tipo!==b.tipo ? (a.tipo==='desabasto'?-1:1)
     : (a.tipo==='desabasto' ? a.cobertura-b.cobertura : b.cob-a.cob));
 
-  if(!vis.length){ cont.innerHTML='<div class="meta">Sin resultados para el filtro actual.</div>'; return; }
+  if(!vis.length){ cont.innerHTML='<div class="meta">Sin resultados para el filtro actual.</div>'; enlazarChips(); return; }
 
   const sevColor=s=> s===3?'var(--rojo)':s===2?'var(--ambar)':'var(--verde)';
   const tipoLbl=f=> f.tipo==='desabasto'?'Desabasto':(f.sev===3?'Exceso alto':'Exceso');
@@ -1179,6 +1194,7 @@ function renderAlertas(){
   h+='</tbody></table></div>';
   if(vis.length>200) h+='<div class="meta" style="margin-top:6px">Mostrando 200 de '+vis.length+'. Usa el buscador para acotar.</div>';
   cont.innerHTML=h;
+  enlazarChips();
 
   cont.querySelectorAll('.alerta-fila').forEach(el=>el.onclick=()=>{
     const cod=el.dataset.cod;
@@ -1191,17 +1207,30 @@ function renderAlertas(){
     cargarRenglon();
   });
 }
-// Filtros de alertas
-['alertaTipo','alertaBuscar'].forEach(id=>{
-  document.addEventListener('input', e=>{ if(e.target && e.target.id===id) renderAlertas(); });
-  document.addEventListener('change', e=>{ if(e.target && e.target.id===id) renderAlertas(); });
-});
+function enlazarChips(){
+  document.querySelectorAll('#alertasResumen .chip').forEach(c=>c.onclick=()=>{
+    filtroChip=c.dataset.chip; renderAlertas();
+  });
+}
+// Buscador combo de alertas (mismo comportamiento que el del simulador)
+(function(){
+  const inp=document.getElementById('inCodAlertas'); if(!inp) return;
+  inp.addEventListener('input', ()=>renderAlertas());
+})();
 // Segmento CEDIS en alertas
 (function(){
   const seg=document.getElementById('segCedisAlertas'); if(!seg) return;
   seg.querySelectorAll('.seg-btn').forEach(b=>b.onclick=()=>{
     seg.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); cedAlertas=b.dataset.val; renderAlertas();
+  });
+})();
+// Segmento base de cálculo en alertas
+(function(){
+  const seg=document.getElementById('segBaseAlertas'); if(!seg) return;
+  seg.querySelectorAll('.seg-btn').forEach(b=>b.onclick=()=>{
+    seg.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); baseAlertas=b.dataset.val; renderAlertas();
   });
 })();
 
