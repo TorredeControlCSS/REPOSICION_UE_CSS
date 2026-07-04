@@ -667,7 +667,7 @@ function render(){
 
 /* SVG de la curva sierra con marcador de tiempo */
 function svgProyeccion(rows){
-  const W=960,H=300,ml=58,mr=20,mt=16,mb=36;
+  const W=900,H=260,ml=58,mr=20,mt=16,mb=36;
   // --- Autoescala del eje X: horizonte = cuándo se agota (con margen), no fijo en 60 ---
   let mAgotaVis=rows.length-1;
   for(let i=0;i<rows.length;i++){ const v=incluirTransitos?rows[i].conTr:rows[i].sinTr; if(v<=0){ mAgotaVis=i; break; } }
