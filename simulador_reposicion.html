@@ -46,8 +46,11 @@
   .kpi .val{font-family:Consolas,monospace;font-size:21px;font-weight:700;color:var(--azul2);line-height:1.1;}
   .kpi .sub{font-size:11px;margin-top:2px;}
   svg{display:block;width:100%;height:auto;max-width:100%;}
-  #grafico svg{height:auto;max-height:520px;}
-  #grafico{min-height:400px;}
+  #grafico{flex:1;display:flex;align-items:stretch;min-height:0;overflow:hidden;}
+  #grafico svg{width:100%;height:100%;}
+  .split-right .card{display:flex;flex-direction:column;overflow:hidden;}
+  .split-left{display:flex;}
+  .split-left>.card{flex:1;display:flex;flex-direction:column;}
   .meta{font-size:11px;color:var(--sub);}
   .aviso{font-size:12px;padding:7px 12px;border:1px solid var(--ambar);background:#fff8e6;color:#7a5a00;margin-bottom:10px;}
   .aviso.err{border-color:var(--rojo);background:#fdecec;color:#7a1010;}
@@ -87,7 +90,7 @@
   .det-dual .sub-f8{border-left:2px solid #cfd8e3;color:var(--azul2);}
   .det-dual .sub-di{color:var(--verde);}
   .det-dual thead th{font-size:9.5px;}
-  .det-tbl th,.det-tbl td{border:1px solid #ddd;padding:4px 8px;white-space:nowrap;}
+  .det-tbl th,.det-tbl td{border:1px solid #ddd;padding:3px 6px;white-space:nowrap;}
   .det-tbl th{background:#f4f7fb;color:var(--azul2);font-size:10px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0;}
   .det-tbl th.ue,.det-tbl td.ue{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:180px;}
   .det-tbl th.ue{background:#f4f7fb;}
@@ -194,7 +197,7 @@
         <input type="hidden" id="inCedis" value="PA">
       </div>
     </div>
-    <div id="ejemplos" class="meta" style="margin-top:10px"></div>
+    <!-- (los renglones destacados por cobertura irán en una sección propia, a diseñar) -->
   </div>
 
   <!-- RESULTADO -->
@@ -215,6 +218,10 @@
               </div>
             </div>
             <div>
+              <label>Tránsitos por llegar</label>
+              <button class="btn-sec" id="btnTransitos" style="width:100%">Tránsitos: ON</button>
+            </div>
+            <div>
               <label>Base de salida</label>
               <select id="inBase"></select>
             </div>
@@ -225,10 +232,6 @@
                 <option value="90" selected>90 días</option>
                 <option value="120">120 días</option>
               </select>
-            </div>
-            <div>
-              <label>Tránsitos por llegar</label>
-              <button class="btn-sec" id="btnTransitos" style="width:100%">Tránsitos: ON</button>
             </div>
             <div style="grid-column:1/-1">
               <label>Simular avance del tiempo</label>
@@ -450,38 +453,6 @@ function poblarRenglones(){
     });
     RENGLONES.sort((a,b)=>a.cod.localeCompare(b.cod));
   }
-  // Ejemplos: renglones con más inventario acumulado (suma de bodegas de los 3 CEDIS)
-  let top;
-  if(usandoSnapshot){
-    top=Object.keys(SNAP_RENG).map(c=>{
-      const o=SNAP_RENG[c];
-      return {c, inv:(o.iPA||0)+(o.iDI||0)+(o.iCH||0)};
-    }).sort((a,b)=>b.inv-a.inv).slice(0,6);
-  }else{
-    const agg={};
-    MATRIZ.rows.forEach(r=>{
-      const c=r[COL.COD_ABASTO]; if(!c)return;
-      (agg[c]=agg[c]||{inv:0}); agg[c].inv+=N(r[COL.INVENTARIO]);
-    });
-    top=Object.keys(agg).map(c=>({c,inv:agg[c].inv})).sort((a,b)=>b.inv-a.inv).slice(0,6);
-  }
-  const cont=document.getElementById('ejemplos');
-  cont.innerHTML='<span style="color:#777">Renglones con más inventario:</span> '+
-    top.map(o=>{
-      const r=RENGLONES.find(x=>x.cod===o.c);
-      const desc=r&&r.sum?r.sum.slice(0,28):'';
-      return '<a href="#" data-c="'+o.c+'" title="'+(r?r.sum:'')+'" '+
-        'style="color:var(--azul);text-decoration:none;margin-right:6px;padding:2px 6px;'+
-        'border:1px solid #cfd8e3;border-radius:3px;display:inline-block;margin-bottom:4px">'+
-        o.c+(desc?' · '+desc:'')+'</a>';
-    }).join('');
-  cont.querySelectorAll('a').forEach(a=>a.onclick=(ev)=>{
-    ev.preventDefault();
-    const r=RENGLONES.find(x=>x.cod===a.dataset.c);
-    document.getElementById('inCod').value=a.dataset.c+' — '+(r?r.sum:'');
-    cerrarCombo();
-    cargarRenglon();
-  });
 }
 
 /* ---------- COMBO CUSTOM: filtrado en vivo ---------- */
@@ -685,14 +656,15 @@ function render(){
     'Al factor ×'+factor+', el inventario '+(mAgota>=60?'dura más de 60 meses':'se agota en '+mAgota+' meses')+
     (incluirTransitos && totalTrans>0 ? ' (contando los '+fmt(totalTrans)+' en tránsito)':'')+'.';
   document.getElementById('leyendaGrafico').innerHTML =
-    '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:14px">'+
-      '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--azul)" stroke-width="2.5"/></svg>'+
-      '<span style="font-size:11px;color:#555">Sin tránsitos</span></span>'+
-    '<span style="display:inline-flex;align-items:center;gap:4px">'+
-      '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--verde)" stroke-width="2.5" stroke-dasharray="5 3"/></svg>'+
-      '<span style="font-size:11px;color:#555">Con tránsitos por llegar</span></span>'+
-    '<div style="color:#999;font-size:10.5px;margin-top:4px">Ritmo de salida: media móvil '+diasMM+'d de '+
-    baseLabel()+'.</div>';
+    '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px">'+
+      '<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">'+
+        '<svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="var(--azul)" stroke-width="2.5"/></svg>'+
+        '<span style="font-size:11px;color:#555">Sin tránsitos</span></span>'+
+      '<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">'+
+        '<svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="var(--verde)" stroke-width="2.5" stroke-dasharray="5 3"/></svg>'+
+        '<span style="font-size:11px;color:#555">Con tránsitos por llegar</span></span>'+
+      '<span style="color:#999;font-size:10.5px;white-space:nowrap">Ritmo: media móvil '+diasMM+'d de '+baseLabel()+'</span>'+
+    '</div>';
 }
 
 /* SVG de la curva sierra con marcador de tiempo */
@@ -809,7 +781,7 @@ function renderDetalleUE(){
   // fila 1: nombres de mes con colspan 2
   h+='<tr><th class="ue" rowspan="2">Unidad Ejecutora</th><th class="num" rowspan="2">Saldo hoy</th>'+
      meses.map(m=>'<th class="num grp2" colspan="2">'+mesLbl(m)+'</th>').join('')+
-     '<th class="num grp2 tot" colspan="2">Total</th></tr>';
+     '<th class="num grp2 tot" colspan="2">∑ Total</th></tr>';
   // fila 2: F8 | Dist bajo cada mes
   h+='<tr>'+meses.map(()=>'<th class="num sub-f8">F8</th><th class="num sub-di">Dist</th>').join('')+
      '<th class="num sub-f8 tot">F8</th><th class="num sub-di tot">Dist</th></tr></thead><tbody>';
@@ -844,14 +816,14 @@ function renderDetalleUE(){
       gReqTot+=f.totReq; gDistTot+=f.totDist; gSaldo+=f.saldo||0;
     });
     // subtotal bloque
-    h+='<tr class="sub-row'+(esSel?' sub-sel':'')+'"><td class="ue">Subtotal '+bl.lbl+'</td>'+
+    h+='<tr class="sub-row'+(esSel?' sub-sel':'')+'"><td class="ue">∑ Subtotal '+bl.lbl+'</td>'+
        '<td class="num">'+fmt(sSaldo)+'</td>';
     for(let i=0;i<nM;i++) h+='<td class="num sub-f8">'+fmt(sReqMes[i])+'</td><td class="num sub-di">'+fmt(sDistMes[i])+'</td>';
     h+='<td class="num sub-f8 tot">'+fmt(sReqTot)+'</td><td class="num sub-di tot">'+fmt(sDistTot)+'</td></tr>';
   });
 
   // total renglón
-  h+='<tr class="tot-row"><td class="ue">TOTAL renglón</td><td class="num">'+fmt(gSaldo)+'</td>';
+  h+='<tr class="tot-row"><td class="ue">∑ TOTAL renglón</td><td class="num">'+fmt(gSaldo)+'</td>';
   for(let i=0;i<nM;i++) h+='<td class="num sub-f8">'+fmt(gReqMes[i])+'</td><td class="num sub-di">'+fmt(gDistMes[i])+'</td>';
   h+='<td class="num sub-f8 tot">'+fmt(gReqTot)+'</td><td class="num sub-di tot">'+fmt(gDistTot)+'</td></tr>';
   h+='</tbody></table></div>';
@@ -940,7 +912,7 @@ function poblarBaseSalida(){
   const ced=document.getElementById('inCedis').value;
   const sel=document.getElementById('inBase');
   const nom = ced==='PA'?'CEDIS Panamá':ced==='DI'?'CEDIS Divisa':'CEDIS Chiriquí';
-  let opts='<option value="req">Requisiciones F8 · '+nom+'</option>';
+  let opts='<option value="req">Req F8 · '+nom+'</option>';
   if(ced==='PA') opts+='<option value="dist">Distribuciones</option>';
   sel.innerHTML=opts;
   if(base!=='req' && base!=='dist') base='req';
