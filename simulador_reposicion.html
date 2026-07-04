@@ -869,7 +869,7 @@ function renderTablaTransitos(){
 function play(){
   const rows=proyectar();
   const mAgota=mesAgotamiento(rows);
-  const VEL=220; // ms por mes
+  const VEL=400; // ms por mes
   const DUR=Math.max(1,mAgota)*VEL;
   let t0=null, acc=0;
   const tick=ts=>{
