@@ -88,6 +88,11 @@
   .alerta-tbl td,.alerta-tbl th{padding:4px 8px;}
   .alerta-fila:hover td{background:#f4f7fb;}
   .alerta-badge{font-size:9px;color:#fff;padding:1px 7px;border-radius:2px;white-space:nowrap;}
+  .th-sort{cursor:pointer;user-select:none;}
+  .th-sort:hover{background:#e8eef5;}
+  .escala-leyenda{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:8px;padding:6px 10px;background:#f7f9fc;border:1px solid #e3e9f0;font-size:11px;color:#555;}
+  .esc-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+  .esc-swatch{width:11px;height:11px;border-radius:2px;display:inline-block;}
   /* Segmented control (toggle profesional) */
   .seg{display:inline-flex;border:1px solid var(--bord);border-radius:3px;overflow:hidden;background:#f4f4f4;}
   .seg-btn{border:none;background:transparent;padding:7px 14px;font-size:12px;font-weight:600;
@@ -308,6 +313,14 @@
       </div>
     </div>
 
+    <!-- tránsitos detectados — arriba del comparativo por UE -->
+    <div class="card" id="cardTransitos">
+      <div style="font-size:13px;font-weight:700;color:var(--azul2);margin-bottom:8px">
+        Tránsitos detectados para este renglón (OC con cita solicitada al proveedor)
+      </div>
+      <div id="tablaTransitos"></div>
+    </div>
+
     <!-- detalle por Unidad Ejecutora (mes a mes) — ancho completo -->
     <div class="card" id="cardDetalleUE">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -316,14 +329,6 @@
         </div>
       </div>
       <div id="tablaDetalleUE"><div class="meta">Selecciona un renglón para ver el detalle.</div></div>
-    </div>
-
-    <!-- tránsitos detectados -->
-    <div class="card" id="cardTransitos">
-      <div style="font-size:13px;font-weight:700;color:var(--azul2);margin-bottom:8px">
-        Tránsitos detectados para este renglón (OC con cita solicitada al proveedor)
-      </div>
-      <div id="tablaTransitos"></div>
     </div>
 
     <div class="foot">
@@ -1128,7 +1133,19 @@ function tieneTransito_(cod){
   const k=codKey(cod);
   return TRANSITOS_ALL.some(t=>codKey(t.cod_abasto_norm||t.cod_abasto)===k);
 }
-let filtroChip='todos';  // 'todos' | 'desabasto' | 'exceso' | 'excesoAlto'
+// Escala de cobertura (meses) — neutral, orientada al planificador
+// nivel: clave, etiqueta, color, test(cob) donde cob puede ser Infinity (sin salida)
+const ESCALA=[
+  {k:'desabasto', lbl:'Desabasto',        col:'#c0392b', rango:'0 m',      test:c=>c<1},
+  {k:'bajo',      lbl:'Bajo',             col:'#e67e22', rango:'1–2 m',    test:c=>c>=1&&c<3},
+  {k:'optimo',    lbl:'Óptimo',           col:'#27ae60', rango:'3–4 m',    test:c=>c>=3&&c<5},
+  {k:'medioalto', lbl:'Medio-Alto',       col:'#c9a227', rango:'5–6 m',    test:c=>c>=5&&c<7},
+  {k:'alto',      lbl:'Alto',             col:'#8e6fb8', rango:'7–12 m',   test:c=>c>=7&&c<=12},
+  {k:'critalto',  lbl:'Críticamente Alto',col:'#5b2c8f', rango:'>12 m',    test:c=>c>12}
+];
+function nivelDe(cob){ for(const n of ESCALA) if(n.test(cob)) return n; return ESCALA[ESCALA.length-1]; }
+let filtroChip='todos';
+let ordenCol='cobertura', ordenDir='asc';   // ordenamiento de la tabla
 function renderAlertas(){
   const cont=document.getElementById('alertasContenido');
   const resumen=document.getElementById('alertasResumen');
@@ -1136,65 +1153,83 @@ function renderAlertas(){
   const ced=cedAlertas;
   const buscar=((document.getElementById('inCodAlertas')||{}).value||'').toLowerCase().trim();
 
+  // Solo entran renglones con alerta real: desabasto o cobertura elevada (>6m).
+  // El rango sano (óptimo/medio-alto) no es alerta y no se lista.
   const filas=[];
   Object.keys(SNAP_RENG).forEach(cod=>{
     const c=coberturaRenglon_(cod, ced, baseAlertas); if(!c) return;
     if(c.inv<=0 && c.salida<=0) return;
-    let tipo=null, sev=0;
-    if(c.salida>0 && c.cobertura<1 && !tieneTransito_(cod)){ tipo='desabasto'; sev=3; }
-    else if(c.inv>0 && c.cobertura>6){ tipo='exceso'; sev = c.cobertura>12?3:2; }
-    if(!tipo) return;
-    filas.push({cod, tipo, sev, ...c, cob:isFinite(c.cobertura)?c.cobertura:9999});
+    const cob = c.cobertura; // puede ser Infinity
+    const esDesabasto = c.salida>0 && cob<1 && !tieneTransito_(cod);
+    const esElevado   = c.inv>0 && cob>6;
+    if(!esDesabasto && !esElevado) return;
+    const niv = esDesabasto ? ESCALA[0] : nivelDe(cob);
+    filas.push({cod, ...c, cob:isFinite(cob)?cob:99999, nivel:niv});
   });
 
-  const nDes=filas.filter(f=>f.tipo==='desabasto').length;
-  const nExc=filas.filter(f=>f.tipo==='exceso'&&f.sev===2).length;
-  const nExcAlto=filas.filter(f=>f.tipo==='exceso'&&f.sev===3).length;
+  // conteos por familia para los chips
+  const cnt=k=>filas.filter(f=>f.nivel.k===k).length;
   const nTot=filas.length;
   const cedNom = ced==='PA'?'CEDIS Panamá':ced==='DI'?'CEDIS Divisa':'CEDIS Chiriquí';
   const baseNom = baseAlertas==='dist'?'distribuciones':baseAlertas==='consumo'?'consumo teórico':'Req F8';
 
-  // Chips CLICABLES que filtran (reemplazan al dropdown MOSTRAR)
-  const chip=(id,txt,cls)=>'<span class="chip '+cls+(filtroChip===id?' chip-on':'')+'" data-chip="'+id+'">'+txt+'</span>';
+  const chip=(id,txt,col)=>'<span class="chip'+(filtroChip===id?' chip-on':'')+'" data-chip="'+id+'" '+
+    'style="background:'+col+'">'+txt+'</span>';
   resumen.innerHTML=
-    chip('todos', 'Todas ('+nTot+')','chip-gris')+
-    chip('desabasto', nDes+' desabasto','chip-rojo')+
-    chip('exceso', nExc+' exceso','chip-ambar')+
-    chip('excesoAlto', nExcAlto+' exceso alto','chip-rojo2')+
+    '<span class="chip'+(filtroChip==='todos'?' chip-on':'')+'" data-chip="todos" style="background:#6a7683">Todas ('+nTot+')</span>'+
+    chip('desabasto', cnt('desabasto')+' desabasto', ESCALA[0].col)+
+    chip('alto', cnt('alto')+' alto', ESCALA[4].col)+
+    chip('critalto', cnt('critalto')+' crít. alto', ESCALA[5].col)+
     '<span style="color:#888;font-size:11px;margin-left:6px">en '+cedNom+' · cobertura sobre '+baseNom+'</span>';
 
+  // Leyenda de rangos (corta, arriba de la tabla)
+  const leyenda='<div class="escala-leyenda">'+
+    ESCALA.map(n=>'<span class="esc-item"><span class="esc-swatch" style="background:'+n.col+'"></span>'+
+      n.lbl+' <b>'+n.rango+'</b></span>').join('')+'</div>';
+
   let vis=filas.filter(f=>{
-    if(filtroChip==='desabasto' && f.tipo!=='desabasto') return false;
-    if(filtroChip==='exceso' && !(f.tipo==='exceso'&&f.sev===2)) return false;
-    if(filtroChip==='excesoAlto' && !(f.tipo==='exceso'&&f.sev===3)) return false;
+    if(filtroChip!=='todos' && f.nivel.k!==filtroChip) return false;
     if(buscar){ const s=(f.cod+' '+(f.sum||'')).toLowerCase(); if(s.indexOf(buscar)<0) return false; }
     return true;
   });
-  vis.sort((a,b)=> a.tipo!==b.tipo ? (a.tipo==='desabasto'?-1:1)
-    : (a.tipo==='desabasto' ? a.cobertura-b.cobertura : b.cob-a.cob));
+  // Ordenamiento por columna
+  const val=(f,col)=> col==='cod'?f.cod : col==='inv'?f.inv : col==='salida'?f.salida : f.cob;
+  vis.sort((a,b)=>{
+    let x=val(a,ordenCol), y=val(b,ordenCol);
+    if(typeof x==='string'){ return ordenDir==='asc'?x.localeCompare(y):y.localeCompare(x); }
+    return ordenDir==='asc'? x-y : y-x;
+  });
 
-  if(!vis.length){ cont.innerHTML='<div class="meta">Sin resultados para el filtro actual.</div>'; enlazarChips(); return; }
+  if(!vis.length){ cont.innerHTML=leyenda+'<div class="meta">Sin resultados para el filtro actual.</div>'; enlazarChips(); return; }
 
-  const sevColor=s=> s===3?'var(--rojo)':s===2?'var(--ambar)':'var(--verde)';
-  const tipoLbl=f=> f.tipo==='desabasto'?'Desabasto':(f.sev===3?'Exceso alto':'Exceso');
-  let h='<div style="overflow-x:auto"><table class="det-tbl alerta-tbl"><thead><tr>'+
+  const flecha=col=> ordenCol===col ? (ordenDir==='asc'?' ▲':' ▼') : '';
+  const thSort=(col,txt,cls)=>'<th class="'+(cls||'')+' th-sort" data-col="'+col+'">'+txt+flecha(col)+'</th>';
+  let h=leyenda+'<div style="overflow-x:auto"><table class="det-tbl alerta-tbl"><thead><tr>'+
     '<th style="width:4px;padding:0"></th>'+
-    '<th class="ue">Renglón</th><th class="num">Inventario</th>'+
-    '<th class="num">Salida/mes</th><th class="num">Cobertura</th><th>Alerta</th></tr></thead><tbody>';
+    thSort('cod','Renglón','ue')+thSort('inv','Inventario','num')+
+    thSort('salida','Salida/mes','num')+thSort('cobertura','Cobertura','num')+
+    '<th>Nivel</th></tr></thead><tbody>';
   vis.slice(0,200).forEach(f=>{
     const cobTxt=isFinite(f.cobertura)?f.cobertura.toFixed(1)+' m':'sin salida';
     h+='<tr class="alerta-fila" data-cod="'+f.cod+'" style="cursor:pointer">'+
-      '<td style="background:'+sevColor(f.sev)+';padding:0;width:4px"></td>'+
+      '<td style="background:'+f.nivel.col+';padding:0;width:4px"></td>'+
       '<td class="ue"><b>'+f.cod+'</b> <span style="color:#666;font-weight:400">'+(f.sum||'').slice(0,42)+'</span></td>'+
       '<td class="num">'+fmt(f.inv)+'</td>'+
       '<td class="num">'+(f.salida>0?fmt(Math.round(f.salida)):'·')+'</td>'+
-      '<td class="num" style="font-weight:700;color:'+sevColor(f.sev)+'">'+cobTxt+'</td>'+
-      '<td><span class="alerta-badge" style="background:'+sevColor(f.sev)+'">'+tipoLbl(f)+'</span></td></tr>';
+      '<td class="num" style="font-weight:700;color:'+f.nivel.col+'">'+cobTxt+'</td>'+
+      '<td><span class="alerta-badge" style="background:'+f.nivel.col+'">'+f.nivel.lbl+'</span></td></tr>';
   });
   h+='</tbody></table></div>';
   if(vis.length>200) h+='<div class="meta" style="margin-top:6px">Mostrando 200 de '+vis.length+'. Usa el buscador para acotar.</div>';
   cont.innerHTML=h;
   enlazarChips();
+  // enlazar ordenamiento por columna
+  cont.querySelectorAll('.th-sort').forEach(th=>th.onclick=()=>{
+    const col=th.dataset.col;
+    if(ordenCol===col) ordenDir=ordenDir==='asc'?'desc':'asc';
+    else { ordenCol=col; ordenDir=(col==='cobertura'||col==='inv'||col==='salida')?'desc':'asc'; }
+    renderAlertas();
+  });
 
   cont.querySelectorAll('.alerta-fila').forEach(el=>el.onclick=()=>{
     const cod=el.dataset.cod;
