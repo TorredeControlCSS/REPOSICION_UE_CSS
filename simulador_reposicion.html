@@ -1258,7 +1258,7 @@ function tieneTransito_(cod){
 // Escala de cobertura (meses) — neutral, orientada al planificador
 // nivel: clave, etiqueta, color, test(cob) donde cob puede ser Infinity (sin salida)
 const ESCALA=[
-  {k:'desabasto', lbl:'Desabasto',        col:'#c0392b', rango:'0 m',      test:c=>c<1},
+  {k:'desabasto', lbl:'Desabasto',        col:'#c0392b', rango:'>1 m',      test:c=>c<1},
   {k:'bajo',      lbl:'Bajo',             col:'#e67e22', rango:'1–2 m',    test:c=>c>=1&&c<3},
   {k:'optimo',    lbl:'Óptimo',           col:'#27ae60', rango:'3–4 m',    test:c=>c>=3&&c<5},
   {k:'medioalto', lbl:'Medio-Alto',       col:'#c9a227', rango:'5–6 m',    test:c=>c>=5&&c<7},
