@@ -450,11 +450,13 @@ function poblarRenglones(){
     });
     RENGLONES.sort((a,b)=>a.cod.localeCompare(b.cod));
   }
-  // Ejemplos: renglones con más inventario CEDIS
+  // Ejemplos: renglones con más inventario acumulado (suma de bodegas de los 3 CEDIS)
   let top;
   if(usandoSnapshot){
-    top=Object.keys(SNAP_RENG).map(c=>({c, inv:SNAP_RENG[c].iC}))
-        .sort((a,b)=>b.inv-a.inv).slice(0,6);
+    top=Object.keys(SNAP_RENG).map(c=>{
+      const o=SNAP_RENG[c];
+      return {c, inv:(o.iPA||0)+(o.iDI||0)+(o.iCH||0)};
+    }).sort((a,b)=>b.inv-a.inv).slice(0,6);
   }else{
     const agg={};
     MATRIZ.rows.forEach(r=>{
@@ -464,9 +466,15 @@ function poblarRenglones(){
     top=Object.keys(agg).map(c=>({c,inv:agg[c].inv})).sort((a,b)=>b.inv-a.inv).slice(0,6);
   }
   const cont=document.getElementById('ejemplos');
-  cont.innerHTML='Ejemplos con más inventario acumulado: '+
-    top.map(o=>'<a href="#" data-c="'+o.c+'" style="color:var(--azul);text-decoration:none;margin-right:10px">'+
-      o.c+'</a>').join('');
+  cont.innerHTML='<span style="color:#777">Renglones con más inventario:</span> '+
+    top.map(o=>{
+      const r=RENGLONES.find(x=>x.cod===o.c);
+      const desc=r&&r.sum?r.sum.slice(0,28):'';
+      return '<a href="#" data-c="'+o.c+'" title="'+(r?r.sum:'')+'" '+
+        'style="color:var(--azul);text-decoration:none;margin-right:6px;padding:2px 6px;'+
+        'border:1px solid #cfd8e3;border-radius:3px;display:inline-block;margin-bottom:4px">'+
+        o.c+(desc?' · '+desc:'')+'</a>';
+    }).join('');
   cont.querySelectorAll('a').forEach(a=>a.onclick=(ev)=>{
     ev.preventDefault();
     const r=RENGLONES.find(x=>x.cod===a.dataset.c);
