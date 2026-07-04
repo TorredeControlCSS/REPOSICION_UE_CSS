@@ -1258,7 +1258,7 @@ function tieneTransito_(cod){
 // Escala de cobertura (meses) — neutral, orientada al planificador
 // nivel: clave, etiqueta, color, test(cob) donde cob puede ser Infinity (sin salida)
 const ESCALA=[
-  {k:'desabasto', lbl:'Desabasto',        col:'#c0392b', rango:'<1 m',      test:c=>c<1},
+  {k:'desabasto', lbl:'Desabasto',        col:'#c0392b', rango:'<1 m',     test:c=>c<1},
   {k:'bajo',      lbl:'Bajo',             col:'#e67e22', rango:'1–2 m',    test:c=>c>=1&&c<3},
   {k:'optimo',    lbl:'Óptimo',           col:'#27ae60', rango:'3–4 m',    test:c=>c>=3&&c<5},
   {k:'medioalto', lbl:'Medio-Alto',       col:'#c9a227', rango:'5–6 m',    test:c=>c>=5&&c<7},
@@ -1282,10 +1282,11 @@ function renderAlertas(){
     const c=coberturaRenglon_(cod, ced, baseAlertas); if(!c) return;
     if(c.inv<=0 && c.salida<=0) return;   // sin inventario ni movimiento: no aplica
     const cob = c.cobertura; // puede ser Infinity (inventario sin salida)
-    // Desabasto sin tránsito es más grave; con tránsito en camino se atenúa a "bajo"
-    let niv = nivelDe(cob);
-    if(niv.k==='desabasto' && tieneTransito_(cod)) niv=ESCALA[1]; // hay reposición en camino
-    filas.push({cod, ...c, cob:isFinite(cob)?cob:99999, nivel:niv});
+    // Clasificación EXCLUSIVAMENTE por cobertura (los umbrales de la escala).
+    const niv = nivelDe(cob);
+    // El tránsito NO cambia el nivel; solo se marca como dato informativo.
+    const conTransito = tieneTransito_(cod);
+    filas.push({cod, ...c, cob:isFinite(cob)?cob:99999, nivel:niv, conTransito:conTransito});
   });
 
   const cnt=k=>filas.filter(f=>f.nivel.k===k).length;
@@ -1337,7 +1338,9 @@ function renderAlertas(){
       '<td class="num">'+fmt(f.inv)+'</td>'+
       '<td class="num">'+(f.salida>0?fmt(Math.round(f.salida)):'·')+'</td>'+
       '<td class="num" style="font-weight:700;color:'+f.nivel.col+'">'+cobTxt+'</td>'+
-      '<td><span class="alerta-badge" style="background:'+f.nivel.col+'">'+f.nivel.lbl+'</span></td></tr>';
+      '<td><span class="alerta-badge" style="background:'+f.nivel.col+'">'+f.nivel.lbl+'</span>'+
+      (f.conTransito?' <span title="Tiene OC en tránsito" style="font-size:9px;color:var(--verde);font-weight:700">⇢ en camino</span>':'')+
+      '</td></tr>';
   });
   h+='</tbody></table></div>';
   if(vis.length>200) h+='<div class="meta" style="margin-top:6px">Mostrando 200 de '+vis.length+'. Usa el buscador para acotar.</div>';
