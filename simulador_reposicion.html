@@ -93,6 +93,8 @@
   .escala-leyenda{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:8px;padding:6px 10px;background:#f7f9fc;border:1px solid #e3e9f0;font-size:11px;color:#555;}
   .esc-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
   .esc-swatch{width:11px;height:11px;border-radius:2px;display:inline-block;}
+  .btn-limpiar{font-size:11px;padding:3px 12px;border:1px solid var(--bord);background:#fff;color:var(--azul2);cursor:pointer;border-radius:12px;font-weight:600;}
+  .btn-limpiar:hover{background:#eef3fa;}
   /* Segmented control (toggle profesional) */
   .seg{display:inline-flex;border:1px solid var(--bord);border-radius:3px;overflow:hidden;background:#f4f4f4;}
   .seg-btn{border:none;background:transparent;padding:7px 14px;font-size:12px;font-weight:600;
@@ -112,6 +114,22 @@
   .det-tri .sub-di{color:var(--verde);}
   .det-tri .srep{color:#bbb;font-style:italic;font-size:9px;}
   .det-tri thead th{font-size:9px;}
+  /* Highlight de fila (clic) */
+  .ue-fila{cursor:pointer;}
+  .ue-fila.fila-hl td{background:#fff3b0 !important;}
+  .ue-fila.fila-hl td.ue{background:#ffe97a !important;font-weight:700;}
+  /* Modal de zoom */
+  .modal-overlay{position:fixed;inset:0;background:rgba(10,30,60,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+  .modal-box{background:#fff;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:22px 26px;position:relative;box-shadow:0 10px 40px rgba(0,0,0,.3);}
+  .modal-close{position:absolute;top:12px;right:14px;border:none;background:transparent;font-size:18px;color:#888;cursor:pointer;}
+  .modal-close:hover{color:#333;}
+  .modal-head{border-bottom:2px solid var(--azul);padding-bottom:10px;}
+  .modal-nota{background:#fff7e6;border:1px solid #e0a800;color:#7a5c00;font-size:12px;padding:8px 12px;margin:12px 0;border-radius:3px;}
+  .modal-tbl{border-collapse:collapse;width:100%;font-size:12px;margin-top:4px;}
+  .modal-tbl th,.modal-tbl td{border:1px solid #ddd;padding:5px 10px;text-align:right;font-family:Consolas;}
+  .modal-tbl th:first-child,.modal-tbl td:first-child{text-align:left;font-family:inherit;}
+  .modal-tbl thead th{background:#f4f7fb;}
+  .modal-tbl .modal-tot td{background:#eef3fa;font-weight:700;}
   .det-tbl th,.det-tbl td{border:1px solid #ddd;padding:3px 6px;white-space:nowrap;}
   .det-tbl th{background:#f4f7fb;color:var(--azul2);font-size:10px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0;}
   .det-tbl th.ue,.det-tbl td.ue{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:180px;}
@@ -225,7 +243,7 @@
   <!-- PANEL: ALERTAS DE COBERTURA -->
   <div id="panelAlertas" class="card hidden">
     <div style="font-size:13px;font-weight:700;color:var(--azul2)">Alertas de cobertura</div>
-    <div class="meta" style="margin-bottom:12px">Renglones que requieren atención. La cobertura se calcula sobre la base elegida. Toca una fila para simular.</div>
+    <div class="meta" style="margin-bottom:12px">Mapa de cobertura de todos los renglones del CEDIS, clasificados por meses de cobertura. Filtra por nivel, busca un renglón, o toca una fila para simular.</div>
     <div class="row" style="align-items:flex-end;gap:12px;margin-bottom:10px">
       <div style="flex:0 0 auto">
         <label>CEDIS</label>
@@ -323,10 +341,11 @@
 
     <!-- detalle por Unidad Ejecutora (mes a mes) — ancho completo -->
     <div class="card" id="cardDetalleUE">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:10px;flex-wrap:wrap">
         <div style="font-size:13px;font-weight:700;color:var(--azul2)">
           Detalle por Unidad Ejecutora — mes a mes
         </div>
+        <div id="detalleRenglon" style="font-size:12px;color:#555"></div>
       </div>
       <div id="tablaDetalleUE"><div class="meta">Selecciona un renglón para ver el detalle.</div></div>
     </div>
@@ -335,6 +354,14 @@
       Modelo de agotamiento con reposición por tránsito. Inventario y ritmos: MATRIZ_REPOSICION.
       Tránsitos: SIGUELO. Elaborado por Torre de Control — CEDIS Panamá.
     </div>
+  </div>
+</div>
+
+<!-- Modal de zoom por UE -->
+<div id="modalUE" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="modalClose">✕</button>
+    <div id="modalContenido"></div>
   </div>
 </div>
 
@@ -814,8 +841,93 @@ function cargarDetalleUE(cod){
   DETALLE_UE={ cod:cod, meses:meses, filas:filas };
   renderDetalleUE();
 }
+/* ================================================================
+   MODAL DE ZOOM POR UNIDAD EJECUTORA (doble clic en fila)
+   ================================================================ */
+function cedisNombreDe(x){ return x==='CEDIS PANAMA'?'CEDIS Panamá':x==='CEDIS DIVISA'?'CEDIS Divisa':x==='CEDIS CHIRIQUI'?'CEDIS Chiriquí':'Otras'; }
+function abrirModalUE(f){
+  const meses=DETALLE_UE.meses;
+  const mesLbl=m=>{ const p=m.split('-'); const nn=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return nn[+p[1]]+' '+p[0].slice(2); };
+  const nM=meses.length;
+  const cons = f.consumo!=null ? f.consumo : null;
+  const promF8=Math.round(f.totReq/nM), promDi=Math.round(f.totDist/nM);
+
+  // nota de disonancia: comparar consumo teórico vs prom F8 vs prom Dist
+  let nota='';
+  if(cons!=null){
+    const vals=[['consumo',cons],['F8',promF8],['distribución',promDi]].filter(x=>x[1]>0);
+    if(vals.length>=2){
+      const max=Math.max(...vals.map(v=>v[1])), min=Math.min(...vals.map(v=>v[1]));
+      if(min>0 && max/min>=1.5){
+        nota='<div class="modal-nota">⚠ Disonancia detectada: el consumo teórico ('+fmt(cons)+
+             '/mes), el promedio de F8 ('+fmt(promF8)+') y de distribución ('+fmt(promDi)+
+             ') difieren de forma notable. Vale revisar la coherencia entre lo reportado, lo pedido y lo despachado.</div>';
+      }
+    }
+  } else if(f.totReq>0 || f.totDist>0){
+    nota='<div class="modal-nota" style="border-color:#d0a;color:#804">Sin consumo teórico reportado por esta UE, aunque sí hay requisiciones/distribuciones. No se puede validar contra el consumo.</div>';
+  }
+
+  // mini-gráfico de barras: Cons/F8/Dist por mes
+  const maxV=Math.max(1, cons||0, ...f.req, ...f.dist);
+  const bw=100/nM;
+  let barras='<svg viewBox="0 0 '+(nM*60)+' 130" style="width:100%;height:150px">';
+  meses.forEach((m,i)=>{
+    const x=i*60+8;
+    const hC=cons? (cons/maxV)*90 : 0, hF=(f.req[i]/maxV)*90, hD=(f.dist[i]/maxV)*90;
+    if(cons) barras+='<rect x="'+x+'" y="'+(100-hC)+'" width="14" height="'+hC+'" fill="#8a5a2a"/>';
+    barras+='<rect x="'+(x+16)+'" y="'+(100-hF)+'" width="14" height="'+hF+'" fill="#0C447C"/>';
+    barras+='<rect x="'+(x+32)+'" y="'+(100-hD)+'" width="14" height="'+hD+'" fill="#2e7d32"/>';
+    barras+='<text x="'+(x+22)+'" y="115" text-anchor="middle" font-size="10" fill="#666">'+mesLbl(m)+'</text>';
+  });
+  barras+='</svg>';
+
+  // tabla grande mes a mes
+  let tabla='<table class="modal-tbl"><thead><tr><th>Mes</th>'+
+    '<th style="color:#8a5a2a">Consumo</th><th style="color:#0C447C">F8</th><th style="color:#2e7d32">Dist</th></tr></thead><tbody>';
+  meses.forEach((m,i)=>{
+    tabla+='<tr><td>'+mesLbl(m)+'</td>'+
+      '<td>'+(cons?fmt(cons):'<span style="color:#bbb">s/rep</span>')+'</td>'+
+      '<td>'+(f.req[i]?fmt(f.req[i]):'·')+'</td>'+
+      '<td>'+(f.dist[i]?fmt(f.dist[i]):'·')+'</td></tr>';
+  });
+  tabla+='<tr class="modal-tot"><td>Total</td><td>'+(cons?fmt(cons*nM):'·')+'</td><td>'+fmt(f.totReq)+'</td><td>'+fmt(f.totDist)+'</td></tr>'+
+    '<tr class="modal-tot"><td>Promedio/mes</td><td>'+(cons?fmt(cons):'·')+'</td><td>'+fmt(promF8)+'</td><td>'+fmt(promDi)+'</td></tr>'+
+    '</tbody></table>';
+
+  document.getElementById('modalContenido').innerHTML=
+    '<div class="modal-head">'+
+      '<div style="font-size:16px;font-weight:700;color:var(--azul2)">'+f.ue+'</div>'+
+      '<div style="font-size:12px;color:#666;margin-top:2px">Servida por <b>'+cedisNombreDe(f.cedis)+'</b>'+
+        (f.region?' · '+f.region:'')+' · Renglón '+(SEL?SEL.cod:'')+'</div>'+
+      '<div style="display:flex;gap:20px;margin-top:8px;font-size:12px">'+
+        '<span>Saldo hoy: <b style="font-family:Consolas">'+fmt(f.saldo)+'</b></span>'+
+        '<span>Consumo teórico: <b style="font-family:Consolas;color:#8a5a2a">'+(cons?fmt(cons)+'/mes':'sin reportar')+'</b></span>'+
+      '</div>'+
+    '</div>'+
+    nota+
+    '<div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:#555">Comparativo mensual — Consumo · F8 · Distribución</div>'+
+    barras+
+    '<div style="display:flex;gap:14px;font-size:11px;margin:6px 0 14px">'+
+      '<span><span style="display:inline-block;width:10px;height:10px;background:#8a5a2a"></span> Consumo</span>'+
+      '<span><span style="display:inline-block;width:10px;height:10px;background:#0C447C"></span> F8</span>'+
+      '<span><span style="display:inline-block;width:10px;height:10px;background:#2e7d32"></span> Distribución</span>'+
+    '</div>'+
+    tabla;
+  document.getElementById('modalUE').style.display='flex';
+}
+(function(){
+  const mc=document.getElementById('modalClose'), mo=document.getElementById('modalUE');
+  if(mc) mc.onclick=()=>{ mo.style.display='none'; };
+  if(mo) mo.onclick=e=>{ if(e.target===mo) mo.style.display='none'; };
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && mo) mo.style.display='none'; });
+})();
+
 function renderDetalleUE(){
   const cont=document.getElementById('tablaDetalleUE');
+  // encabezado: renglón + código
+  const elR=document.getElementById('detalleRenglon');
+  if(elR && SEL) elR.innerHTML='Renglón <b style="color:var(--azul2);font-family:Consolas">'+SEL.cod+'</b> · '+(SEL.sum||'');
   if(!DETALLE_UE || !DETALLE_UE.filas.length){
     cont.innerHTML='<div class="meta">No hay movimientos por UE para este renglón.</div>'; return;
   }
@@ -862,7 +974,8 @@ function renderDetalleUE(){
     let sReqTot=0, sDistTot=0, sSaldo=0, sCons=0;
     filasBl.forEach(f=>{
       const hayMov = f.totReq>0 || f.totDist>0;
-      h+='<tr class="grp-body '+gid+'"'+(esSel?'':' style="display:none"')+'>'+
+      const uidx = DETALLE_UE.filas.indexOf(f);
+      h+='<tr class="grp-body ue-fila '+gid+'" data-ueidx="'+uidx+'"'+(esSel?'':' style="display:none"')+'>'+
          '<td class="ue">'+f.ue+'</td>'+
          '<td class="num saldo">'+(f.saldo?fmt(f.saldo):'·')+'</td>';
       for(let i=0;i<nM;i++){
@@ -895,8 +1008,17 @@ function renderDetalleUE(){
      '<b style="color:#8a5a2a">Cons</b> = consumo mensual teórico reportado por la UE · '+
      '<b style="color:var(--azul2)">F8</b> = requisiciones recibidas · '+
      '<b style="color:var(--verde)">Dist</b> = distribuciones despachadas. '+
-     '«s/rep» = sin consumo reportado. Distribuciones solo CEDIS Panamá.</div>';
+     '«s/rep» = sin consumo reportado. Distribuciones solo CEDIS Panamá.'+
+     ' <span style="color:#999">· Clic en una fila para resaltarla · doble clic para ver el detalle ampliado.</span></div>';
   cont.innerHTML=h;
+  // Highlight (clic simple) y modal (doble clic) en filas de UE
+  cont.querySelectorAll('.ue-fila').forEach(tr=>{
+    tr.addEventListener('click', ()=>{ tr.classList.toggle('fila-hl'); });
+    tr.addEventListener('dblclick', ()=>{
+      const idx=parseInt(tr.dataset.ueidx);
+      if(idx>=0 && DETALLE_UE.filas[idx]) abrirModalUE(DETALLE_UE.filas[idx]);
+    });
+  });
 }
 // Expandir/colapsar bloques CEDIS al hacer clic en su encabezado
 document.addEventListener('click', e=>{
@@ -1153,43 +1275,41 @@ function renderAlertas(){
   const ced=cedAlertas;
   const buscar=((document.getElementById('inCodAlertas')||{}).value||'').toLowerCase().trim();
 
-  // Solo entran renglones con alerta real: desabasto o cobertura elevada (>6m).
-  // El rango sano (óptimo/medio-alto) no es alerta y no se lista.
+  // UNIVERSO COMPLETO: todos los renglones con inventario o salida en este CEDIS,
+  // clasificados por su nivel de cobertura (los 6 niveles de la escala).
   const filas=[];
   Object.keys(SNAP_RENG).forEach(cod=>{
     const c=coberturaRenglon_(cod, ced, baseAlertas); if(!c) return;
-    if(c.inv<=0 && c.salida<=0) return;
-    const cob = c.cobertura; // puede ser Infinity
-    const esDesabasto = c.salida>0 && cob<1 && !tieneTransito_(cod);
-    const esElevado   = c.inv>0 && cob>6;
-    if(!esDesabasto && !esElevado) return;
-    const niv = esDesabasto ? ESCALA[0] : nivelDe(cob);
+    if(c.inv<=0 && c.salida<=0) return;   // sin inventario ni movimiento: no aplica
+    const cob = c.cobertura; // puede ser Infinity (inventario sin salida)
+    // Desabasto sin tránsito es más grave; con tránsito en camino se atenúa a "bajo"
+    let niv = nivelDe(cob);
+    if(niv.k==='desabasto' && tieneTransito_(cod)) niv=ESCALA[1]; // hay reposición en camino
     filas.push({cod, ...c, cob:isFinite(cob)?cob:99999, nivel:niv});
   });
 
-  // conteos por familia para los chips
   const cnt=k=>filas.filter(f=>f.nivel.k===k).length;
   const nTot=filas.length;
   const cedNom = ced==='PA'?'CEDIS Panamá':ced==='DI'?'CEDIS Divisa':'CEDIS Chiriquí';
   const baseNom = baseAlertas==='dist'?'distribuciones':baseAlertas==='consumo'?'consumo teórico':'Req F8';
 
+  // 6 chips (todas las categorías) + "Todas" + botón limpiar
   const chip=(id,txt,col)=>'<span class="chip'+(filtroChip===id?' chip-on':'')+'" data-chip="'+id+'" '+
     'style="background:'+col+'">'+txt+'</span>';
   resumen.innerHTML=
     '<span class="chip'+(filtroChip==='todos'?' chip-on':'')+'" data-chip="todos" style="background:#6a7683">Todas ('+nTot+')</span>'+
-    chip('desabasto', cnt('desabasto')+' desabasto', ESCALA[0].col)+
-    chip('alto', cnt('alto')+' alto', ESCALA[4].col)+
-    chip('critalto', cnt('critalto')+' crít. alto', ESCALA[5].col)+
+    ESCALA.map(n=>chip(n.k, cnt(n.k)+' '+n.lbl.toLowerCase(), n.col)).join('')+
+    '<button class="btn-limpiar" id="btnLimpiarAlertas">Limpiar / ver todo</button>'+
     '<span style="color:#888;font-size:11px;margin-left:6px">en '+cedNom+' · cobertura sobre '+baseNom+'</span>';
 
-  // Leyenda de rangos (corta, arriba de la tabla)
   const leyenda='<div class="escala-leyenda">'+
     ESCALA.map(n=>'<span class="esc-item"><span class="esc-swatch" style="background:'+n.col+'"></span>'+
       n.lbl+' <b>'+n.rango+'</b></span>').join('')+'</div>';
 
   let vis=filas.filter(f=>{
+    // El buscador tiene prioridad: si busco, muestro el renglón sin importar el chip
+    if(buscar){ const s=(f.cod+' '+(f.sum||'')).toLowerCase(); return s.indexOf(buscar)>=0; }
     if(filtroChip!=='todos' && f.nivel.k!==filtroChip) return false;
-    if(buscar){ const s=(f.cod+' '+(f.sum||'')).toLowerCase(); if(s.indexOf(buscar)<0) return false; }
     return true;
   });
   // Ordenamiento por columna
@@ -1246,6 +1366,13 @@ function enlazarChips(){
   document.querySelectorAll('#alertasResumen .chip').forEach(c=>c.onclick=()=>{
     filtroChip=c.dataset.chip; renderAlertas();
   });
+  const bl=document.getElementById('btnLimpiarAlertas');
+  if(bl) bl.onclick=()=>{
+    filtroChip='todos';
+    const inp=document.getElementById('inCodAlertas'); if(inp) inp.value='';
+    ordenCol='cobertura'; ordenDir='asc';
+    renderAlertas();
+  };
 }
 // Buscador combo de alertas (mismo comportamiento que el del simulador)
 (function(){
