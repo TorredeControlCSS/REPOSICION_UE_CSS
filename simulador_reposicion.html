@@ -122,15 +122,15 @@
   <img src="icons/icon-512.png" alt="Logo" width="42" height="42" onerror="this.style.display='none'">
   <div>
     <div class="t1">Simulador de Reposición en el Tiempo</div>
-    <div class="t2">Torre de Control · DINALOG / CEDIS Panamá</div>
+    <div class="t2">Torre de Control · DINALOG / CEDIS Panamá
+      <span id="statusConexion" style="opacity:.85"></span>
+    </div>
   </div>
   <div class="spacer"></div>
   <div class="meta" id="metaTop"></div>
 </div>
 
 <div class="wrap">
-
-  <div id="avisoConexion" class="aviso">Conectando con la Calculadora de Reposición…</div>
 
   <!-- PESTAÑAS -->
   <div class="tabs">
@@ -359,7 +359,8 @@ function filtrarTransitoVivo_(solicitudes){
    CARGA INICIAL: matriz (obligatoria) + tránsitos (best-effort)
    ================================================================ */
 async function iniciar(){
-  const aviso=document.getElementById('avisoConexion');
+  const aviso=document.getElementById('statusConexion');
+  const setStatus=(txt,color)=>{ if(aviso){ aviso.textContent='· '+txt; aviso.style.color=color||'#dbe8f5'; } };
   // 1) Inventario/ritmos: primero SNAPSHOT estático (rápido, móvil), luego GAS en vivo
   let origen='';
   try{
@@ -379,8 +380,7 @@ async function iniciar(){
       mapCols();
       origen='GAS en vivo';
     }catch(eGas){
-      aviso.className='aviso err';
-      aviso.textContent='No se pudo cargar el inventario. Ni el snapshot ('+eSnap.message+') ni el Web App ('+eGas.message+') respondieron.';
+      setStatus('sin datos — revisa conexión','#ffd0d0');
       return;
     }
   }
@@ -400,20 +400,17 @@ async function iniciar(){
     const t=await jsonp(API_SIGUELO, {action:'getSolicitudesPriorizadas'}, 120000);
     if(t && t.success && Array.isArray(t.solicitudes)){
       TRANSITOS_ALL=filtrarTransitoVivo_(t.solicitudes); SIGUELO_OK=true;
-      aviso.className='aviso ok';
-      aviso.textContent='Conectado. '+MATRIZ.rows.length.toLocaleString()+' filas de reposición · '+
-        TRANSITOS_ALL.length.toLocaleString()+' OC en tránsito (SIGUELO, pendientes + agendadas). '+
-        'Generado: '+(MATRIZ.meta.generado?new Date(MATRIZ.meta.generado).toLocaleString():'—');
-      const mt=document.getElementById('metaTop');
+      const gen=MATRIZ.meta.generado?new Date(MATRIZ.meta.generado).toLocaleDateString():'—';
+      setStatus(MATRIZ.rows.length.toLocaleString()+' renglones · '+
+        TRANSITOS_ALL.length.toLocaleString()+' OC en tránsito · datos al '+gen, '#cfe8d4');
+            const mt=document.getElementById('metaTop');
       if(mt) mt.innerHTML='Generado: '+(MATRIZ.meta.generado?new Date(MATRIZ.meta.generado).toLocaleString():'—')+
         '<br>'+MATRIZ.rows.length.toLocaleString()+' filas · '+TRANSITOS_ALL.length.toLocaleString()+' en tránsito';
     }else{ throw new Error('respuesta inválida'); }
     renderListaTransitos();
   }catch(e){
     SIGUELO_OK=false;
-    aviso.className='aviso';
-    aviso.textContent='Calculadora conectada, pero SIGUELO no respondió ('+e.message+'). '+
-      'La simulación correrá SIN la capa de tránsitos. Puedes reintentar recargando.';
+    setStatus('sin tránsitos (SIGUELO no respondió)','#ffe6b0');
     const lt=document.getElementById('listaTransitos');
     if(lt) lt.innerHTML='<div class="meta">SIGUELO no respondió; no hay lista de tránsitos. Usa la pestaña «Buscar renglón».</div>';
   }
