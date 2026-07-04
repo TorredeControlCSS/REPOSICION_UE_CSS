@@ -31,12 +31,23 @@
   .btn-play{background:var(--verde);color:#fff;font-weight:700;}
   .btn-play.on{background:var(--rojo);}
   .btn-sec{background:#f4f4f4;color:#333;}
-  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
-  .kpi{border:1px solid var(--bord);padding:9px 12px;}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .kpi{border:1px solid var(--bord);padding:7px 10px;}
+  /* Layout de dos columnas: controles+tarjetas izquierda, gráfico derecha */
+  .split{display:flex;gap:12px;align-items:stretch;margin-bottom:10px;}
+  .split-left{flex:0 0 460px;min-width:0;}
+  .split-right{flex:1;min-width:0;}
+  .split-left .card,.split-right .card{margin-bottom:0;}
+  /* Controles en rejilla de 2 columnas dentro del panel izquierdo */
+  .ctrl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ctrl-grid input[type=range]{width:100%;}
+  @media(max-width:1100px){ .split{flex-direction:column;} .split-left{flex:1 1 auto;} }
   .kpi .lab{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
   .kpi .val{font-family:Consolas,monospace;font-size:21px;font-weight:700;color:var(--azul2);line-height:1.1;}
   .kpi .sub{font-size:11px;margin-top:2px;}
   svg{display:block;width:100%;height:auto;max-width:100%;}
+  #grafico svg{height:auto;max-height:520px;}
+  #grafico{min-height:400px;}
   .meta{font-size:11px;color:var(--sub);}
   .aviso{font-size:12px;padding:7px 12px;border:1px solid var(--ambar);background:#fff8e6;color:#7a5a00;margin-bottom:10px;}
   .aviso.err{border-color:var(--rojo);background:#fdecec;color:#7a1010;}
@@ -72,6 +83,10 @@
   .seg-btn.active{background:var(--azul);color:#fff;}
   /* Tabla de detalle por UE */
   .det-tbl{border-collapse:collapse;width:100%;font-size:11px;}
+  .det-dual .grp2{border-left:2px solid #cfd8e3;}
+  .det-dual .sub-f8{border-left:2px solid #cfd8e3;color:var(--azul2);}
+  .det-dual .sub-di{color:var(--verde);}
+  .det-dual thead th{font-size:9.5px;}
   .det-tbl th,.det-tbl td{border:1px solid #ddd;padding:4px 8px;white-space:nowrap;}
   .det-tbl th{background:#f4f7fb;color:var(--azul2);font-size:10px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0;}
   .det-tbl th.ue,.det-tbl td.ue{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:180px;}
@@ -185,67 +200,66 @@
   <!-- RESULTADO -->
   <div id="resultado" class="hidden">
 
-    <!-- controles de simulación -->
-    <div class="card">
-      <div class="row">
-        <div style="flex:0 0 260px">
-          <label>Factor de crecimiento · ×<span id="facTxt">1.0</span>
-            → <b id="facTasa" style="font-family:Consolas;color:var(--azul2)"></b></label>
-          <div class="slider-wrap">
-            <input type="range" id="slFactor" min="1" max="12" step="0.5" value="1" style="max-width:240px">
-            <div class="slider-lab" style="max-width:240px"><span>×1</span><span>×12</span></div>
+    <!-- fila superior: dos columnas (controles+KPIs | gráfico) -->
+    <div class="split">
+      <!-- IZQUIERDA: controles + tarjetas -->
+      <div class="split-left">
+        <div class="card">
+          <div class="ctrl-grid">
+            <div>
+              <label>Factor de crecimiento · ×<span id="facTxt">1.0</span>
+                → <b id="facTasa" style="font-family:Consolas;color:var(--azul2)"></b></label>
+              <div class="slider-wrap">
+                <input type="range" id="slFactor" min="1" max="12" step="0.5" value="1">
+                <div class="slider-lab"><span>×1</span><span>×12</span></div>
+              </div>
+            </div>
+            <div>
+              <label>Base de salida</label>
+              <select id="inBase"></select>
+            </div>
+            <div>
+              <label>Media móvil</label>
+              <select id="inMM">
+                <option value="60">60 días</option>
+                <option value="90" selected>90 días</option>
+                <option value="120">120 días</option>
+              </select>
+            </div>
+            <div>
+              <label>Tránsitos por llegar</label>
+              <button class="btn-sec" id="btnTransitos" style="width:100%">Tránsitos: ON</button>
+            </div>
+            <div style="grid-column:1/-1">
+              <label>Simular avance del tiempo</label>
+              <div style="display:flex;gap:6px">
+                <button class="btn-play" id="btnPlay" style="flex:1">▶ Reproducir</button>
+                <button class="btn-sec" id="btnReset" style="flex:1">Reiniciar</button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div style="flex:0 0 auto">
-          <label>Base de salida</label>
-          <select id="inBase"></select>
-        </div>
-        <div style="flex:0 0 auto">
-          <label>Media móvil</label>
-          <select id="inMM" style="width:auto">
-            <option value="60">60 días</option>
-            <option value="90" selected>90 días</option>
-            <option value="120">120 días</option>
-          </select>
-        </div>
-        <div style="flex:0 0 auto">
-          <label>Tránsitos por llegar</label>
-          <button class="btn-sec" id="btnTransitos">Tránsitos: ON</button>
-        </div>
-        <div style="flex:0 0 auto">
-          <label>Simular avance del tiempo</label>
-          <div style="display:flex;gap:6px">
-            <button class="btn-play" id="btnPlay">▶ Reproducir</button>
-            <button class="btn-sec" id="btnReset">Reiniciar</button>
-          </div>
+          <div class="meta" id="estadoSim" style="margin-top:8px"></div>
+          <div class="kpis" id="kpis" style="margin-top:10px"></div>
         </div>
       </div>
-      <div class="meta" id="estadoSim" style="margin-top:8px"></div>
-      <div class="kpis" id="kpis" style="margin-top:10px"></div>
-    </div>
 
-    <!-- gráfico proyección -->
-    <div class="card">
-      <div style="font-size:13px;font-weight:700;color:var(--azul2);margin-bottom:8px">
-        Proyección de inventario en el tiempo — con y sin tránsitos
+      <!-- DERECHA: gráfico -->
+      <div class="split-right">
+        <div class="card" style="height:100%">
+          <div style="font-size:13px;font-weight:700;color:var(--azul2);margin-bottom:8px">
+            Proyección de inventario en el tiempo
+          </div>
+          <div id="grafico"></div>
+          <div class="meta" id="leyendaGrafico" style="margin-top:6px"></div>
+        </div>
       </div>
-      <div id="grafico"></div>
-      <div class="meta" id="leyendaGrafico" style="margin-top:6px"></div>
     </div>
 
-    <!-- detalle por Unidad Ejecutora (mes a mes) -->
+    <!-- detalle por Unidad Ejecutora (mes a mes) — ancho completo -->
     <div class="card" id="cardDetalleUE">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div style="font-size:13px;font-weight:700;color:var(--azul2)">
           Detalle por Unidad Ejecutora — mes a mes
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <label style="margin:0">Ver:</label>
-          <select id="detalleTipo" style="width:auto;padding:4px 8px">
-            <option value="req">Requisiciones F8</option>
-            <option value="dist">Distribuciones</option>
-            <option value="ambos">Ambos</option>
-          </select>
         </div>
       </div>
       <div id="tablaDetalleUE"><div class="meta">Selecciona un renglón para ver el detalle.</div></div>
@@ -260,8 +274,8 @@
     </div>
 
     <div class="foot">
-      Modelo lineal de agotamiento con reposición por tránsito. Inventario y ritmos: MATRIZ_REPOSICION (Calculadora).
-      Tránsitos: SIGUELO (OC en tránsito sin cita/agendadas). Elaborado por Torre de Control — CEDIS Panamá.
+      Modelo de agotamiento con reposición por tránsito. Inventario y ritmos: MATRIZ_REPOSICION.
+      Tránsitos: SIGUELO. Elaborado por Torre de Control — CEDIS Panamá.
     </div>
   </div>
 </div>
@@ -580,7 +594,7 @@ function tasaSalida(){
 }
 function cedisNombre(){ const c=SEL?SEL.ced:'PA'; return c==='PA'?'CEDIS Panamá':c==='DI'?'CEDIS Divisa':'CEDIS Chiriquí'; }
 function baseLabel(){
-  return base==='dist' ? 'mis distribuciones' : 'F8 '+cedisNombre();
+  return base==='dist' ? 'Distribuciones' : 'F8 '+cedisNombre();
 }
 
 // Mes (entero desde hoy) de una fecha ISO 'yyyy-mm-dd'
@@ -643,12 +657,18 @@ function render(){
   const badge = m => m>24?['Riesgo alto','var(--rojo)']:m>12?['Sobre-cobertura','var(--ambar)']:['Rotación sana','var(--verde)'];
   const bA=badge(cobActual);
   const k=document.getElementById('kpis');
+  // Tarjeta de agotamiento fusionada: cambia según el botón de tránsitos
+  const mAgotaTxt = mAgota>=60?'>60 m':mAgota+' m';
+  const colAgota = mAgota>24?'var(--rojo)':mAgota>12?'var(--ambar)':'var(--verde)';
+  const kpiAgota = incluirTransitos
+    ? ['Se agota (con tránsitos)', mAgotaTxt,
+       totalTrans>0 ? 'incluye '+fmt(totalTrans)+' en camino' : 'sin tránsitos para este renglón', colAgota]
+    : ['Se agota (sin reposición)', mAgotaTxt, 'proyección base, tránsitos apagados', colAgota];
   k.innerHTML=[
     ['Inventario actual', fmt(SEL.inv), 'en '+cedisNombre(),'var(--azul2)'],
-    ['Salida mensual (×'+factor+')', fmt(tasa), 'media móvil '+diasMM+'d · '+baseLabel()+' × factor','var(--azul2)'],
-    ['Cobertura sin tránsitos', isFinite(cobActual)?cobActual.toFixed(1)+' m':'—', bA[0]+' · '+(cobActual/12).toFixed(1)+' años', bA[1]],
-    ['Tránsitos por llegar', fmt(totalTrans), SEL.transitos.length+' entrega(s)'+(SIGUELO_OK?'':' · SIGUELO offline'),'var(--verde)'],
-    ['Se agota (con tránsitos)', mAgota>=60?'>60 m':mAgota+' m', incluirTransitos?'incluye reposición':'tránsitos OFF', mAgota>24?'var(--rojo)':mAgota>12?'var(--ambar)':'var(--verde)']
+    ['Salida mensual (×'+factor+')', fmt(tasa), 'MM '+diasMM+'d × factor','var(--azul2)'],
+    ['Cobertura base', isFinite(cobActual)?cobActual.toFixed(1)+' m':'—', bA[0]+' · '+(cobActual/12).toFixed(1)+' años', bA[1]],
+    kpiAgota
   ].map(x=>'<div class="kpi"><div class="lab">'+x[0]+'</div><div class="val" style="color:'+x[3]+'">'+x[1]+
     '</div><div class="sub" style="color:'+x[3]+'">'+x[2]+'</div></div>').join('');
 
@@ -657,17 +677,19 @@ function render(){
     'Al factor ×'+factor+', el inventario '+(mAgota>=60?'dura más de 60 meses':'se agota en '+mAgota+' meses')+
     (incluirTransitos && totalTrans>0 ? ' (contando los '+fmt(totalTrans)+' en tránsito)':'')+'.';
   document.getElementById('leyendaGrafico').innerHTML =
-    'Curva <b style="color:var(--azul)">azul</b>: inventario si NO llegara ningún tránsito. '+
-    'Curva <b style="color:var(--verde)">verde</b>: con las entregas por llegar (escalones hacia arriba). '+
-    'Los saltos verticales son las OC en tránsito. '+
-    '<br><span style="color:#777">El ritmo de salida es la media móvil de los últimos '+diasMM+' días de '+
-    baseLabel()+'. '+
-    'Cambia «Media móvil» (60/90/120) para ver escenarios con más o menos memoria.</span>';
+    '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:14px">'+
+      '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--azul)" stroke-width="2.5"/></svg>'+
+      '<span style="font-size:11px;color:#555">Sin tránsitos</span></span>'+
+    '<span style="display:inline-flex;align-items:center;gap:4px">'+
+      '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--verde)" stroke-width="2.5" stroke-dasharray="5 3"/></svg>'+
+      '<span style="font-size:11px;color:#555">Con tránsitos por llegar</span></span>'+
+    '<div style="color:#999;font-size:10.5px;margin-top:4px">Ritmo de salida: media móvil '+diasMM+'d de '+
+    baseLabel()+'.</div>';
 }
 
 /* SVG de la curva sierra con marcador de tiempo */
 function svgProyeccion(rows){
-  const W=900,H=260,ml=58,mr=20,mt=16,mb=36;
+  const W=640,H=440,ml=54,mr=18,mt=18,mb=40;
   // --- Autoescala del eje X: horizonte = cuándo se agota (con margen), no fijo en 60 ---
   let mAgotaVis=rows.length-1;
   for(let i=0;i<rows.length;i++){ const v=incluirTransitos?rows[i].conTr:rows[i].sinTr; if(v<=0){ mAgotaVis=i; break; } }
@@ -724,12 +746,6 @@ function svgProyeccion(rows){
     s+='<rect x="'+bx+'" y="'+(cy-30)+'" width="135" height="24" fill="#fff" stroke="'+col+'" stroke-width="1.5"/>';
     s+='<text x="'+(bx+6)+'" y="'+(cy-13)+'" font-size="11" font-family="Consolas" fill="var(--azul2)" font-weight="'+(agot?'700':'400')+'">mes '+tiempoMes+': '+(agot?'AGOTADO':fmt(val))+'</text>';
   }
-  // leyenda: recuadro con fondo blanco abajo-derecha (evita traslape con líneas de año)
-  const lgx=W-mr-208, lgy=H-mb-42;
-  s+='<g transform="translate('+lgx+','+lgy+')">'+
-     '<rect x="-8" y="-13" width="206" height="40" fill="#fff" fill-opacity="0.92" stroke="#ddd"/>'+
-     '<line x1="0" y1="0" x2="22" y2="0" stroke="var(--azul)" stroke-width="2.5"/><text x="27" y="4" font-size="11" fill="#333">Sin tránsitos</text>'+
-     '<line x1="0" y1="16" x2="22" y2="16" stroke="var(--verde)" stroke-width="2.5" stroke-dasharray="6 3"/><text x="27" y="20" font-size="11" fill="#333">Con tránsitos por llegar</text></g>';
   s+='</svg>';
   return s;
 }
@@ -766,79 +782,74 @@ function renderDetalleUE(){
   if(!DETALLE_UE || !DETALLE_UE.filas.length){
     cont.innerHTML='<div class="meta">No hay movimientos por UE para este renglón.</div>'; return;
   }
-  const tipo=document.getElementById('detalleTipo').value;  // req | dist | ambos
   const meses=DETALLE_UE.meses;
   const mesLbl=m=>{ const p=m.split('-'); const nn=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return nn[+p[1]]+' '+p[0].slice(2); };
-  const nCol=meses.length;
+  const nM=meses.length;
 
-  // Orden y etiquetas de los bloques por CEDIS
   const BLOQUES=[
     {key:'CEDIS PANAMA',  lbl:'CEDIS Panamá',        col:'#0C447C'},
     {key:'CEDIS DIVISA',  lbl:'CEDIS Divisa',         col:'#5a6a7a'},
     {key:'CEDIS CHIRIQUI',lbl:'CEDIS Chiriquí',       col:'#5a6a7a'},
     {key:'OTRAS',         lbl:'Otras / excepciones',  col:'#8a5a2a'}
   ];
-  // CEDIS seleccionado arriba → su bloque será el protagonista (abierto + resaltado)
-  const cedSel=document.getElementById('inCedis').value; // PA | DI | CH
+  const cedSel=document.getElementById('inCedis').value;
   const keySel = cedSel==='PA'?'CEDIS PANAMA':cedSel==='DI'?'CEDIS DIVISA':'CEDIS CHIRIQUI';
 
-  function tabla(campo, titulo, colTotal, colProm, color){
-    let h='<div style="font-size:12px;font-weight:700;color:'+color+';margin:10px 0 4px">'+titulo+'</div>';
-    h+='<div style="overflow-x:auto"><table class="det-tbl"><thead><tr>'+
-       '<th class="ue">Unidad Ejecutora</th>'+
-       '<th class="num">Saldo hoy</th>'+
-       meses.map(m=>'<th class="num">'+mesLbl(m)+'</th>').join('')+
-       '<th class="num tot">Total</th><th class="num tot">Prom/mes</th></tr></thead><tbody>';
+  // encabezado: cada mes con dos sub-columnas (F8 | Dist) + total (F8|Dist)
+  const totCols = nM+1; // meses + total
+  let h='<div style="overflow-x:auto"><table class="det-tbl det-dual"><thead>';
+  // fila 1: nombres de mes con colspan 2
+  h+='<tr><th class="ue" rowspan="2">Unidad Ejecutora</th><th class="num" rowspan="2">Saldo hoy</th>'+
+     meses.map(m=>'<th class="num grp2" colspan="2">'+mesLbl(m)+'</th>').join('')+
+     '<th class="num grp2 tot" colspan="2">Total</th></tr>';
+  // fila 2: F8 | Dist bajo cada mes
+  h+='<tr>'+meses.map(()=>'<th class="num sub-f8">F8</th><th class="num sub-di">Dist</th>').join('')+
+     '<th class="num sub-f8 tot">F8</th><th class="num sub-di tot">Dist</th></tr></thead><tbody>';
 
-    const granMes=meses.map(()=>0); let granTot=0, granSaldo=0;
+  const gReqMes=meses.map(()=>0), gDistMes=meses.map(()=>0);
+  let gReqTot=0, gDistTot=0, gSaldo=0;
 
-    BLOQUES.forEach(bl=>{
-      const filasBl=DETALLE_UE.filas.filter(f=>(f.cedis||'OTRAS')===bl.key);
-      if(!filasBl.length) return;
-      const esSel = (bl.key===keySel);
-      const gid='grp_'+campo+'_'+bl.key.replace(/\s/g,'');
-      // encabezado de bloque (clic para expandir/colapsar)
-      h+='<tr class="grp-row'+(esSel?' grp-sel':'')+'" data-grp="'+gid+'" style="cursor:pointer">'+
-         '<td class="ue" style="color:'+(esSel?bl.col:'#888')+'">'+
-           '<span class="grp-caret">'+(esSel?'▼':'▶')+'</span> '+bl.lbl+
-           (esSel?' &nbsp;<span style="font-size:9px;background:'+bl.col+';color:#fff;padding:1px 6px;border-radius:2px">PROYECTANDO</span>':'')+
-         '</td><td class="num" colspan="'+(nCol+3)+'"></td></tr>';
-      const subMes=meses.map(()=>0); let subTot=0, subSaldo=0;
-      filasBl.forEach(f=>{
-        const serie=f[campo];
-        h+='<tr class="grp-body '+gid+'"'+(esSel?'':' style="display:none"')+'><td class="ue">'+f.ue+'</td>'+
-           '<td class="num saldo">'+(f.saldo?fmt(f.saldo):'·')+'</td>'+
-           serie.map(x=>'<td class="num">'+(x?fmt(x):'·')+'</td>').join('')+
-           '<td class="num tot">'+fmt(f[colTotal])+'</td>'+
-           '<td class="num tot">'+fmt(f[colProm])+'</td></tr>';
-        serie.forEach((x,i)=>{ subMes[i]+=x; granMes[i]+=x; });
-        subTot+=f[colTotal]; granTot+=f[colTotal];
-        subSaldo+=f.saldo||0; granSaldo+=f.saldo||0;
-      });
-      // subtotal del bloque (siempre visible)
-      h+='<tr class="sub-row'+(esSel?' sub-sel':'')+'"><td class="ue">Subtotal '+bl.lbl+'</td>'+
-         '<td class="num">'+fmt(subSaldo)+'</td>'+
-         subMes.map(x=>'<td class="num">'+fmt(x)+'</td>').join('')+
-         '<td class="num tot">'+fmt(subTot)+'</td>'+
-         '<td class="num tot">'+fmt(Math.round(subTot/nCol))+'</td></tr>';
+  BLOQUES.forEach(bl=>{
+    const filasBl=DETALLE_UE.filas.filter(f=>(f.cedis||'OTRAS')===bl.key);
+    if(!filasBl.length) return;
+    const esSel=(bl.key===keySel);
+    const gid='grp_'+bl.key.replace(/\s/g,'');
+    const totColspan = nM*2+2+1; // sub-cols + saldo
+    h+='<tr class="grp-row'+(esSel?' grp-sel':'')+'" data-grp="'+gid+'" style="cursor:pointer">'+
+       '<td class="ue" style="color:'+(esSel?bl.col:'#888')+'">'+
+         '<span class="grp-caret">'+(esSel?'▼':'▶')+'</span> '+bl.lbl+
+         (esSel?' &nbsp;<span style="font-size:9px;background:'+bl.col+';color:#fff;padding:1px 6px;border-radius:2px">PROYECTANDO</span>':'')+
+       '</td><td colspan="'+totColspan+'"></td></tr>';
+    const sReqMes=meses.map(()=>0), sDistMes=meses.map(()=>0);
+    let sReqTot=0, sDistTot=0, sSaldo=0;
+    filasBl.forEach(f=>{
+      h+='<tr class="grp-body '+gid+'"'+(esSel?'':' style="display:none"')+'>'+
+         '<td class="ue">'+f.ue+'</td>'+
+         '<td class="num saldo">'+(f.saldo?fmt(f.saldo):'·')+'</td>';
+      for(let i=0;i<nM;i++){
+        const rq=f.req[i]||0, ds=f.dist[i]||0;
+        h+='<td class="num sub-f8">'+(rq?fmt(rq):'·')+'</td><td class="num sub-di">'+(ds?fmt(ds):'·')+'</td>';
+        sReqMes[i]+=rq; sDistMes[i]+=ds; gReqMes[i]+=rq; gDistMes[i]+=ds;
+      }
+      h+='<td class="num sub-f8 tot">'+fmt(f.totReq)+'</td><td class="num sub-di tot">'+fmt(f.totDist)+'</td></tr>';
+      sReqTot+=f.totReq; sDistTot+=f.totDist; sSaldo+=f.saldo||0;
+      gReqTot+=f.totReq; gDistTot+=f.totDist; gSaldo+=f.saldo||0;
     });
+    // subtotal bloque
+    h+='<tr class="sub-row'+(esSel?' sub-sel':'')+'"><td class="ue">Subtotal '+bl.lbl+'</td>'+
+       '<td class="num">'+fmt(sSaldo)+'</td>';
+    for(let i=0;i<nM;i++) h+='<td class="num sub-f8">'+fmt(sReqMes[i])+'</td><td class="num sub-di">'+fmt(sDistMes[i])+'</td>';
+    h+='<td class="num sub-f8 tot">'+fmt(sReqTot)+'</td><td class="num sub-di tot">'+fmt(sDistTot)+'</td></tr>';
+  });
 
-    // total del renglón
-    h+='<tr class="tot-row"><td class="ue">TOTAL renglón</td>'+
-       '<td class="num">'+fmt(granSaldo)+'</td>'+
-       granMes.map(x=>'<td class="num">'+fmt(x)+'</td>').join('')+
-       '<td class="num tot">'+fmt(granTot)+'</td>'+
-       '<td class="num tot">'+fmt(Math.round(granTot/nCol))+'</td></tr>';
-    h+='</tbody></table></div>';
-    return h;
-  }
-
-  let html='';
-  if(tipo==='req'||tipo==='ambos') html+=tabla('req','Requisiciones F8 (solicitado por UE)','totReq','promReq','var(--azul2)');
-  if(tipo==='dist'||tipo==='ambos') html+=tabla('dist','Distribuciones (despachado a la UE)','totDist','promDist','var(--verde)');
-  cont.innerHTML=html;
+  // total renglón
+  h+='<tr class="tot-row"><td class="ue">TOTAL renglón</td><td class="num">'+fmt(gSaldo)+'</td>';
+  for(let i=0;i<nM;i++) h+='<td class="num sub-f8">'+fmt(gReqMes[i])+'</td><td class="num sub-di">'+fmt(gDistMes[i])+'</td>';
+  h+='<td class="num sub-f8 tot">'+fmt(gReqTot)+'</td><td class="num sub-di tot">'+fmt(gDistTot)+'</td></tr>';
+  h+='</tbody></table></div>';
+  h+='<div class="meta" style="margin-top:6px">F8 = requisiciones recibidas · Dist = distribuciones despachadas (solo CEDIS Panamá; Divisa y Chiriquí sin dato aún).</div>';
+  cont.innerHTML=h;
 }
-document.addEventListener('change', e=>{ if(e.target && e.target.id==='detalleTipo') renderDetalleUE(); });
 // Expandir/colapsar bloques CEDIS al hacer clic en su encabezado
 document.addEventListener('click', e=>{
   const gr=e.target.closest && e.target.closest('.grp-row');
@@ -922,7 +933,7 @@ function poblarBaseSalida(){
   const sel=document.getElementById('inBase');
   const nom = ced==='PA'?'CEDIS Panamá':ced==='DI'?'CEDIS Divisa':'CEDIS Chiriquí';
   let opts='<option value="req">Requisiciones F8 · '+nom+'</option>';
-  if(ced==='PA') opts+='<option value="dist">Mis distribuciones (CEDIS Panamá)</option>';
+  if(ced==='PA') opts+='<option value="dist">Distribuciones</option>';
   sel.innerHTML=opts;
   if(base!=='req' && base!=='dist') base='req';
   if(ced!=='PA' && base==='dist') base='req';   // distribución no aplica fuera de PA
