@@ -201,7 +201,7 @@
     <div class="tab active" data-tab="transitos">Tránsitos en camino</div>
     <div class="tab" data-tab="buscar">Buscar renglón</div>
     <div class="tab" data-tab="alertas">Alertas de cobertura</div>
-    <div class="tab" data-tab="topmov">Top movimiento</div>
+    <div class="tab" data-tab="topmov">Desabasto UE</div>
   </div>
 
   <!-- PANEL: TRÁNSITOS EN CAMINO (por proveedor) -->
@@ -277,26 +277,35 @@
   </div>
 
   <div id="panelTopMov" class="card hidden">
-    <div style="font-size:13px;font-weight:700;color:var(--azul2)">Top de alto movimiento · Requisición F8 vs Despacho real</div>
-    <div class="meta" style="margin-bottom:12px">Ranking por requisición F8 mensual (REQ_MES). El fill compara lo despachado real (DISTRIB_MES) contra lo solicitado (REQ_MES) — mide en qué medida CEDIS surte lo que las UE piden. Cifras mensuales promedio.</div>
+    <div style="font-size:13px;font-weight:700;color:var(--azul2)">Unidades Ejecutoras en cero · teniendo existencia aguas arriba</div>
+    <div class="meta" style="margin-bottom:12px">Renglones con saldo en cero en la Unidad Ejecutora cuando su CEDIS de abastecimiento o CEDIS Panamá <b>sí</b> tienen inventario. La antigüedad se mide desde el último movimiento registrado en SALMI. Las líneas donde nadie en la red tiene existencia se excluyen: corresponden a compras, no a distribución.</div>
     <div class="row" style="align-items:flex-end;gap:12px;margin-bottom:10px">
       <div style="flex:0 0 auto">
-        <label>CEDIS</label>
+        <label>CEDIS que abastece</label>
         <div class="seg" id="segCedisTop">
-          <button type="button" class="seg-btn active" data-val="PA">Panamá</button>
-          <button type="button" class="seg-btn" data-val="DI">Divisa</button>
-          <button type="button" class="seg-btn" data-val="CH">Chiriquí</button>
+          <button type="button" class="seg-btn active" data-val="">Todos</button>
+          <button type="button" class="seg-btn" data-val="CEDIS PANAMA">Panamá</button>
+          <button type="button" class="seg-btn" data-val="CEDIS DIVISA">Divisa</button>
+          <button type="button" class="seg-btn" data-val="CEDIS CHIRIQUI">Chiriquí</button>
         </div>
       </div>
       <div style="flex:0 0 auto">
-        <label>Nivel</label>
+        <label>Vista</label>
         <div class="seg" id="segNivelTop">
-          <button type="button" class="seg-btn active" data-val="reng">Por Renglón</button>
-          <button type="button" class="seg-btn" data-val="ue">UE × Renglón</button>
+          <button type="button" class="seg-btn active" data-val="ue">Por Unidad Ejecutora</button>
+          <button type="button" class="seg-btn" data-val="det">Detalle por renglón</button>
         </div>
       </div>
       <div style="flex:0 0 auto">
-        <label>Mostrar Top</label>
+        <label>Severidad</label>
+        <div class="seg" id="segSevTop">
+          <button type="button" class="seg-btn active" data-val="">Todas</button>
+          <button type="button" class="seg-btn" data-val="CRITICO">Crítico</button>
+          <button type="button" class="seg-btn" data-val="ATENCION">Atención</button>
+        </div>
+      </div>
+      <div style="flex:0 0 auto">
+        <label>Mostrar</label>
         <div class="seg" id="segTopN">
           <button type="button" class="seg-btn" data-val="25">25</button>
           <button type="button" class="seg-btn active" data-val="50">50</button>
@@ -308,9 +317,12 @@
         <label>Filtrar (código, renglón o UE)</label>
         <input id="inFiltroTop" placeholder="Escribe para filtrar…" autocomplete="off">
       </div>
+      <div style="flex:0 0 auto">
+        <button class="btn-sec" id="btnExportDesabasto" type="button">Exportar CSV</button>
+      </div>
     </div>
     <div id="topmovResumen" class="alerta-resumen"></div>
-    <div id="topmovContenido"><div class="meta">Cargando ranking…</div></div>
+    <div id="topmovContenido"><div class="meta">Cargando alertas…</div></div>
   </div>
 
   <!-- RESULTADO -->
@@ -1449,132 +1461,223 @@ function enlazarChips(){
 
 /* Switch de pestañas */
 /* ================================================================
-   TOP DE ALTO MOVIMIENTO · Requisición F8 vs Despacho real
-   Rankea por REQ_MES. Fill = DISTRIB_MES / REQ_MES (solicitado vs despachado).
-   En vivo desde MATRIZ.rows. No toca el backend.
+   DESABASTO EN UNIDADES EJECUTORAS · UE en cero con stock aguas arriba
+   Fuente: alertas_ue.json (generado por MODULO_ALERTAS.gs).
+   Regla: sólo entran las líneas donde el CEDIS que abastece a la UE
+   —o CEDIS Panamá— tienen existencia. Si nadie en la red tiene, es
+   un asunto de compras y queda fuera de este panel.
    ================================================================ */
-const TOPMOV = { ced:'PA', nivel:'reng', topN:50, filtro:'' };
+const ALERTAS_URL = 'alertas_ue.json';
+const TOPMOV = { ced:'', nivel:'ue', sev:'', topN:50, filtro:'' };
+let DESAB = null;          // payload crudo del JSON
+let DESAB_ERR = '';
 
-function _keyCedisTop(){ return TOPMOV.ced==='PA'?'CEDIS PANAMA':TOPMOV.ced==='DI'?'CEDIS DIVISA':'CEDIS CHIRIQUI'; }
+/* Carga en segundo plano; no bloquea el resto del tablero. */
+fetch(ALERTAS_URL, {cache:'no-cache'})
+  .then(r=> r.ok ? r.json() : Promise.reject('HTTP '+r.status))
+  .then(d=>{ DESAB=d; if(tabActiva()==='topmov') renderTopMov(); })
+  .catch(e=>{ DESAB_ERR=String(e); if(tabActiva()==='topmov') renderTopMov(); });
 
-function agregarTopMov(){
-  const keyCed=_keyCedisTop();
-  const iUE=COL.UNIDAD_EJECUTORA, iCed=COL.CEDIS_RESPONSABLE, iCod=COL.COD_ABASTO,
-        iSum=COL.SUMINISTRO, iInv=COL.INVENTARIO, iReq=COL.REQ_MES, iDist=COL.DISTRIB_MES;
-  const porReng={};   // cod -> agregado
-  const filas=[];     // nivel UE×Renglón
+function tabActiva(){
+  const t=document.querySelector('.tab.active');
+  return t ? t.dataset.tab : '';
+}
 
-  MATRIZ.rows.forEach(r=>{
-    if(r[iCed]!==keyCed) return;
-    const ueRaw=String(r[iUE]||'');
-    if(/^CEDIS /.test(ueRaw.toUpperCase())) return;   // excluir filas del propio almacén CEDIS
-    const req=Number(r[iReq])||0;
-    if(req<=0) return;                                  // sin requisición F8 no entra al Top
-    const dist=Number(r[iDist])||0;
-    const inv=Number(r[iInv])||0;
-    const cod=String(r[iCod]||''), sum=String(r[iSum]||'');
+/* Aplica los filtros activos sobre las filas del JSON. */
+function filtrarDesabasto(){
+  if(!DESAB || !DESAB.f) return [];
+  let d = DESAB.f;
+  if(TOPMOV.ced)  d = d.filter(x=> x.x === TOPMOV.ced);
+  if(TOPMOV.sev)  d = d.filter(x=> x.v === TOPMOV.sev);
+  const q = (TOPMOV.filtro||'').trim().toUpperCase();
+  if(q) d = d.filter(x=> ((x.c||'')+' '+(x.s||'')+' '+(x.u||'')).toUpperCase().indexOf(q) >= 0);
+  return d;
+}
 
-    filas.push({ ue:ueRaw, cod, sum, inv, req, dist,
-      fill: req>0 ? dist/req : 0 });
-
-    if(!porReng[cod]) porReng[cod]={ cod, sum, req:0, dist:0, inv:0, nUE:0 };
-    const a=porReng[cod];
-    a.req+=req; a.dist+=dist; a.inv+=inv; a.nUE++;
-    if(!a.sum && sum) a.sum=sum;
+/* Agrega el detalle a nivel Unidad Ejecutora. */
+function agruparPorUE(filas){
+  const m={};
+  filas.forEach(f=>{
+    const o = m[f.u] || (m[f.u] = { ue:f.u, cedis:f.x, region:f.g,
+                                    n:0, critico:0, atencion:0, consumo:0, maxDias:0 });
+    o.n++;
+    if(f.v==='CRITICO')  o.critico++;
+    if(f.v==='ATENCION') o.atencion++;
+    o.consumo += (f.co||0);
+    if((f.d||0) > o.maxDias) o.maxDias = f.d||0;
   });
+  return Object.keys(m).map(k=>m[k])
+               .sort((a,b)=> b.critico-a.critico || b.n-a.n || b.consumo-a.consumo);
+}
 
-  let data;
-  if(TOPMOV.nivel==='reng'){
-    data=Object.values(porReng).map(a=>({
-      etiqueta:a.cod, sub:a.sum, cod:a.cod, sum:a.sum, ue:'',
-      req:a.req, dist:a.dist, inv:a.inv, nUE:a.nUE,
-      fill:a.req>0?a.dist/a.req:0
-    }));
-  }else{
-    data=filas.map(f=>({
-      etiqueta:f.cod, sub:f.sum, cod:f.cod, sum:f.sum, ue:f.ue,
-      req:f.req, dist:f.dist, inv:f.inv, nUE:1, fill:f.fill
-    }));
-  }
-  data.sort((a,b)=>b.req-a.req);
-  return data;
+function colorSev(v){
+  return v==='CRITICO' ? '#c0392b' : v==='ATENCION' ? '#8a5a2a' : '#2e7d32';
 }
 
 function renderTopMov(){
-  const cont=document.getElementById('topmovContenido');
-  const resu=document.getElementById('topmovResumen');
+  const cont = document.getElementById('topmovContenido');
+  const resu = document.getElementById('topmovResumen');
   if(!cont) return;
-  if(!MATRIZ.rows||!MATRIZ.rows.length){ cont.innerHTML='<div class="meta">Sin datos cargados.</div>'; return; }
 
-  let data=agregarTopMov();
-  const totReng=data.length;
+  if(DESAB_ERR && !DESAB){
+    resu.innerHTML='';
+    cont.innerHTML = '<div class="meta">No se pudo cargar <b>alertas_ue.json</b> ('+esc(DESAB_ERR)+').<br>'+
+      'Ejecuta <b>publicarAlertasAhora()</b> en el proyecto de Apps Script para generarlo.</div>';
+    return;
+  }
+  if(!DESAB){ cont.innerHTML='<div class="meta">Cargando alertas…</div>'; return; }
 
-  // filtro de texto
-  const q=(TOPMOV.filtro||'').trim().toUpperCase();
-  if(q) data=data.filter(d=>((d.cod||'')+' '+(d.sum||'')+' '+(d.ue||'')).toUpperCase().indexOf(q)>=0);
+  const filas = filtrarDesabasto();
+  const k = DESAB.kpi || {};
+  const um = DESAB.umbral || {critico:60, atencion:30};
+  const gen = DESAB.generado ? String(DESAB.generado).slice(0,10) : '—';
 
-  // resumen: suma solicitada vs despachada del universo filtrado
-  const sumReq=data.reduce((s,d)=>s+d.req,0), sumDist=data.reduce((s,d)=>s+d.dist,0);
-  const fillGlobal=sumReq>0?(sumDist/sumReq):0;
-  resu.innerHTML=
-    '<span class="chip">Renglones con F8: <b>'+totReng.toLocaleString()+'</b></span>'+
-    '<span class="chip">Solicitado F8/mes: <b style="font-family:Consolas">'+fmt(Math.round(sumReq))+'</b></span>'+
-    '<span class="chip">Despachado/mes: <b style="font-family:Consolas">'+fmt(Math.round(sumDist))+'</b></span>'+
-    '<span class="chip">Fill agregado: <b style="font-family:Consolas;color:'+(fillGlobal>=0.9?'#2e7d32':fillGlobal>=0.6?'#8a5a2a':'#c0392b')+'">'+Math.round(fillGlobal*100)+'%</b></span>';
+  // Recuento sobre el universo filtrado
+  const nCrit = filas.filter(f=>f.v==='CRITICO').length;
+  const nAten = filas.filter(f=>f.v==='ATENCION').length;
+  const uesSet = {}, rengSet = {};
+  let consumoTot = 0;
+  filas.forEach(f=>{ uesSet[f.u]=1; rengSet[f.c]=1; consumoTot += (f.co||0); });
 
-  // recorte Top N
-  const n=TOPMOV.topN;
-  const mostrado = n>0 ? data.slice(0,n) : data;
+  resu.innerHTML =
+    '<span class="chip">Líneas: <b style="font-family:Consolas">'+fmt(filas.length)+'</b></span>'+
+    '<span class="chip">Críticas (&ge;'+um.critico+'d): <b style="font-family:Consolas;color:#c0392b">'+fmt(nCrit)+'</b></span>'+
+    '<span class="chip">Atención (&ge;'+um.atencion+'d): <b style="font-family:Consolas;color:#8a5a2a">'+fmt(nAten)+'</b></span>'+
+    '<span class="chip">UEs: <b style="font-family:Consolas">'+fmt(Object.keys(uesSet).length)+'</b></span>'+
+    '<span class="chip">Renglones: <b style="font-family:Consolas">'+fmt(Object.keys(rengSet).length)+'</b></span>'+
+    '<span class="chip">Consumo/mes desatendido: <b style="font-family:Consolas">'+fmt(Math.round(consumoTot))+'</b></span>'+
+    '<span class="chip">Corte: <b>'+esc(gen)+'</b></span>';
 
-  const cabUE = TOPMOV.nivel==='ue';
-  let html='<div style="overflow-x:auto"><table class="det-tbl"><thead><tr>'+
-    '<th style="text-align:right">#</th>'+
-    '<th>Código</th><th>Renglón</th>'+
-    (cabUE?'<th>Unidad Ejecutora</th>':'<th style="text-align:right">UEs</th>')+
-    '<th style="text-align:right">Solicitado F8/mes</th>'+
-    '<th style="text-align:right">Despachado/mes</th>'+
-    '<th style="text-align:right">Fill</th>'+
-    '<th style="text-align:right">Inventario</th>'+
-    '</tr></thead><tbody>';
+  if(!filas.length){
+    cont.innerHTML='<div class="meta">No hay líneas que cumplan el filtro seleccionado.</div>';
+    return;
+  }
 
-  mostrado.forEach((d,i)=>{
-    const fillPct=Math.round(d.fill*100);
-    const col = d.fill>=0.9?'#2e7d32':d.fill>=0.6?'#8a5a2a':'#c0392b';
-    html+='<tr>'+
-      '<td style="text-align:right;color:#999">'+(i+1)+'</td>'+
-      '<td style="font-family:Consolas">'+esc(d.cod)+'</td>'+
-      '<td>'+esc(d.sum||'—')+'</td>'+
-      (cabUE?'<td>'+esc(d.ue||'—')+'</td>':'<td style="text-align:right;font-family:Consolas">'+d.nUE+'</td>')+
-      '<td style="text-align:right;font-family:Consolas"><b>'+fmt(Math.round(d.req))+'</b></td>'+
-      '<td style="text-align:right;font-family:Consolas">'+fmt(Math.round(d.dist))+'</td>'+
-      '<td style="text-align:right;font-family:Consolas;color:'+col+'"><b>'+fillPct+'%</b></td>'+
-      '<td style="text-align:right;font-family:Consolas">'+fmt(Math.round(d.inv))+'</td>'+
-      '</tr>';
-  });
-  html+='</tbody></table></div>';
-  if(n>0 && data.length>n) html+='<div class="meta" style="margin-top:6px">Mostrando '+n+' de '+data.length.toLocaleString()+' renglones. Usa el filtro o cambia a "Todos".</div>';
+  const n = TOPMOV.topN;
+  let html='';
+
+  if(TOPMOV.nivel==='ue'){
+    const datos = agruparPorUE(filas);
+    const most = n>0 ? datos.slice(0,n) : datos;
+    html='<div style="overflow-x:auto"><table class="det-tbl"><thead><tr>'+
+      '<th style="text-align:right">#</th>'+
+      '<th>Unidad Ejecutora</th><th>CEDIS que abastece</th><th>Región</th>'+
+      '<th style="text-align:right">Renglones en 0</th>'+
+      '<th style="text-align:right">Críticos</th>'+
+      '<th style="text-align:right">Días máx. sin mov.</th>'+
+      '<th style="text-align:right">Consumo/mes desatendido</th>'+
+      '</tr></thead><tbody>';
+    most.forEach((u,i)=>{
+      html+='<tr>'+
+        '<td style="text-align:right;color:#999">'+(i+1)+'</td>'+
+        '<td>'+esc(u.ue)+'</td>'+
+        '<td>'+esc(u.cedis||'—')+'</td>'+
+        '<td>'+esc(u.region||'—')+'</td>'+
+        '<td style="text-align:right;font-family:Consolas"><b>'+fmt(u.n)+'</b></td>'+
+        '<td style="text-align:right;font-family:Consolas;color:#c0392b"><b>'+fmt(u.critico)+'</b></td>'+
+        '<td style="text-align:right;font-family:Consolas">'+fmt(u.maxDias)+'</td>'+
+        '<td style="text-align:right;font-family:Consolas">'+fmt(Math.round(u.consumo))+'</td>'+
+        '</tr>';
+    });
+    html+='</tbody></table></div>';
+    if(n>0 && datos.length>n)
+      html+='<div class="meta" style="margin-top:6px">Mostrando '+n+' de '+fmt(datos.length)+
+            ' Unidades Ejecutoras. Cambia a "Todos" o usa el filtro.</div>';
+  } else {
+    const most = n>0 ? filas.slice(0,n) : filas;
+    html='<div style="overflow-x:auto"><table class="det-tbl"><thead><tr>'+
+      '<th style="text-align:right">#</th>'+
+      '<th>Severidad</th><th>Unidad Ejecutora</th><th>CEDIS</th>'+
+      '<th>Código</th><th>Renglón</th>'+
+      '<th>Último mov.</th><th style="text-align:right">Días</th>'+
+      '<th style="text-align:right">Inv. su CEDIS</th>'+
+      '<th style="text-align:right">Inv. Panamá</th>'+
+      '<th style="text-align:right">Consumo/mes</th>'+
+      '</tr></thead><tbody>';
+    most.forEach((f,i)=>{
+      html+='<tr>'+
+        '<td style="text-align:right;color:#999">'+(i+1)+'</td>'+
+        '<td style="color:'+colorSev(f.v)+';font-weight:700">'+esc(f.v)+'</td>'+
+        '<td>'+esc(f.u)+'</td>'+
+        '<td>'+esc(f.x||'—')+'</td>'+
+        '<td style="font-family:Consolas">'+esc(f.c)+'</td>'+
+        '<td>'+esc(f.s||'—')+'</td>'+
+        '<td style="font-family:Consolas">'+esc(f.m||'—')+'</td>'+
+        '<td style="text-align:right;font-family:Consolas;color:'+colorSev(f.v)+'"><b>'+
+          (f.d==null?'—':fmt(f.d))+'</b></td>'+
+        '<td style="text-align:right;font-family:Consolas">'+fmt(f.is||0)+'</td>'+
+        '<td style="text-align:right;font-family:Consolas">'+fmt(f.ip||0)+'</td>'+
+        '<td style="text-align:right;font-family:Consolas">'+fmt(Math.round(f.co||0))+'</td>'+
+        '</tr>';
+    });
+    html+='</tbody></table></div>';
+    if(n>0 && filas.length>n)
+      html+='<div class="meta" style="margin-top:6px">Mostrando '+n+' de '+fmt(filas.length)+
+            ' líneas. Cambia a "Todos" o usa el filtro.</div>';
+  }
+
+  if(k.sinRed)
+    html+='<div class="meta" style="margin-top:10px;padding:8px;border-left:3px solid #666;background:#f4f4f4">'+
+          '<b>'+fmt(k.sinRed)+'</b> líneas adicionales están en cero en la UE y también en toda la red CEDIS. '+
+          'No son atribuibles a distribución: corresponden a gestión de compras y quedan fuera de este panel.</div>';
+
   cont.innerHTML=html;
 }
 
-/* Controles del Top */
+/* Exportación CSV de lo que está en pantalla (respeta filtros). */
+function exportarDesabastoCSV(){
+  const filas=filtrarDesabasto();
+  if(!filas.length){ alert('No hay datos que exportar con el filtro actual.'); return; }
+  const esc2 = v => '"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  let lineas;
+  if(TOPMOV.nivel==='ue'){
+    lineas=[['UNIDAD_EJECUTORA','CEDIS_ABASTECE','REGION','RENGLONES_EN_CERO',
+             'CRITICOS','DIAS_MAX_SIN_MOV','CONSUMO_MES_DESATENDIDO'].join(',')];
+    agruparPorUE(filas).forEach(u=>{
+      lineas.push([u.ue,u.cedis,u.region,u.n,u.critico,u.maxDias,Math.round(u.consumo)].map(esc2).join(','));
+    });
+  }else{
+    lineas=[['SEVERIDAD','UNIDAD_EJECUTORA','CEDIS_ABASTECE','REGION','COD_RENGLON','SUMINISTRO',
+             'ULTIMO_MOV','DIAS_SIN_MOV','INV_CEDIS_SUPLE','INV_CEDIS_PANAMA','CONSUMO_MES'].join(',')];
+    filas.forEach(f=>{
+      lineas.push([f.v,f.u,f.x,f.g,f.c,f.s,f.m,f.d==null?'':f.d,
+                   f.is||0,f.ip||0,Math.round(f.co||0)].map(esc2).join(','));
+    });
+  }
+  const blob=new Blob(['\ufeff'+lineas.join('\r\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='DESABASTO_UE_'+(DESAB&&DESAB.generado?String(DESAB.generado).slice(0,10):'export')+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* Controles del panel de desabasto */
 (function(){
-  const segC=document.getElementById('segCedisTop');
-  if(segC) segC.querySelectorAll('.seg-btn').forEach(b=>b.onclick=()=>{
-    segC.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active'); TOPMOV.ced=b.dataset.val; renderTopMov();
-  });
-  const segN=document.getElementById('segNivelTop');
-  if(segN) segN.querySelectorAll('.seg-btn').forEach(b=>b.onclick=()=>{
-    segN.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active'); TOPMOV.nivel=b.dataset.val; renderTopMov();
-  });
-  const segT=document.getElementById('segTopN');
-  if(segT) segT.querySelectorAll('.seg-btn').forEach(b=>b.onclick=()=>{
-    segT.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active'); TOPMOV.topN=Number(b.dataset.val)||0; renderTopMov();
-  });
+  const bind=(id,prop,cast)=>{
+    const seg=document.getElementById(id);
+    if(!seg) return;
+    seg.querySelectorAll('.seg-btn').forEach(b=>b.onclick=()=>{
+      seg.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      TOPMOV[prop]= cast ? cast(b.dataset.val) : b.dataset.val;
+      renderTopMov();
+    });
+  };
+  bind('segCedisTop','ced');
+  bind('segNivelTop','nivel');
+  bind('segSevTop','sev');
+  bind('segTopN','topN', v=>Number(v)||0);
+
   const inp=document.getElementById('inFiltroTop');
-  if(inp) inp.addEventListener('input', ()=>{ TOPMOV.filtro=inp.value; clearTimeout(window._ftm); window._ftm=setTimeout(renderTopMov,180); });
+  if(inp) inp.addEventListener('input', ()=>{
+    TOPMOV.filtro=inp.value;
+    clearTimeout(window._ftm);
+    window._ftm=setTimeout(renderTopMov,180);
+  });
+  const btn=document.getElementById('btnExportDesabasto');
+  if(btn) btn.onclick=exportarDesabastoCSV;
 })();
 
 function activarTab(nombre){
