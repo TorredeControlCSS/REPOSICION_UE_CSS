@@ -81,6 +81,7 @@
   .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;color:#fff;cursor:pointer;opacity:.72;transition:opacity .12s,box-shadow .12s;}
   .chip:hover{opacity:.9;}
   .chip.chip-on{opacity:1;box-shadow:0 0 0 2px rgba(12,68,124,.35);}
+  .kpi-chip{font-size:11px;font-weight:600;padding:4px 11px;border-radius:6px;background:#f7f9fc;border:1px solid #d3dbe6;color:#333;}
   .chip-gris{background:#6a7683;}
   .chip-rojo{background:var(--rojo);}
   .chip-ambar{background:var(--ambar);}
@@ -312,6 +313,10 @@
           <button type="button" class="seg-btn" data-val="100">100</button>
           <button type="button" class="seg-btn" data-val="0">Todos</button>
         </div>
+      </div>
+      <div style="flex:1 1 240px;min-width:200px">
+        <label>Unidad Ejecutora</label>
+        <select id="selUE"><option value="">Todas las Unidades Ejecutoras</option></select>
       </div>
       <div style="flex:1 1 220px;min-width:180px">
         <label>Filtrar (código, renglón o UE)</label>
@@ -1468,14 +1473,14 @@ function enlazarChips(){
    un asunto de compras y queda fuera de este panel.
    ================================================================ */
 const ALERTAS_URL = 'alertas_ue.json';
-const TOPMOV = { ced:'', nivel:'ue', sev:'', topN:50, filtro:'' };
+const TOPMOV = { ced:'', nivel:'ue', sev:'', topN:50, filtro:'', ue:'' };
 let DESAB = null;          // payload crudo del JSON
 let DESAB_ERR = '';
 
 /* Carga en segundo plano; no bloquea el resto del tablero. */
 fetch(ALERTAS_URL, {cache:'no-cache'})
   .then(r=> r.ok ? r.json() : Promise.reject('HTTP '+r.status))
-  .then(d=>{ DESAB=d; if(tabActiva()==='topmov') renderTopMov(); })
+  .then(d=>{ DESAB=d; poblarSelectUE(); if(tabActiva()==='topmov') renderTopMov(); })
   .catch(e=>{ DESAB_ERR=String(e); if(tabActiva()==='topmov') renderTopMov(); });
 
 function tabActiva(){
@@ -1483,10 +1488,27 @@ function tabActiva(){
   return t ? t.dataset.tab : '';
 }
 
+/* Puebla el selector con las UEs presentes en los datos, ordenadas y con su
+   conteo de renglones en cero, para que la más cargada se distinga a simple vista. */
+function poblarSelectUE(){
+  const sel=document.getElementById('selUE');
+  if(!sel || !DESAB || !DESAB.f) return;
+  const cnt={};
+  DESAB.f.forEach(x=>{ cnt[x.u]=(cnt[x.u]||0)+1; });
+  const ues=Object.keys(cnt).sort((a,b)=> a.localeCompare(b,'es'));
+  let html='<option value="">Todas las Unidades Ejecutoras ('+ues.length+')</option>';
+  ues.forEach(u=>{
+    html+='<option value="'+esc(u)+'">'+esc(u)+' · '+cnt[u]+' en 0</option>';
+  });
+  sel.innerHTML=html;
+  sel.value=TOPMOV.ue;   // conserva selección si ya había una
+}
+
 /* Aplica los filtros activos sobre las filas del JSON. */
 function filtrarDesabasto(){
   if(!DESAB || !DESAB.f) return [];
   let d = DESAB.f;
+  if(TOPMOV.ue)   d = d.filter(x=> x.u === TOPMOV.ue);
   if(TOPMOV.ced)  d = d.filter(x=> x.x === TOPMOV.ced);
   if(TOPMOV.sev)  d = d.filter(x=> x.v === TOPMOV.sev);
   const q = (TOPMOV.filtro||'').trim().toUpperCase();
@@ -1540,13 +1562,13 @@ function renderTopMov(){
   filas.forEach(f=>{ uesSet[f.u]=1; rengSet[f.c]=1; consumoTot += (f.co||0); });
 
   resu.innerHTML =
-    '<span class="chip">Líneas: <b style="font-family:Consolas">'+fmt(filas.length)+'</b></span>'+
-    '<span class="chip">Críticas (&ge;'+um.critico+'d): <b style="font-family:Consolas;color:#c0392b">'+fmt(nCrit)+'</b></span>'+
-    '<span class="chip">Atención (&ge;'+um.atencion+'d): <b style="font-family:Consolas;color:#8a5a2a">'+fmt(nAten)+'</b></span>'+
-    '<span class="chip">UEs: <b style="font-family:Consolas">'+fmt(Object.keys(uesSet).length)+'</b></span>'+
-    '<span class="chip">Renglones: <b style="font-family:Consolas">'+fmt(Object.keys(rengSet).length)+'</b></span>'+
-    '<span class="chip">Consumo/mes desatendido: <b style="font-family:Consolas">'+fmt(Math.round(consumoTot))+'</b></span>'+
-    '<span class="chip">Corte: <b>'+esc(gen)+'</b></span>';
+    '<span class="kpi-chip">Líneas: <b style="font-family:Consolas">'+fmt(filas.length)+'</b></span>'+
+    '<span class="kpi-chip">Críticas (&ge;'+um.critico+'d): <b style="font-family:Consolas;color:#c0392b">'+fmt(nCrit)+'</b></span>'+
+    '<span class="kpi-chip">Atención (&ge;'+um.atencion+'d): <b style="font-family:Consolas;color:#8a5a2a">'+fmt(nAten)+'</b></span>'+
+    '<span class="kpi-chip">UEs: <b style="font-family:Consolas">'+fmt(Object.keys(uesSet).length)+'</b></span>'+
+    '<span class="kpi-chip">Renglones: <b style="font-family:Consolas">'+fmt(Object.keys(rengSet).length)+'</b></span>'+
+    '<span class="kpi-chip">Consumo/mes desatendido: <b style="font-family:Consolas">'+fmt(Math.round(consumoTot))+'</b></span>'+
+    '<span class="kpi-chip">Corte: <b>'+esc(gen)+'</b></span>';
 
   if(!filas.length){
     cont.innerHTML='<div class="meta">No hay líneas que cumplan el filtro seleccionado.</div>';
@@ -1675,6 +1697,20 @@ function exportarDesabastoCSV(){
     TOPMOV.filtro=inp.value;
     clearTimeout(window._ftm);
     window._ftm=setTimeout(renderTopMov,180);
+  });
+  const sel=document.getElementById('selUE');
+  if(sel) sel.addEventListener('change', ()=>{
+    TOPMOV.ue=sel.value;
+    // Con una UE concreta, el detalle por renglón es lo útil; el agregado por UE
+    // sería una sola fila. Al limpiar el filtro, vuelve a la vista por UE.
+    if(TOPMOV.ue){
+      TOPMOV.nivel='det';
+    }else{
+      TOPMOV.nivel='ue';
+    }
+    const seg=document.getElementById('segNivelTop');
+    seg.querySelectorAll('.seg-btn').forEach(x=>x.classList.toggle('active', x.dataset.val===TOPMOV.nivel));
+    renderTopMov();
   });
   const btn=document.getElementById('btnExportDesabasto');
   if(btn) btn.onclick=exportarDesabastoCSV;
