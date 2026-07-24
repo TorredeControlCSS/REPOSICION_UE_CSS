@@ -1521,12 +1521,13 @@ function agruparPorUE(filas){
   const m={};
   filas.forEach(f=>{
     const o = m[f.u] || (m[f.u] = { ue:f.u, cedis:f.x, region:f.g,
-                                    n:0, critico:0, atencion:0, consumo:0, maxDias:0 });
+                                    n:0, critico:0, atencion:0, consumo:0, maxDias:0, conF8:0, sinF8:0 });
     o.n++;
     if(f.v==='CRITICO')  o.critico++;
     if(f.v==='ATENCION') o.atencion++;
     o.consumo += (f.co||0);
     if((f.d||0) > o.maxDias) o.maxDias = f.d||0;
+    if(f.fq>0) o.conF8++; else o.sinF8++;
   });
   return Object.keys(m).map(k=>m[k])
                .sort((a,b)=> b.critico-a.critico || b.n-a.n || b.consumo-a.consumo);
@@ -1587,9 +1588,11 @@ function renderTopMov(){
       '<th style="text-align:right">Renglones en 0</th>'+
       '<th style="text-align:right">Críticos</th>'+
       '<th style="text-align:right">Días máx. sin mov.</th>'+
+      '<th style="text-align:right">Sin F8 pedida</th>'+
       '<th style="text-align:right">Consumo/mes desatendido</th>'+
       '</tr></thead><tbody>';
     most.forEach((u,i)=>{
+      const sinF8 = u.sinF8||0;
       html+='<tr>'+
         '<td style="text-align:right;color:#999">'+(i+1)+'</td>'+
         '<td>'+esc(u.ue)+'</td>'+
@@ -1598,6 +1601,7 @@ function renderTopMov(){
         '<td style="text-align:right;font-family:Consolas"><b>'+fmt(u.n)+'</b></td>'+
         '<td style="text-align:right;font-family:Consolas;color:#c0392b"><b>'+fmt(u.critico)+'</b></td>'+
         '<td style="text-align:right;font-family:Consolas">'+fmt(u.maxDias)+'</td>'+
+        '<td style="text-align:right;font-family:Consolas'+(sinF8>0?';color:#8a5a2a;font-weight:700':'')+'">'+fmt(sinF8)+'</td>'+
         '<td style="text-align:right;font-family:Consolas">'+fmt(Math.round(u.consumo))+'</td>'+
         '</tr>';
     });
@@ -1615,8 +1619,18 @@ function renderTopMov(){
       '<th style="text-align:right">Inv. su CEDIS</th>'+
       '<th style="text-align:right">Inv. Panamá</th>'+
       '<th style="text-align:right">Consumo/mes</th>'+
+      '<th style="text-align:right">F8 YTD</th>'+
+      '<th style="text-align:right">Nº F8</th>'+
+      '<th>Última F8</th>'+
       '</tr></thead><tbody>';
     most.forEach((f,i)=>{
+      const sinF8 = !(f.fq>0);
+      const f8cel = sinF8
+        ? '<td style="text-align:right;color:#c0392b;font-weight:700">sin F8</td><td style="text-align:right">—</td><td>—</td>'
+        : '<td style="text-align:right;font-family:Consolas"><b>'+fmt(f.fq)+'</b></td>'+
+          '<td style="text-align:right;font-family:Consolas">'+fmt(f.fn||0)+'</td>'+
+          '<td style="font-family:Consolas;font-size:11px">'+esc(f.fu||'—')+
+            (f.fd?'<br><span style="color:#888">'+esc(f.fd)+'</span>':'')+'</td>';
       html+='<tr>'+
         '<td style="text-align:right;color:#999">'+(i+1)+'</td>'+
         '<td style="color:'+colorSev(f.v)+';font-weight:700">'+esc(f.v)+'</td>'+
@@ -1630,6 +1644,7 @@ function renderTopMov(){
         '<td style="text-align:right;font-family:Consolas">'+fmt(f.is||0)+'</td>'+
         '<td style="text-align:right;font-family:Consolas">'+fmt(f.ip||0)+'</td>'+
         '<td style="text-align:right;font-family:Consolas">'+fmt(Math.round(f.co||0))+'</td>'+
+        f8cel+
         '</tr>';
     });
     html+='</tbody></table></div>';
@@ -1654,16 +1669,18 @@ function exportarDesabastoCSV(){
   let lineas;
   if(TOPMOV.nivel==='ue'){
     lineas=[['UNIDAD_EJECUTORA','CEDIS_ABASTECE','REGION','RENGLONES_EN_CERO',
-             'CRITICOS','DIAS_MAX_SIN_MOV','CONSUMO_MES_DESATENDIDO'].join(',')];
+             'CRITICOS','DIAS_MAX_SIN_MOV','SIN_F8_PEDIDA','CONSUMO_MES_DESATENDIDO'].join(',')];
     agruparPorUE(filas).forEach(u=>{
-      lineas.push([u.ue,u.cedis,u.region,u.n,u.critico,u.maxDias,Math.round(u.consumo)].map(esc2).join(','));
+      lineas.push([u.ue,u.cedis,u.region,u.n,u.critico,u.maxDias,u.sinF8||0,Math.round(u.consumo)].map(esc2).join(','));
     });
   }else{
     lineas=[['SEVERIDAD','UNIDAD_EJECUTORA','CEDIS_ABASTECE','REGION','COD_RENGLON','SUMINISTRO',
-             'ULTIMO_MOV','DIAS_SIN_MOV','INV_CEDIS_SUPLE','INV_CEDIS_PANAMA','CONSUMO_MES'].join(',')];
+             'ULTIMO_MOV','DIAS_SIN_MOV','INV_CEDIS_SUPLE','INV_CEDIS_PANAMA','CONSUMO_MES',
+             'F8_YTD_SOLICITADO','F8_YTD_CANT','F8_ULTIMA_FECHA','F8_ULTIMO_DOC'].join(',')];
     filas.forEach(f=>{
       lineas.push([f.v,f.u,f.x,f.g,f.c,f.s,f.m,f.d==null?'':f.d,
-                   f.is||0,f.ip||0,Math.round(f.co||0)].map(esc2).join(','));
+                   f.is||0,f.ip||0,Math.round(f.co||0),
+                   f.fq||0,f.fn||0,f.fu||'',f.fd||''].map(esc2).join(','));
     });
   }
   const blob=new Blob(['\ufeff'+lineas.join('\r\n')],{type:'text/csv;charset=utf-8;'});
