@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calculadora de Reposición · CEDIS Panamá</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
     --azul:#1e5a9e; --azul2:#0C447C; --bg:#ececec; --card:#fff;
@@ -38,11 +39,19 @@
   table.lista tr.clickable{cursor:pointer;}
   table.lista tr.clickable:hover{background:#f2f7fc;}
   table.lista tr.vital td:first-child{font-weight:700;}
-  .sem{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:7px;vertical-align:middle;}
+  .sem{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:middle;}
   .sem.r{background:var(--rojo);}
   .sem.a{background:var(--ambar);}
   .sem.v{background:var(--verde);}
   .sem.g{background:#999;}
+  .estado-cell{white-space:nowrap;}
+  .estado-lab{font-size:10px;font-weight:700;letter-spacing:.3px;vertical-align:middle;}
+  .estado-lab.r{color:var(--rojo);}
+  .estado-lab.a{color:var(--ambar);}
+  .estado-lab.v{color:var(--verde);}
+  .estado-lab.g{color:#777;}
+  .ver-curva{font-size:10px;color:var(--azul);border:1px solid var(--azul);padding:1px 6px;border-radius:10px;white-space:nowrap;opacity:0;transition:opacity .1s;}
+  tr.clickable:hover .ver-curva{opacity:1;}
   .badge-vital{display:inline-block;font-size:9px;background:#fdecea;color:#7a1d12;border:1px solid #e0b4ae;padding:1px 5px;margin-left:6px;vertical-align:middle;}
   .veredicto{font-size:12px;}
   .veredicto.r{color:var(--rojo);font-weight:700;}
@@ -98,7 +107,11 @@
   <div id="vistaLista">
     <div class="kpis" id="kpisUE" style="display:none;"></div>
     <div class="card" id="cardLista" style="display:none;">
-      <div class="kicker">Renglones de la unidad · orden por urgencia</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="kicker">Renglones de la unidad · orden por urgencia</div>
+        <button id="btnExcel" style="margin-left:auto;background:var(--verde);color:#fff;font-weight:700;">⬇ Descargar pre-pedido (Excel)</button>
+      </div>
+      <div class="hint" style="margin-top:4px;">El pre-pedido incluye los renglones que requieren reposición (urgentes y por vencer), con la cantidad sugerida.</div>
       <div style="overflow:auto;max-height:70vh;margin-top:8px;">
         <table class="lista" id="tablaLista">
           <thead><tr>
@@ -163,8 +176,18 @@ var VENTANA_CONSUMO = 30;   // días para calcular consumo diario
 // ====== ESTADO ======
 var INDICE = null;      // {fechas, ues:[{ue,archivo,renglones}]}
 var UE_DATA = null;     // {ue, fechas, f:[{c, v:[[fecha,saldo]]}]}
-var MAESTRO = {};       // cod -> descripción (se llena best-effort)
+var MAESTRO = {};       // cod -> {n:nombre, vit:0|1}
 var chart = null;
+
+// ====== DICCIONARIO DE RENGLONES ======
+function cargarDiccionario(){
+  return fetch(BASE+'renglones_dic.json?ts='+Date.now())
+    .then(function(r){ return r.ok? r.json() : null; })
+    .then(function(d){ if(d && d.r) MAESTRO = d.r; })
+    .catch(function(){ /* si falla, se muestran códigos */ });
+}
+function nombreDe(cod){ var e=MAESTRO[cod]; return (e && e.n)? e.n : cod; }
+function esVital(cod){ var e=MAESTRO[cod]; return !!(e && e.vit); }
 
 // ====== UTILIDADES ======
 function fmt(n){ n=Math.round(Number(n)||0); return n.toLocaleString('es-PA'); }
@@ -291,7 +314,15 @@ function paramsActuales(){
 function filaCalculo(rengln, params){
   var saldos = expandirSerie(rengln.v, UE_DATA.fechas);
   var c = calcular(saldos, UE_DATA.fechas, params, 0);
-  return {cod:rengln.c, nombre:(MAESTRO[rengln.c]||rengln.c), saldos:saldos, c:c};
+  return {cod:rengln.c, nombre:nombreDe(rengln.c), vital:esVital(rengln.c), saldos:saldos, c:c};
+}
+
+// Etiqueta de texto por estado (accesible, no solo color)
+function etiquetaEstado(estado){
+  if (estado==='r') return 'URGENTE';
+  if (estado==='a') return 'PRONTO';
+  if (estado==='v') return 'OK';
+  return 'SIN CONSUMO';
 }
 
 function ordenUrgencia(a,b){
@@ -310,12 +341,14 @@ function rankEstado(c){
   return 3;                         // ok
 }
 
+var FILAS_ACTUALES = [];
 function renderLista(){
   el('vistaDetalle').classList.remove('on');
   el('vistaLista').style.display='';
   var params = paramsActuales();
   var filas = UE_DATA.f.map(function(r){ return filaCalculo(r, params); });
   filas.sort(ordenUrgencia);
+  FILAS_ACTUALES = filas;
 
   // KPIs
   var enCero=0, pedirYa=0, pronto=0, ok=0, sinC=0;
@@ -337,13 +370,17 @@ function renderLista(){
   filas.forEach(function(f, i){
     var c=f.c;
     var tr=document.createElement('tr');
-    tr.className='clickable';
+    tr.className='clickable'+(f.vital?' vital':'');
     var semClass = c.estado;
     var dias = (c.diasReorden==null)?'—':(c.diasReorden<=0?'0':Math.round(c.diasReorden));
     var pedir = (c.consumo<=0)?'—':fmt(c.pedirTransito||c.pedir);
+    var vitalBadge = f.vital?'<span class="badge-vital">VITAL</span>':'';
     tr.innerHTML =
-      '<td><span class="sem '+semClass+'"></span></td>'+
-      '<td>'+escapeHtml(f.nombre)+' <span style="color:#999;font-size:10px;">'+f.cod+'</span></td>'+
+      '<td><span class="estado-cell"><span class="sem '+semClass+'"></span>'+
+        '<span class="estado-lab '+semClass+'">'+etiquetaEstado(c.estado)+'</span></span></td>'+
+      '<td>'+escapeHtml(f.nombre)+vitalBadge+
+        ' <span style="color:#999;font-size:10px;">'+f.cod+'</span>'+
+        ' <span class="ver-curva">ver curva ▸</span></td>'+
       '<td class="num">'+fmt(c.inv)+'</td>'+
       '<td class="num">'+(c.consumo>0?c.consumo.toFixed(1):'—')+'</td>'+
       '<td class="num">'+dias+'</td>'+
@@ -443,6 +480,40 @@ el('selUE').addEventListener('change', function(){
   var a=this.value; if(a) cargarUE(a);
 });
 el('btnBack').addEventListener('click', renderLista);
+
+// Exportar pre-pedido a Excel (solo renglones que requieren reposición)
+function exportarPrePedido(){
+  if (!UE_DATA || !FILAS_ACTUALES.length){ return; }
+  var ueNom = UE_DATA.ue || 'UE';
+  var corte = (INDICE && INDICE.fechas.length)? INDICE.fechas[INDICE.fechas.length-1] : '';
+  var aoa = [
+    ['PRE-PEDIDO DE REPOSICIÓN'],
+    ['Unidad Ejecutora:', ueNom],
+    ['Corte:', corte],
+    ['Generado:', new Date().toLocaleString('es-PA')],
+    [],
+    ['Estado','Código','Renglón','Vital','Inventario','Consumo/día','Días a reorden','Cantidad sugerida a pedir']
+  ];
+  FILAS_ACTUALES.forEach(function(f){
+    var c=f.c;
+    // solo los que requieren acción: urgente (r) o pronto (a)
+    if (c.estado!=='r' && c.estado!=='a') return;
+    aoa.push([
+      etiquetaEstado(c.estado), f.cod, f.nombre, f.vital?'VITAL':'',
+      Math.round(c.inv), Number(c.consumo.toFixed(1)),
+      (c.diasReorden==null?'':Math.round(c.diasReorden)),
+      Math.round(c.pedirTransito||c.pedir)
+    ]);
+  });
+  if (aoa.length<=6){ aviso(el('avisoGlobal'),'No hay renglones que requieran reposición en esta unidad.','ok'); return; }
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:10},{wch:12},{wch:44},{wch:7},{wch:11},{wch:11},{wch:14},{wch:22}];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pre-pedido');
+  var slug = ueNom.replace(/[^A-Za-z0-9]+/g,'_').slice(0,40);
+  XLSX.writeFile(wb, 'Pre-pedido_'+slug+'_'+corte+'.xlsx');
+}
+el('btnExcel').addEventListener('click', exportarPrePedido);
 ['pLead','pCob','pSeg','pTransito','pConsManual'].forEach(function(id){
   el(id).addEventListener('input', function(){
     if (el('vistaDetalle').classList.contains('on')) renderDetalle();
@@ -450,7 +521,7 @@ el('btnBack').addEventListener('click', renderLista);
 });
 
 // arranque
-cargarIndice();
+cargarDiccionario().then(cargarIndice);
 </script>
 </body>
 </html>
