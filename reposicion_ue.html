@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calculadora de Reposición · CEDIS Panamá</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
   :root{
     --azul:#1e5a9e; --azul2:#0C447C; --bg:#ececec; --card:#fff;
@@ -64,6 +64,7 @@
   .kpi{flex:1;min-width:120px;border:1px solid var(--bord);padding:7px 10px;background:#f7f9fc;}
   .kpi .lab{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
   .kpi .val{font-family:Consolas,monospace;font-size:20px;font-weight:700;color:var(--azul2);line-height:1.1;}
+  .kpi .kpi-desc{font-size:9.5px;color:var(--sub);margin-top:5px;line-height:1.3;text-transform:none;letter-spacing:0;}
 
   /* Detalle / curva */
   .detalle{display:none;}
@@ -99,6 +100,35 @@
   .combo-item .et.a{color:var(--ambar);}
   .combo-item .et.v{color:var(--verde);}
   .combo-item .et.g{color:#777;}
+  /* Etiqueta con ícono de ayuda (i) y tooltip */
+  .lbl-ayuda{display:flex;align-items:center;gap:5px;}
+  .info-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+    border-radius:50%;border:1px solid var(--azul);color:var(--azul);font-size:10px;font-weight:700;
+    cursor:help;flex-shrink:0;font-style:normal;line-height:1;position:relative;}
+  .info-i:hover .tip{display:block;}
+  .info-i .tip{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);
+    width:220px;background:#243b53;color:#fff;font-weight:400;font-size:11px;line-height:1.45;
+    padding:8px 10px;border-radius:4px;z-index:60;text-transform:none;letter-spacing:0;text-align:left;
+    box-shadow:0 4px 12px rgba(0,0,0,.25);}
+  .info-i .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+    border:5px solid transparent;border-top-color:#243b53;}
+  /* Aviso amable para el campo de consumo manual */
+  .campo-nota{font-size:10px;color:var(--sub);margin-top:3px;line-height:1.3;}
+  /* Tutorial guiado */
+  #tourOverlay{position:fixed;inset:0;z-index:1000;}
+  #tourBackdrop{position:absolute;inset:0;background:rgba(15,25,40,.55);}
+  .tour-spot{position:absolute;border:3px solid var(--azul);border-radius:4px;
+    box-shadow:0 0 0 9999px rgba(15,25,40,.55);z-index:1001;pointer-events:none;transition:all .25s ease;}
+  #tourBox{position:absolute;z-index:1002;background:#fff;border:1px solid var(--bord);
+    max-width:340px;width:calc(100% - 32px);padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.3);}
+  #tourTitulo{font-size:14px;font-weight:700;color:var(--azul2);margin-bottom:6px;}
+  #tourTexto{font-size:12.5px;line-height:1.5;color:#333;}
+  #tourNav{display:flex;align-items:center;gap:8px;margin-top:12px;}
+  #tourPaso{font-size:11px;color:var(--sub);}
+  #tourNav button{font-size:12px;}
+  .btn-plano{background:transparent;border:none;color:var(--sub);text-decoration:underline;padding:6px 4px;}
+  .btn-plano:hover{background:transparent;color:var(--azul);}
+  #tourNext{background:var(--azul);color:#fff;font-weight:700;border-color:var(--azul);padding:7px 14px;}
 </style>
 </head>
 <body>
@@ -124,18 +154,45 @@
   <div id="panelBienvenida">
     <div class="kpis" id="kpisRed" style="display:none;"></div>
     <div class="card" id="cardBienvenida">
-      <div class="kicker">Cómo usar esta calculadora</div>
-      <div style="font-size:13px;line-height:1.6;color:#333;margin-top:6px;">
-        <p style="margin:6px 0;">Elija su Unidad Ejecutora arriba. Verá todos sus renglones ordenados por urgencia,
-        con un semáforo por estado y la cantidad sugerida a pedir.</p>
-        <p style="margin:6px 0;"><b>Cada renglón</b> muestra su curva de saldo de los últimos días y, cuando está
-        en riesgo, un diagnóstico de dónde está el problema:</p>
-        <ul style="margin:6px 0 6px 18px;padding:0;">
-          <li style="margin:3px 0;"><b style="color:var(--verde);">Distribución local</b> — su CEDIS tiene existencia y debe despacharle.</li>
-          <li style="margin:3px 0;"><b style="color:var(--ambar);">Reabasto inter-CEDIS</b> — su CEDIS regional está seco pero CEDIS Panamá tiene; Panamá debe surtir al regional.</li>
-          <li style="margin:3px 0;"><b style="color:var(--rojo);">Compras</b> — nadie en la red tiene existencia; es gestión de compras.</li>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="kicker">Bienvenido a la Calculadora de Reposición</div>
+        <button id="btnTutorial" style="margin-left:auto;background:var(--azul);color:#fff;font-weight:700;">▶ Ver tutorial guiado</button>
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:#333;margin-top:8px;">
+        <p style="margin:6px 0;">Esta herramienta le ayuda a saber, para cada medicamento e insumo de su unidad,
+        <b>si necesita reposición y cuánto pedir</b>, con base en su consumo real de los últimos días.</p>
+        <p style="margin:8px 0 4px;"><b>Para comenzar:</b> seleccione su Unidad Ejecutora en la lista de arriba.
+        Verá sus renglones ordenados por urgencia, con un semáforo de color por estado:</p>
+        <ul style="margin:4px 0 8px 18px;padding:0;">
+          <li style="margin:3px 0;"><span class="sem r"></span> <b style="color:var(--rojo);">Rojo</b> — sin existencia o por debajo del nivel de alerta: pedir ya.</li>
+          <li style="margin:3px 0;"><span class="sem a"></span> <b style="color:var(--ambar);">Ámbar</b> — se acerca al punto de reposición: pedir pronto.</li>
+          <li style="margin:3px 0;"><span class="sem v"></span> <b style="color:var(--verde);">Verde</b> — cobertura suficiente por ahora.</li>
         </ul>
-        <p style="margin:6px 0;">Puede descargar un <b>pre-pedido en Excel</b> con solo los renglones que requieren reposición.</p>
+        <p style="margin:8px 0 4px;">Al abrir un renglón verá su <b>curva de existencia</b> día por día y, cuando está en riesgo,
+        un diagnóstico de dónde resolver el problema:</p>
+        <ul style="margin:4px 0 8px 18px;padding:0;">
+          <li style="margin:3px 0;"><b style="color:var(--verde);">Distribución local</b> — su CEDIS tiene existencia y debe despacharle.</li>
+          <li style="margin:3px 0;"><b style="color:var(--ambar);">Reabasto entre CEDIS</b> — su CEDIS regional no tiene existencia disponible, pero el CEDIS central (Panamá) sí; corresponde que Panamá surta al regional.</li>
+          <li style="margin:3px 0;"><b style="color:var(--rojo);">Gestión de compras</b> — ningún CEDIS de la red tiene existencia; el abastecimiento depende de una compra.</li>
+        </ul>
+        <p style="margin:8px 0 0;">También puede descargar un <b>pre-pedido en Excel</b> con los renglones que requieren reposición y la cantidad sugerida, listo para tramitar.</p>
+        <p style="margin:8px 0 0;color:var(--azul);cursor:pointer;font-weight:600;" id="linkTutorial">▶ ¿Primera vez? Vea el tutorial guiado paso a paso.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay del tutorial guiado -->
+  <div id="tourOverlay" style="display:none;">
+    <div id="tourBackdrop"></div>
+    <div id="tourBox">
+      <div id="tourTitulo"></div>
+      <div id="tourTexto"></div>
+      <div id="tourNav">
+        <span id="tourPaso"></span>
+        <span style="flex:1;"></span>
+        <button id="tourSkip" class="btn-plano">Saltar</button>
+        <button id="tourPrev" class="btn-plano">◂ Atrás</button>
+        <button id="tourNext">Siguiente ▸</button>
       </div>
     </div>
   </div>
@@ -196,24 +253,29 @@
 
       <div class="params">
         <div>
-          <label>Lead time (días)</label>
+          <label class="lbl-ayuda">Tiempo de entrega (días)
+            <span class="info-i">i<span class="tip">Cuántos días tarda, en promedio, en llegar un pedido desde que se solicita hasta que se recibe en su unidad. Si no está seguro, deje 15.</span></span>
+          </label>
           <input type="number" id="pLead" value="15" min="1" max="120">
         </div>
         <div>
-          <label>Cobertura objetivo (días)</label>
+          <label class="lbl-ayuda">Días que quiere cubrir
+            <span class="info-i">i<span class="tip">Para cuántos días de consumo quiere tener existencia después de reponer. 15 días es lo habitual; suba a 30 si prefiere pedir con más holgura.</span></span>
+          </label>
           <input type="number" id="pCob" value="15" min="1" max="120">
         </div>
         <div>
-          <label>Stock seguridad (días)</label>
+          <label class="lbl-ayuda">Reserva de seguridad (días)
+            <span class="info-i">i<span class="tip">Días extra de existencia como colchón, por si un pedido se atrasa o el consumo sube. 5 días es un valor prudente.</span></span>
+          </label>
           <input type="number" id="pSeg" value="5" min="0" max="60">
         </div>
         <div>
-          <label>En tránsito (unid.)</label>
-          <input type="number" id="pTransito" value="0" min="0">
-        </div>
-        <div>
-          <label>Consumo manual (si sin historia)</label>
-          <input type="number" id="pConsManual" value="" min="0" placeholder="opcional">
+          <label class="lbl-ayuda">Consumo mensual estimado
+            <span class="info-i">i<span class="tip">Solo si el renglón aparece "Sin historial de consumo". Escriba cuántas unidades usa su unidad al mes y la calculadora estimará el pedido inicial. Si ya hay historial, déjelo vacío.</span></span>
+          </label>
+          <input type="number" id="pConsManual" value="" min="0" placeholder="Déjelo vacío si hay historial">
+          <div class="campo-nota">Opcional. Úselo solo cuando no hay historial de consumo.</div>
         </div>
       </div>
 
@@ -324,7 +386,7 @@ function calcular(saldos, fechas, params, consManual){
 
   var estado, veredicto;
   if (consumo<=0){
-    estado='g'; veredicto='Sin consumo reciente';
+    estado='g'; veredicto='Sin historial de consumo — no se puede calcular el pedido';
   } else if (inv<=0){
     estado='r'; veredicto='Desabastecido — pedir urgente '+fmt(pedirTransito||pedir);
   } else if (inv<=reorden){
@@ -420,11 +482,11 @@ function pintarResumenRed(idx){
   var pa = porCedis['CEDIS PANAMA']||0, di = porCedis['CEDIS DIVISA']||0, ch = porCedis['CEDIS CHIRIQUI']||0;
   kp.style.display='flex';
   kp.innerHTML =
-    kpi('Unidades Ejecutoras', totUE, 'var(--azul2)') +
-    kpi('Renglones monitoreados', totReng, 'var(--azul2)') +
-    kpi('Abastece CEDIS Panamá', pa, 'var(--azul)') +
-    kpi('Abastece CEDIS Divisa', di, 'var(--azul)') +
-    kpi('Abastece CEDIS Chiriquí', ch, 'var(--azul)');
+    kpi('Unidades Ejecutoras', totUE, 'var(--azul2)', 'Policlínicas y hospitales con datos en el sistema.') +
+    kpi('Renglones monitoreados', totReng, 'var(--azul2)', 'Medicamentos e insumos con seguimiento de saldo.') +
+    kpi('Surte CEDIS Panamá', pa, 'var(--azul)', 'Unidades abastecidas por el CEDIS central.') +
+    kpi('Surte CEDIS Divisa', di, 'var(--azul)', 'Unidades de Herrera, Los Santos, Coclé y Veraguas.') +
+    kpi('Surte CEDIS Chiriquí', ch, 'var(--azul)', 'Unidades de Chiriquí y Bocas del Toro.');
 }
 
 // Carga (una sola vez) las curvas de las tres bodegas CEDIS.
@@ -582,11 +644,11 @@ function renderLista(){
   });
   var kp = el('kpisUE'); kp.style.display='flex';
   kp.innerHTML =
-    kpi('En cero', enCero, 'var(--rojo)') +
-    kpi('Pedir ya', pedirYa, 'var(--rojo)') +
-    kpi('Pedir pronto', pronto, 'var(--ambar)') +
-    kpi('Cobertura ok', ok, 'var(--verde)') +
-    kpi('Sin consumo', sinC, '#777');
+    kpi('En cero', enCero, 'var(--rojo)', 'Sin existencia. Requieren pedido inmediato.') +
+    kpi('Pedir ya', pedirYa, 'var(--rojo)', 'Existencia por debajo del nivel de alerta.') +
+    kpi('Pedir pronto', pronto, 'var(--ambar)', 'Se acercan al nivel de alerta (menos de 7 días).') +
+    kpi('Con cobertura', ok, 'var(--verde)', 'Existencia suficiente por ahora.') +
+    kpi('Sin historial', sinC, '#777', 'No se puede calcular sin datos de consumo.');
 
   var bus = el('buscarRenglon'); if(bus) bus.value='';   // limpiar búsqueda al cambiar de UE
   pintarTabla();
@@ -638,8 +700,9 @@ function pintarTabla(){
   });
 }
 
-function kpi(lab,val,color){
-  return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val" style="color:'+color+'">'+fmt(val)+'</div></div>';
+function kpi(lab,val,color,desc){
+  return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val" style="color:'+color+'">'+fmt(val)+'</div>'+
+         (desc?'<div class="kpi-desc">'+desc+'</div>':'')+'</div>';
 }
 function escapeHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -650,7 +713,6 @@ function abrirDetalle(cod){
   el('vistaLista').style.display='none';
   el('vistaDetalle').classList.add('on');
   el('kpisUE').style.display='none';
-  el('pTransito').value = 0;
   el('pConsManual').value = '';
   sincronizarComboRenglon();
   renderDetalle();
@@ -714,7 +776,7 @@ function renderDetalle(){
     lead: Number(el('pLead').value)||15,
     cob:  Number(el('pCob').value)||15,
     seg:  Number(el('pSeg').value)||5,
-    transito: Number(el('pTransito').value)||0
+    transito: 0
   };
   var consManual = Number(el('pConsManual').value)||0;
   var saldos = expandirSerie(rengln.v, UE_DATA.fechas);
@@ -731,17 +793,16 @@ function renderDetalle(){
     '<div class="veredicto-box '+c.estado+'">'+escapeHtml(c.veredicto)+'</div>' +
     (mostrarAbasto ? '<div class="abasto-box '+vAbasto.clase+'">'+escapeHtml(vAbasto.texto)+'</div>' : '');
 
-  // Números
+  // Números (etiquetas claras para usuario no logístico)
   el('detNums').innerHTML =
-    kpi('Inventario actual', c.inv, 'var(--azul2)') +
-    kpi('Consumo/día', c.consumo>0?c.consumo.toFixed(1):0, 'var(--azul2)') +
-    kpi('Punto de reorden', c.reorden, 'var(--ambar)') +
-    kpi('Nivel objetivo', c.objetivo, 'var(--verde)') +
-    kpi('Pedir (sin tránsito)', c.pedir, 'var(--azul2)') +
-    kpi('Pedir (con tránsito)', c.pedirTransito, 'var(--azul2)');
+    kpi('Existencia hoy', c.inv, 'var(--azul2)') +
+    kpi('Consumo por día', c.consumo>0?c.consumo.toFixed(1):0, 'var(--azul2)') +
+    kpi('Nivel de alerta', c.reorden, 'var(--ambar)') +
+    kpi('Existencia ideal', c.objetivo, 'var(--verde)') +
+    kpi('Cantidad a pedir', c.pedir, 'var(--rojo)');
 
   if (c.sinHistoria && consManual<=0){
-    aviso(el('avisoGlobal'), 'Este renglón no tiene consumo reciente. Si la unidad debe manejarlo (nueva inclusión), teclee un consumo mensual estimado arriba para calcular el pedido inicial.', '');
+    aviso(el('avisoGlobal'), 'Este renglón no tiene historial de consumo, por lo que no se puede calcular cuánto pedir. Si su unidad maneja este medicamento, escriba en "Consumo mensual estimado" cuántas unidades usa al mes.', '');
   } else { aviso(el('avisoGlobal'),'',''); }
 
   dibujarCurva(saldos, UE_DATA.fechas, c, serieN1, serieN2, vAbasto);
@@ -768,13 +829,13 @@ function dibujarCurva(saldos, fechas, c, serieN1, serieN2, vAbasto){
   if (serieN1 && serieN1.some(function(x){ return x!==null; })){
     hayCedis = true;
     var lblN1 = (vAbasto && vAbasto.n1cedis) ? vAbasto.n1cedis : 'CEDIS que abastece';
-    ds.push({ label:'Inventario '+lblN1, data:serieN1, borderColor:'#7a5a2a',
-      borderWidth:1.5, pointRadius:0, tension:.15, spanGaps:true, borderDash:[2,2], yAxisID:'y2' });
+    ds.push({ label:'Inventario '+lblN1, data:serieN1, borderColor:'#7b3fa0',
+      borderWidth:2, pointRadius:0, tension:.15, spanGaps:true, borderDash:[5,3], yAxisID:'y2' });
   }
   if (serieN2 && serieN2.some(function(x){ return x!==null; })){
     hayCedis = true;
-    ds.push({ label:'Inventario '+CEDIS_CENTRAL+' (central)', data:serieN2, borderColor:'#555',
-      borderWidth:1.5, pointRadius:0, tension:.15, spanGaps:true, borderDash:[8,3], yAxisID:'y2' });
+    ds.push({ label:'Inventario '+CEDIS_CENTRAL+' (central)', data:serieN2, borderColor:'#4a2570',
+      borderWidth:2, pointRadius:0, tension:.15, spanGaps:true, borderDash:[10,4], yAxisID:'y2' });
   }
 
   // Barras de Formas 8 (pedidos) por día para este renglón, separadas por tipo.
@@ -887,43 +948,217 @@ function marcarComboSel(items){
 })();
 
 // Exportar pre-pedido a Excel (solo renglones que requieren reposición)
+// Excel institucional con logo, encabezado formateado y filas por color de estado.
+// Usa ExcelJS (soporta imágenes y estilos). El logo se toma del mismo que usa
+// el topbar de la app.
+var LOGO_URL = 'https://raw.githubusercontent.com/TorredeControlCSS/REPOSICION_UE_CSS/main/icons/icon-192.png';
+
 function exportarPrePedido(){
   if (!UE_DATA || !FILAS_ACTUALES.length){ return; }
+  if (typeof ExcelJS === 'undefined'){ aviso(el('avisoGlobal'),'No se pudo cargar el generador de Excel. Revise su conexión e intente de nuevo.','err'); return; }
   var ueNom = UE_DATA.ue || 'UE';
   var corte = (INDICE && INDICE.fechas.length)? INDICE.fechas[INDICE.fechas.length-1] : '';
-  var aoa = [
-    ['PRE-PEDIDO DE REPOSICIÓN'],
-    ['Unidad Ejecutora:', ueNom],
-    ['Corte:', corte],
-    ['Generado:', new Date().toLocaleString('es-PA')],
-    [],
-    ['Estado','Código','Renglón','Vital','Inventario','Consumo/día','Días a reorden','Cantidad sugerida a pedir']
+
+  // filas que requieren acción (urgente o pronto)
+  var filas = FILAS_ACTUALES.filter(function(f){ return f.c.estado==='r' || f.c.estado==='a'; });
+  if (!filas.length){ aviso(el('avisoGlobal'),'No hay renglones que requieran reposición en esta unidad.','ok'); return; }
+
+  var AZUL='FF0C447C', AZUL2='FF1E5A9E', ROJO='FFC0392B', AMBAR='FFB8860B', GRIS='FFECECEC';
+  var wb = new ExcelJS.Workbook();
+  wb.creator='Torre de Control · CEDIS Panamá';
+  wb.created=new Date();
+  var ws = wb.addWorksheet('Pre-pedido', { views:[{showGridLines:false, state:'frozen', ySplit:8}] });
+
+  ws.columns = [
+    {width:11},{width:13},{width:52},{width:9},{width:13},{width:13},{width:15},{width:24}
   ];
-  FILAS_ACTUALES.forEach(function(f){
-    var c=f.c;
-    // solo los que requieren acción: urgente (r) o pronto (a)
-    if (c.estado!=='r' && c.estado!=='a') return;
-    aoa.push([
-      etiquetaEstado(c.estado), f.cod, f.nombre, f.vital?'VITAL':'',
-      Math.round(c.inv), Number(c.consumo.toFixed(1)),
-      (c.diasReorden==null?'':Math.round(c.diasReorden)),
-      Math.round(c.pedirTransito||c.pedir)
-    ]);
+
+  // --- Encabezado institucional ---
+  ws.mergeCells('A1:B4');           // espacio para el logo
+  ws.mergeCells('C1:H1'); ws.getCell('C1').value='CAJA DE SEGURO SOCIAL';
+  ws.mergeCells('C2:H2'); ws.getCell('C2').value='Dirección Nacional de Logística · CEDIS Panamá · Torre de Control';
+  ws.mergeCells('C3:H3'); ws.getCell('C3').value='PRE-PEDIDO DE REPOSICIÓN';
+  ws.getCell('C1').font={bold:true,size:13,color:{argb:AZUL}};
+  ws.getCell('C2').font={size:9,color:{argb:'FF555555'}};
+  ws.getCell('C3').font={bold:true,size:12,color:{argb:AZUL2}};
+
+  ws.mergeCells('C4:H4');
+  ws.getCell('C4').value='Unidad Ejecutora: '+ueNom+'    ·    Corte: '+corte+'    ·    Generado: '+new Date().toLocaleString('es-PA');
+  ws.getCell('C4').font={size:9,italic:true,color:{argb:'FF555555'}};
+
+  // nota explicativa
+  ws.mergeCells('A6:H6');
+  ws.getCell('A6').value='Incluye los renglones que requieren reposición (en cero, por debajo del nivel de alerta o próximos a él), con la cantidad sugerida a pedir según el consumo de los últimos días.';
+  ws.getCell('A6').font={size:9,color:{argb:'FF555555'}};
+  ws.getRow(6).height=26;
+  ws.getCell('A6').alignment={wrapText:true,vertical:'middle'};
+
+  // --- Cabecera de tabla (fila 8) ---
+  var H=['Estado','Código','Renglón','Vital','Existencia','Consumo/día','Días a alerta','Cantidad a pedir'];
+  var hr=ws.getRow(8); H.forEach(function(t,i){ hr.getCell(i+1).value=t; });
+  hr.eachCell(function(cell){
+    cell.font={bold:true,size:10,color:{argb:'FFFFFFFF'}};
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:AZUL2}};
+    cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};
+    cell.border={bottom:{style:'thin',color:{argb:'FFA8A8A8'}}};
   });
-  if (aoa.length<=6){ aviso(el('avisoGlobal'),'No hay renglones que requieran reposición en esta unidad.','ok'); return; }
-  var ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:10},{wch:12},{wch:44},{wch:7},{wch:11},{wch:11},{wch:14},{wch:22}];
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Pre-pedido');
+  hr.height=26;
+
+  // --- Filas de datos ---
+  var r=9;
+  filas.forEach(function(f){
+    var c=f.c;
+    var esRojo = c.estado==='r';
+    var row=ws.getRow(r);
+    row.getCell(1).value = etiquetaEstado(c.estado);
+    row.getCell(2).value = f.cod;
+    row.getCell(3).value = f.nombre;
+    row.getCell(4).value = f.vital?'VITAL':'';
+    row.getCell(5).value = Math.round(c.inv);
+    row.getCell(6).value = Number(c.consumo.toFixed(1));
+    row.getCell(7).value = (c.diasReorden==null?'':Math.round(c.diasReorden));
+    row.getCell(8).value = Math.round(c.pedir);
+    // estilos
+    row.getCell(1).font={bold:true,size:9,color:{argb:esRojo?ROJO:AMBAR}};
+    row.getCell(4).font={bold:true,size:8,color:{argb:ROJO}};
+    row.getCell(4).alignment={horizontal:'center'};
+    [5,6,7,8].forEach(function(ci){ row.getCell(ci).alignment={horizontal:'right'}; row.getCell(ci).font={name:'Consolas',size:10}; });
+    row.getCell(8).font={name:'Consolas',size:10,bold:true,color:{argb:esRojo?ROJO:AMBAR}};
+    row.getCell(3).font={size:10};
+    // sombreado tenue por urgencia
+    if (esRojo){ row.eachCell(function(cell){ cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFDECEC'}}; }); }
+    row.eachCell(function(cell){ cell.border={bottom:{style:'hair',color:{argb:'FFDDDDDD'}}}; });
+    r++;
+  });
+
+  // total
+  ws.mergeCells('A'+(r+1)+':G'+(r+1));
+  ws.getCell('A'+(r+1)).value='Total de renglones a pedir:';
+  ws.getCell('A'+(r+1)).font={bold:true,size:10}; ws.getCell('A'+(r+1)).alignment={horizontal:'right'};
+  ws.getCell('H'+(r+1)).value=filas.length;
+  ws.getCell('H'+(r+1)).font={bold:true,size:11,color:{argb:AZUL2}}; ws.getCell('H'+(r+1)).alignment={horizontal:'right'};
+
   var slug = ueNom.replace(/[^A-Za-z0-9]+/g,'_').slice(0,40);
-  XLSX.writeFile(wb, 'Pre-pedido_'+slug+'_'+corte+'.xlsx');
+  var nombreArchivo = 'Pre-pedido_'+slug+'_'+corte+'.xlsx';
+
+  // intentar incrustar el logo; si falla, se genera igual sin él
+  var finalizar = function(){
+    wb.xlsx.writeBuffer().then(function(buf){
+      var blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a'); a.href=url; a.download=nombreArchivo;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  };
+  fetch(LOGO_URL).then(function(r){ return r.ok? r.arrayBuffer() : Promise.reject(); })
+    .then(function(ab){
+      var imgId=wb.addImage({ buffer:ab, extension:'png' });
+      ws.addImage(imgId, { tl:{col:0.3,row:0.3}, ext:{width:70,height:70} });
+      finalizar();
+    })
+    .catch(function(){ finalizar(); });   // sin logo si no carga
 }
 el('btnExcel').addEventListener('click', exportarPrePedido);
-['pLead','pCob','pSeg','pTransito','pConsManual'].forEach(function(id){
+['pLead','pCob','pSeg','pConsManual'].forEach(function(id){
   el(id).addEventListener('input', function(){
     if (el('vistaDetalle').classList.contains('on')) renderDetalle();
   });
 });
+
+// ====== TUTORIAL GUIADO ======
+// Pasos: cada uno resalta un elemento y muestra una explicación. Algunos
+// requieren tener una UE abierta y un renglón en detalle; el tour los prepara.
+var TOUR_STEPS = [
+  { sel:'#selUE', tit:'1. Elija su unidad', txt:'Aquí selecciona su Unidad Ejecutora (su policlínica u hospital). Al elegirla, la calculadora carga todos sus medicamentos e insumos.' },
+  { sel:'#kpisUE', tit:'2. Resumen de su unidad', txt:'Estas tarjetas le dicen, de un vistazo, cuántos renglones están en cero, cuántos debe pedir ya, cuántos pronto, y cuántos tienen cobertura suficiente.', prep:'lista' },
+  { sel:'#buscarRenglon', tit:'3. Busque un renglón', txt:'Escriba el nombre o el código de un medicamento para encontrarlo rápido, sin recorrer toda la lista.', prep:'lista' },
+  { sel:'#tablaLista', tit:'4. La lista por urgencia', txt:'Sus renglones aparecen ordenados por urgencia: primero los que están en cero. El semáforo de color y el veredicto le dicen qué hacer con cada uno. Haga clic en cualquier fila para ver su detalle.', prep:'lista' },
+  { sel:'#detVeredicto', tit:'5. El diagnóstico', txt:'Al abrir un renglón, esta franja le dice si necesita pedir y —cuando está en riesgo— dónde está el problema: si su CEDIS debe despacharle, si el central debe surtir al regional, o si es asunto de compras.', prep:'detalle' },
+  { sel:'.params', tit:'6. Ajustes (opcional)', txt:'Estos valores ya vienen con un cálculo prudente. Solo cámbielos si conoce datos específicos de su unidad. Pase el mouse sobre la (i) de cada uno para saber qué significa.', prep:'detalle' },
+  { sel:'.chart-box', tit:'7. La curva de existencia', txt:'Muestra cómo bajó su existencia día por día. La línea morada es lo que tiene su CEDIS. Las barras marcan las Formas 8 que su unidad solicitó: así ve si pidió a tiempo frente a la caída.', prep:'detalle' },
+  { sel:'#btnExcel', tit:'8. Descargue su pre-pedido', txt:'Genera un Excel con los renglones que requieren reposición y la cantidad sugerida, listo para tramitar su pedido.', prep:'lista' }
+];
+var TOUR_I = 0;
+
+function tourElegirDemoUE(){
+  // elige la primera UE del selector para poder mostrar lista y detalle
+  var sel = el('selUE');
+  if (sel && sel.options.length>1 && !sel.value){
+    sel.selectedIndex = 1; sel.value = sel.options[1].value;
+    cargarUE(sel.value);
+  }
+}
+function tourPrepararDetalle(){
+  // abre el primer renglón para los pasos de detalle
+  if (FILAS_ACTUALES && FILAS_ACTUALES.length && !el('vistaDetalle').classList.contains('on')){
+    abrirDetalle(FILAS_ACTUALES[0].cod);
+  }
+}
+function tourVolverLista(){
+  if (el('vistaDetalle').classList.contains('on')) renderLista();
+}
+
+function iniciarTour(){
+  TOUR_I = 0;
+  el('panelBienvenida') && (el('panelBienvenida').style.display='none');
+  tourElegirDemoUE();
+  el('tourOverlay').style.display='block';
+  // pequeño respiro para que cargue la UE demo
+  setTimeout(function(){ mostrarPasoTour(); }, 600);
+}
+function cerrarTour(){
+  el('tourOverlay').style.display='none';
+  var sp=document.querySelector('.tour-spot'); if(sp) sp.remove();
+}
+function mostrarPasoTour(){
+  var step = TOUR_STEPS[TOUR_I];
+  if(!step){ cerrarTour(); return; }
+  // preparar el estado necesario para el paso
+  if (step.prep==='detalle') tourPrepararDetalle();
+  else if (step.prep==='lista') tourVolverLista();
+
+  setTimeout(function(){ posicionarTour(step); }, step.prep? 250 : 0);
+}
+function posicionarTour(step){
+  var target = document.querySelector(step.sel);
+  var box = el('tourBox');
+  // spotlight
+  var sp = document.querySelector('.tour-spot');
+  if(!sp){ sp=document.createElement('div'); sp.className='tour-spot'; el('tourOverlay').appendChild(sp); }
+  if (target){
+    target.scrollIntoView({block:'center', behavior:'smooth'});
+    setTimeout(function(){
+      var r = target.getBoundingClientRect();
+      sp.style.top=(r.top-6)+'px'; sp.style.left=(r.left-6)+'px';
+      sp.style.width=(r.width+12)+'px'; sp.style.height=(r.height+12)+'px';
+      sp.style.display='block';
+      // posicionar la caja: debajo si cabe, si no arriba
+      var bh=box.offsetHeight||160, bw=box.offsetWidth||320;
+      var top = r.bottom+14; if (top+bh > window.innerHeight-10) top = Math.max(10, r.top-bh-14);
+      var left = Math.min(Math.max(10, r.left), window.innerWidth-bw-10);
+      box.style.top=top+'px'; box.style.left=left+'px';
+    }, 300);
+  } else {
+    sp.style.display='none';
+    box.style.top='50%'; box.style.left='50%'; box.style.transform='translate(-50%,-50%)';
+  }
+  el('tourTitulo').textContent = step.tit;
+  el('tourTexto').textContent = step.txt;
+  el('tourPaso').textContent = 'Paso '+(TOUR_I+1)+' de '+TOUR_STEPS.length;
+  el('tourPrev').style.visibility = TOUR_I===0 ? 'hidden' : 'visible';
+  el('tourNext').textContent = TOUR_I===TOUR_STEPS.length-1 ? 'Terminar' : 'Siguiente ▸';
+}
+(function(){
+  var b=el('btnTutorial'); if(b) b.addEventListener('click', iniciarTour);
+  var l=el('linkTutorial'); if(l) l.addEventListener('click', iniciarTour);
+  var n=el('tourNext'); if(n) n.addEventListener('click', function(){
+    if(TOUR_I>=TOUR_STEPS.length-1){ cerrarTour(); return; }
+    TOUR_I++; mostrarPasoTour();
+  });
+  var p=el('tourPrev'); if(p) p.addEventListener('click', function(){ if(TOUR_I>0){ TOUR_I--; mostrarPasoTour(); } });
+  var s=el('tourSkip'); if(s) s.addEventListener('click', cerrarTour);
+})();
 
 // arranque
 cargarDiccionario().then(cargarIndice);
