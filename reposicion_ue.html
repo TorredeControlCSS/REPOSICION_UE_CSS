@@ -85,6 +85,20 @@
   .nums{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
   .nums .kpi{min-width:110px;}
   .hint{font-size:11px;color:var(--sub);margin-top:4px;}
+  /* Combo escribible para cambiar de renglón en el detalle */
+  .combo-list-det{position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;
+    border:1px solid var(--bord);border-top:none;max-height:280px;overflow:auto;display:none;
+    box-shadow:0 4px 10px rgba(0,0,0,.12);}
+  .combo-list-det.on{display:block;}
+  .combo-item{padding:7px 10px;font-size:12.5px;cursor:pointer;border-bottom:1px solid #eee;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;}
+  .combo-item:hover,.combo-item.sel{background:#f2f7fc;}
+  .combo-item .cod{color:#999;font-size:10px;margin-left:6px;}
+  .combo-item .et{font-size:9px;font-weight:700;margin-right:6px;padding:1px 4px;border-radius:2px;}
+  .combo-item .et.r{color:var(--rojo);}
+  .combo-item .et.a{color:var(--ambar);}
+  .combo-item .et.v{color:var(--verde);}
+  .combo-item .et.g{color:#777;}
 </style>
 </head>
 <body>
@@ -165,7 +179,11 @@
       <span class="back" id="btnBack" style="margin:0;">← Volver a la lista</span>
       <div style="flex:1;min-width:240px;display:flex;align-items:center;gap:8px;">
         <label style="margin:0;white-space:nowrap;">Cambiar renglón:</label>
-        <select id="selRenglonDet" style="flex:1;min-width:200px;"></select>
+        <div style="flex:1;min-width:200px;position:relative;">
+          <input id="buscarRenglonDet" placeholder="Escriba nombre o código…" autocomplete="off"
+                 style="width:100%;box-sizing:border-box;">
+          <div id="listaRenglonDet" class="combo-list-det"></div>
+        </div>
       </div>
       <span id="navRenglon" style="display:flex;gap:6px;">
         <button id="btnRengPrev" title="Renglón anterior (por urgencia)">◂ Anterior</button>
@@ -599,22 +617,48 @@ function abrirDetalle(cod){
   el('kpisUE').style.display='none';
   el('pTransito').value = 0;
   el('pConsManual').value = '';
-  poblarSelRenglon();
+  sincronizarComboRenglon();
   renderDetalle();
 }
 
-// Llena el selector de renglones del detalle usando el orden por urgencia ya
-// calculado en FILAS_ACTUALES (mismo orden que la lista). Permite saltar de
-// renglón sin volver atrás.
-function poblarSelRenglon(){
-  var sel = el('selRenglonDet');
-  if(!sel) return;
-  var opts = FILAS_ACTUALES.map(function(f){
-    var etq = etiquetaEstado(f.c.estado);
-    return '<option value="'+f.cod+'"'+(f.cod===COD_ACTUAL?' selected':'')+'>'+
-           '['+etq+'] '+escapeHtml(f.nombre)+' · '+f.cod+'</option>';
+// Pone el nombre del renglón actual en el buscador y cierra la lista.
+function sincronizarComboRenglon(){
+  var inp = el('buscarRenglonDet');
+  if(inp) inp.value = nombreDe(COD_ACTUAL)+' · '+COD_ACTUAL;
+  cerrarListaRenglon();
+}
+// Cierra el desplegable de autocompletado.
+function cerrarListaRenglon(){
+  var lst = el('listaRenglonDet');
+  if(lst){ lst.classList.remove('on'); lst.innerHTML=''; }
+}
+// Filtra FILAS_ACTUALES por texto y pinta el desplegable de autocompletado.
+var COMBO_SEL = -1;   // índice resaltado con teclado
+function renderComboRenglon(q){
+  var lst = el('listaRenglonDet'); if(!lst) return;
+  q = (q||'').trim().toUpperCase();
+  // si el texto es exactamente el renglón actual (sincronizado), mostrar todo
+  var base = FILAS_ACTUALES;
+  var res = q ? base.filter(function(f){
+    return String(f.nombre||'').toUpperCase().indexOf(q)>=0 ||
+           String(f.cod||'').toUpperCase().indexOf(q)>=0;
+  }) : base.slice(0, 50);   // sin texto: primeros 50 por urgencia
+  COMBO_SEL = -1;
+  if(!res.length){ lst.innerHTML='<div class="combo-item" style="color:#999;cursor:default;">Sin coincidencias</div>'; lst.classList.add('on'); return; }
+  lst.innerHTML = res.slice(0,80).map(function(f){
+    var cls = f.c.estado;
+    return '<div class="combo-item" data-cod="'+f.cod+'">'+
+           '<span class="et '+cls+'">'+etiquetaEstado(f.c.estado)+'</span>'+
+           escapeHtml(f.nombre)+'<span class="cod">'+f.cod+'</span></div>';
   }).join('');
-  sel.innerHTML = opts;
+  lst.classList.add('on');
+  // clic en un item
+  Array.prototype.forEach.call(lst.querySelectorAll('.combo-item[data-cod]'), function(it){
+    it.addEventListener('mousedown', function(e){   // mousedown: antes del blur
+      e.preventDefault();
+      abrirDetalle(it.getAttribute('data-cod'));
+    });
+  });
 }
 // Salta al renglón anterior/siguiente según el orden por urgencia.
 function saltarRenglon(delta){
@@ -726,12 +770,39 @@ el('btnBack').addEventListener('click', renderLista);
 
 // Navegación de renglón dentro del detalle (sin volver a la lista)
 (function(){
-  var sel = el('selRenglonDet');
-  if(sel) sel.addEventListener('change', function(){ if(this.value) abrirDetalle(this.value); });
+  var inp = el('buscarRenglonDet');
+  if(inp){
+    // al enfocar: seleccionar todo el texto y mostrar sugerencias
+    inp.addEventListener('focus', function(){ this.select(); renderComboRenglon(''); });
+    // al escribir: filtrar
+    inp.addEventListener('input', function(){
+      clearTimeout(window._brdt);
+      window._brdt = setTimeout(function(){ renderComboRenglon(inp.value); }, 100);
+    });
+    // teclado: flechas para navegar, Enter para elegir, Esc para cerrar
+    inp.addEventListener('keydown', function(e){
+      var lst = el('listaRenglonDet');
+      var items = lst ? lst.querySelectorAll('.combo-item[data-cod]') : [];
+      if(e.key==='ArrowDown'){ e.preventDefault(); COMBO_SEL=Math.min(COMBO_SEL+1, items.length-1); marcarComboSel(items); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); COMBO_SEL=Math.max(COMBO_SEL-1, 0); marcarComboSel(items); }
+      else if(e.key==='Enter'){ e.preventDefault();
+        var pick = (COMBO_SEL>=0 && items[COMBO_SEL]) ? items[COMBO_SEL] : items[0];
+        if(pick) abrirDetalle(pick.getAttribute('data-cod'));
+      }
+      else if(e.key==='Escape'){ sincronizarComboRenglon(); inp.blur(); }
+    });
+    // al perder foco: cerrar (con pequeño delay para permitir el clic)
+    inp.addEventListener('blur', function(){ setTimeout(cerrarListaRenglon, 150); });
+  }
   var prev = el('btnRengPrev'), next = el('btnRengNext');
   if(prev) prev.addEventListener('click', function(){ saltarRenglon(-1); });
   if(next) next.addEventListener('click', function(){ saltarRenglon(1); });
 })();
+
+function marcarComboSel(items){
+  Array.prototype.forEach.call(items, function(it,i){ it.classList.toggle('sel', i===COMBO_SEL); });
+  if(COMBO_SEL>=0 && items[COMBO_SEL]) items[COMBO_SEL].scrollIntoView({block:'nearest'});
+}
 
 // Buscador de renglones (filtra la tabla en vivo, con pequeño debounce)
 (function(){
