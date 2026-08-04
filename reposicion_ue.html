@@ -12,7 +12,7 @@
     --bord:#a8a8a8; --sub:#555; --verde:#2e7d32; --ambar:#b8860b; --rojo:#a11;
   }
   html,body{margin:0;padding:0;background:var(--bg);font-family:"Segoe UI",Tahoma,sans-serif;color:#222;}
-  .wrap{max-width:1100px;margin:0 auto;padding:0 12px 40px;}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 14px 32px;}
   .topbar{background:linear-gradient(90deg,var(--azul2),var(--azul));color:#fff;display:flex;align-items:center;gap:12px;padding:11px 16px;}
   .topbar img{width:42px;height:42px;object-fit:contain;flex-shrink:0;background:transparent;}
   .topbar .t1{font-size:15px;font-weight:700;line-height:1.2;}
@@ -106,6 +106,26 @@
     <div class="hint">Al entrar verá sus renglones ordenados por urgencia: primero los que están en cero, luego los más próximos al punto de reorden.</div>
   </div>
 
+  <!-- Panel de bienvenida / resumen de red (se oculta al elegir una UE) -->
+  <div id="panelBienvenida">
+    <div class="kpis" id="kpisRed" style="display:none;"></div>
+    <div class="card" id="cardBienvenida">
+      <div class="kicker">Cómo usar esta calculadora</div>
+      <div style="font-size:13px;line-height:1.6;color:#333;margin-top:6px;">
+        <p style="margin:6px 0;">Elija su Unidad Ejecutora arriba. Verá todos sus renglones ordenados por urgencia,
+        con un semáforo por estado y la cantidad sugerida a pedir.</p>
+        <p style="margin:6px 0;"><b>Cada renglón</b> muestra su curva de saldo de los últimos días y, cuando está
+        en riesgo, un diagnóstico de dónde está el problema:</p>
+        <ul style="margin:6px 0 6px 18px;padding:0;">
+          <li style="margin:3px 0;"><b style="color:var(--verde);">Distribución local</b> — su CEDIS tiene existencia y debe despacharle.</li>
+          <li style="margin:3px 0;"><b style="color:var(--ambar);">Reabasto inter-CEDIS</b> — su CEDIS regional está seco pero CEDIS Panamá tiene; Panamá debe surtir al regional.</li>
+          <li style="margin:3px 0;"><b style="color:var(--rojo);">Compras</b> — nadie en la red tiene existencia; es gestión de compras.</li>
+        </ul>
+        <p style="margin:6px 0;">Puede descargar un <b>pre-pedido en Excel</b> con solo los renglones que requieren reposición.</p>
+      </div>
+    </div>
+  </div>
+
   <div id="avisoGlobal"></div>
 
   <!-- VISTA LISTA -->
@@ -141,7 +161,17 @@
 
   <!-- VISTA DETALLE / CURVA -->
   <div class="detalle" id="vistaDetalle">
-    <span class="back" id="btnBack">← Volver a la lista</span>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+      <span class="back" id="btnBack" style="margin:0;">← Volver a la lista</span>
+      <div style="flex:1;min-width:240px;display:flex;align-items:center;gap:8px;">
+        <label style="margin:0;white-space:nowrap;">Cambiar renglón:</label>
+        <select id="selRenglonDet" style="flex:1;min-width:200px;"></select>
+      </div>
+      <span id="navRenglon" style="display:flex;gap:6px;">
+        <button id="btnRengPrev" title="Renglón anterior (por urgencia)">◂ Anterior</button>
+        <button id="btnRengNext" title="Siguiente renglón (por urgencia)">Siguiente ▸</button>
+      </span>
+    </div>
     <div class="card">
       <div class="kicker" id="detNombre">—</div>
       <div id="detVeredicto"></div>
@@ -354,8 +384,28 @@ function cargarIndice(){
         });
       // Precargar en segundo plano las curvas de los CEDIS (no bloquea la lista)
       cargarCedis(idx.cedis_url || 'series_saldos_CEDIS.json');
+      // Resumen de red para el panel de bienvenida (llena el espacio vacío)
+      pintarResumenRed(idx);
     })
     .catch(function(e){ aviso(el('avisoGlobal'), 'Error cargando el índice: '+e.message+'. Verifique que series_saldos_index.json esté publicado.', 'err'); });
+}
+
+// Resumen de la red a partir del índice: total UEs, renglones cubiertos, y
+// reparto por CEDIS. Da contexto antes de elegir una unidad.
+function pintarResumenRed(idx){
+  var kp = el('kpisRed'); if(!kp) return;
+  var totUE = idx.ues.length;
+  var totReng = idx.ues.reduce(function(a,u){ return a + (u.renglones||0); }, 0);
+  var porCedis = {};
+  idx.ues.forEach(function(u){ var c=u.cedis||'—'; porCedis[c]=(porCedis[c]||0)+1; });
+  var pa = porCedis['CEDIS PANAMA']||0, di = porCedis['CEDIS DIVISA']||0, ch = porCedis['CEDIS CHIRIQUI']||0;
+  kp.style.display='flex';
+  kp.innerHTML =
+    kpi('Unidades Ejecutoras', totUE, 'var(--azul2)') +
+    kpi('Renglones monitoreados', totReng, 'var(--azul2)') +
+    kpi('Abastece CEDIS Panamá', pa, 'var(--azul)') +
+    kpi('Abastece CEDIS Divisa', di, 'var(--azul)') +
+    kpi('Abastece CEDIS Chiriquí', ch, 'var(--azul)');
 }
 
 // Carga (una sola vez) las curvas de las tres bodegas CEDIS.
@@ -415,6 +465,7 @@ function cargarUE(archivo){
       UE_DATA = data;
       // El archivo de la UE también trae 'cedis'; si el índice no lo tenía, usarlo
       if(!UE_CEDIS && data.cedis) UE_CEDIS = cedisCanon(data.cedis);
+      var pb=el('panelBienvenida'); if(pb) pb.style.display='none';   // ocultar bienvenida
       aviso(el('avisoGlobal'),'','');
       renderLista();
     })
@@ -548,13 +599,36 @@ function abrirDetalle(cod){
   el('kpisUE').style.display='none';
   el('pTransito').value = 0;
   el('pConsManual').value = '';
+  poblarSelRenglon();
   renderDetalle();
+}
+
+// Llena el selector de renglones del detalle usando el orden por urgencia ya
+// calculado en FILAS_ACTUALES (mismo orden que la lista). Permite saltar de
+// renglón sin volver atrás.
+function poblarSelRenglon(){
+  var sel = el('selRenglonDet');
+  if(!sel) return;
+  var opts = FILAS_ACTUALES.map(function(f){
+    var etq = etiquetaEstado(f.c.estado);
+    return '<option value="'+f.cod+'"'+(f.cod===COD_ACTUAL?' selected':'')+'>'+
+           '['+etq+'] '+escapeHtml(f.nombre)+' · '+f.cod+'</option>';
+  }).join('');
+  sel.innerHTML = opts;
+}
+// Salta al renglón anterior/siguiente según el orden por urgencia.
+function saltarRenglon(delta){
+  var i = FILAS_ACTUALES.findIndex(function(f){ return f.cod===COD_ACTUAL; });
+  if(i<0) return;
+  var j = i + delta;
+  if(j<0 || j>=FILAS_ACTUALES.length) return;
+  abrirDetalle(FILAS_ACTUALES[j].cod);
 }
 
 function renderDetalle(){
   var rengln = UE_DATA.f.filter(function(r){ return r.c===COD_ACTUAL; })[0];
   if (!rengln){ return; }
-  var nombre = (MAESTRO[COD_ACTUAL]||COD_ACTUAL);
+  var nombre = nombreDe(COD_ACTUAL);
   el('detNombre').textContent = nombre+'  ·  '+COD_ACTUAL;
 
   var params = {
@@ -649,6 +723,15 @@ el('selUE').addEventListener('change', function(){
   var a=this.value; if(a) cargarUE(a);
 });
 el('btnBack').addEventListener('click', renderLista);
+
+// Navegación de renglón dentro del detalle (sin volver a la lista)
+(function(){
+  var sel = el('selRenglonDet');
+  if(sel) sel.addEventListener('change', function(){ if(this.value) abrirDetalle(this.value); });
+  var prev = el('btnRengPrev'), next = el('btnRengNext');
+  if(prev) prev.addEventListener('click', function(){ saltarRenglon(-1); });
+  if(next) next.addEventListener('click', function(){ saltarRenglon(1); });
+})();
 
 // Buscador de renglones (filtra la tabla en vivo, con pequeño debounce)
 (function(){
