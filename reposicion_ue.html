@@ -74,6 +74,11 @@
   .veredicto-box.a{background:#fff8e6;border-color:var(--ambar);color:#7a5a00;}
   .veredicto-box.v{background:#eef7ee;border-color:var(--verde);color:#1a5a1a;}
   .veredicto-box.g{background:#f2f2f2;border-color:#999;color:#555;}
+  /* Veredicto de abastecimiento aguas arriba (2 escalones) */
+  .abasto-box{padding:9px 12px;font-size:12.5px;font-weight:600;margin:-4px 0 10px;border:1px solid;line-height:1.35;}
+  .abasto-box.dist{background:#eef7ee;border-color:var(--verde);color:#1a5a1a;}
+  .abasto-box.reab{background:#fff8e6;border-color:var(--ambar);color:#7a5a00;}
+  .abasto-box.compra{background:#fdecec;border-color:var(--rojo);color:#7a1010;}
   .params{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:10px 0;}
   .params > div{flex:1;min-width:130px;}
   .chart-box{position:relative;height:340px;}
@@ -172,12 +177,26 @@
 // ====== CONFIG ======
 var BASE = 'https://torredecontrolcss.github.io/REPOSICION_UE_CSS/';
 var VENTANA_CONSUMO = 30;   // días para calcular consumo diario
+var CEDIS_CENTRAL = 'CEDIS PANAMA';   // nivel-2 constante: Panamá surte a los CEDIS regionales
 
 // ====== ESTADO ======
-var INDICE = null;      // {fechas, ues:[{ue,archivo,renglones}]}
-var UE_DATA = null;     // {ue, fechas, f:[{c, v:[[fecha,saldo]]}]}
+var INDICE = null;      // {fechas, ues:[{ue,archivo,cedis,renglones}], cedis_url}
+var UE_DATA = null;     // {ue, cedis, fechas, f:[{c, v:[[fecha,saldo]]}]}
+var CEDIS_DATA = null;  // {fechas, cedis:{'CEDIS X':[{c, v:[[fecha,saldo]]}]}}
+var UE_CEDIS = '';      // CEDIS que abastece a la UE activa (canónico, base sin acento)
 var MAESTRO = {};       // cod -> {n:nombre, vit:0|1}
 var chart = null;
+
+// Base sin acentos/símbolos para casar nombres de CEDIS entre índice y archivo
+function baseUp(s){ return String(s==null?'':s).toUpperCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+// Nombre canónico de bodega CEDIS a partir de cualquier grafía
+function cedisCanon(s){ var t=baseUp(s);
+  if(t.indexOf('PANAMA')>=0)   return 'CEDIS PANAMA';
+  if(t.indexOf('DIVISA')>=0)   return 'CEDIS DIVISA';
+  if(t.indexOf('CHIRIQUI')>=0) return 'CEDIS CHIRIQUI';
+  return ''; }
 
 // ====== DICCIONARIO DE RENGLONES ======
 function cargarDiccionario(){
@@ -194,9 +213,18 @@ function fmt(n){ n=Math.round(Number(n)||0); return n.toLocaleString('es-PA'); }
 function el(id){ return document.getElementById(id); }
 function aviso(cont, msg, tipo){ cont.innerHTML = msg ? '<div class="aviso '+(tipo||'')+'">'+msg+'</div>' : ''; }
 
-// Expande la serie dispersa [[fecha,saldo]] a saldo por cada fecha del eje (last-carried-forward)
+// Expande la serie dispersa a saldo por cada fecha del eje (last-carried-forward).
+// FORMATO: el backend (MODULO_SERIES_SALDOS) emite [[índiceDeFecha, saldo], ...]
+// donde índiceDeFecha es la posición entera dentro del arreglo 'fechas', NO la
+// fecha en texto. Se soporta también el formato legado [[fechaISO, saldo]] por
+// si quedaran archivos viejos publicados.
 function expandirSerie(vSparse, fechas){
-  var mapa = {}; vSparse.forEach(function(p){ mapa[p[0]] = p[1]; });
+  var mapa = {};
+  vSparse.forEach(function(p){
+    var k = p[0];
+    if (typeof k === 'number') { if (k>=0 && k<fechas.length) mapa[fechas[k]] = p[1]; }
+    else { mapa[k] = p[1]; }                 // legado: clave ya es fecha ISO
+  });
   var out = []; var prev = null;
   for (var i=0;i<fechas.length;i++){
     if (mapa[fechas[i]] !== undefined) prev = mapa[fechas[i]];
@@ -259,6 +287,39 @@ function calcular(saldos, fechas, params, consManual){
           estado:estado, veredicto:veredicto, sinHistoria:sinHistoria, puntos:cd.puntos};
 }
 
+// ====== VEREDICTO AGUAS ARRIBA (2 escalones) ======
+// Decide si un cero/quiebre en la UE es distribución local, reabasto
+// inter-CEDIS o compras, según el saldo actual de su CEDIS regional y de
+// CEDIS Panamá (central). Sólo aplica cuando la UE está en riesgo.
+function veredictoAbasto(cod, invUE, consumoDia){
+  // Nivel 1: el CEDIS que la surte directo
+  var esCentral = (UE_CEDIS===CEDIS_CENTRAL || !UE_CEDIS);
+  var n1cedis = UE_CEDIS || CEDIS_CENTRAL;
+  var s1 = ultimoSaldo(serieCedis(n1cedis, cod));
+  // Nivel 2: CEDIS Panamá (sólo si la UE es regional)
+  var s2 = esCentral ? null : ultimoSaldo(serieCedis(CEDIS_CENTRAL, cod));
+
+  var mesesN1 = (consumoDia>0 && s1!=null) ? (s1/(consumoDia*30)) : null;
+  var mesesN2 = (consumoDia>0 && s2!=null) ? (s2/(consumoDia*30)) : null;
+
+  var clase, texto;
+  if (s1!=null && s1>0){
+    clase='dist';
+    texto = 'Distribución local · '+n1cedis+' tiene '+fmt(s1)+
+            (mesesN1!=null?' (≈'+mesesN1.toFixed(1)+' meses)':'')+' — debe despachar a la unidad.';
+  } else if (!esCentral && s2!=null && s2>0){
+    clase='reab';
+    texto = 'Reabasto inter-CEDIS · '+n1cedis+' está sin existencia, pero CEDIS Panamá tiene '+fmt(s2)+
+            (mesesN2!=null?' (≈'+mesesN2.toFixed(1)+' meses)':'')+' — Panamá debe surtir al CEDIS regional.';
+  } else {
+    clase='compra';
+    texto = 'Compras · sin existencia en '+n1cedis+(esCentral?'':' ni en CEDIS Panamá')+
+            '. No es distribución: corresponde a gestión de compras.';
+  }
+  return { clase:clase, texto:texto, n1cedis:n1cedis, s1:s1, s2:s2,
+           mesesN1:mesesN1, mesesN2:mesesN2, esCentral:esCentral };
+}
+
 function fechaReorden(fechas, inv, reorden, consumo){
   if (consumo<=0) return null;
   var dias = (inv - reorden)/consumo;
@@ -283,18 +344,72 @@ function cargarIndice(){
         .forEach(function(u){
           var o = document.createElement('option');
           o.value = u.archivo; o.textContent = u.ue+'  ('+u.renglones+' renglones)';
+          o.setAttribute('data-cedis', u.cedis||'');   // CEDIS que la abastece
           sel.appendChild(o);
         });
+      // Precargar en segundo plano las curvas de los CEDIS (no bloquea la lista)
+      cargarCedis(idx.cedis_url || 'series_saldos_CEDIS.json');
     })
     .catch(function(e){ aviso(el('avisoGlobal'), 'Error cargando el índice: '+e.message+'. Verifique que series_saldos_index.json esté publicado.', 'err'); });
 }
 
+// Carga (una sola vez) las curvas de las tres bodegas CEDIS.
+function cargarCedis(archivo){
+  fetch(BASE+archivo+'?ts='+Date.now())
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if(!data || !data.cedis){ return; }
+      // Reindexar las llaves de CEDIS a forma canónica para casar con UE_CEDIS
+      var idx={};
+      Object.keys(data.cedis).forEach(function(k){
+        var can=cedisCanon(k)||baseUp(k);
+        idx[can]=data.cedis[k];
+      });
+      CEDIS_DATA = { fechas:data.fechas, cedis:idx };
+      // Si ya hay un detalle abierto, refrescar para pintar el overlay
+      if (el('vistaDetalle').classList.contains('on')) renderDetalle();
+    })
+    .catch(function(){ /* sin CEDIS: la curva de UE se muestra igual */ });
+}
+
+// Devuelve la serie expandida (saldo/día) de un CEDIS para un renglón, o null.
+function serieCedis(cedisCan, cod){
+  if(!CEDIS_DATA || !CEDIS_DATA.cedis) return null;
+  var lista = CEDIS_DATA.cedis[cedisCan]; if(!lista) return null;
+  var r = lista.filter(function(x){ return x.c===cod; })[0]; if(!r) return null;
+  // Expandir sobre el eje de fechas de la UE (pueden diferir en longitud;
+  // se mapea por fecha ISO, no por índice, para ser robusto).
+  return expandirPorFecha(r.v, CEDIS_DATA.fechas, UE_DATA.fechas);
+}
+// Expande serie dispersa [[idxFechaCedis,saldo]] al eje de fechas de la UE.
+function expandirPorFecha(vSparse, fechasCedis, fechasUE){
+  var mapa={};
+  vSparse.forEach(function(p){ var f=fechasCedis[p[0]]; if(f!==undefined) mapa[f]=p[1]; });
+  var out=[]; var prev=null;
+  for(var i=0;i<fechasUE.length;i++){
+    if(mapa[fechasUE[i]]!==undefined) prev=mapa[fechasUE[i]];
+    out.push(prev);
+  }
+  return out;
+}
+// Último valor no-nulo de una serie (saldo actual del CEDIS).
+function ultimoSaldo(serie){
+  if(!serie) return null;
+  for(var i=serie.length-1;i>=0;i--) if(serie[i]!==null) return serie[i];
+  return null;
+}
+
 function cargarUE(archivo){
   aviso(el('avisoGlobal'), 'Cargando unidad…', '');
+  // Capturar el CEDIS que abastece a esta UE desde la opción seleccionada
+  var opt = el('selUE').options[el('selUE').selectedIndex];
+  UE_CEDIS = cedisCanon(opt ? (opt.getAttribute('data-cedis')||'') : '');
   fetch(BASE+archivo+'?ts='+Date.now())
     .then(function(r){ if(!r.ok) throw new Error('archivo '+r.status); return r.json(); })
     .then(function(data){
       UE_DATA = data;
+      // El archivo de la UE también trae 'cedis'; si el índice no lo tenía, usarlo
+      if(!UE_CEDIS && data.cedis) UE_CEDIS = cedisCanon(data.cedis);
       aviso(el('avisoGlobal'),'','');
       renderLista();
     })
@@ -425,8 +540,16 @@ function renderDetalle(){
   var saldos = expandirSerie(rengln.v, UE_DATA.fechas);
   var c = calcular(saldos, UE_DATA.fechas, params, consManual);
 
-  // Veredicto grande
-  el('detVeredicto').innerHTML = '<div class="veredicto-box '+c.estado+'">'+escapeHtml(c.veredicto)+'</div>';
+  // Series de CEDIS aguas arriba (para overlay y veredicto)
+  var serieN1 = serieCedis(UE_CEDIS||CEDIS_CENTRAL, COD_ACTUAL);
+  var serieN2 = (UE_CEDIS && UE_CEDIS!==CEDIS_CENTRAL) ? serieCedis(CEDIS_CENTRAL, COD_ACTUAL) : null;
+
+  // Veredicto grande (estado de la UE)
+  var vAbasto = veredictoAbasto(COD_ACTUAL, c.inv, c.consumo);
+  var mostrarAbasto = (c.estado==='r' || c.estado==='a');   // sólo cuando hay riesgo
+  el('detVeredicto').innerHTML =
+    '<div class="veredicto-box '+c.estado+'">'+escapeHtml(c.veredicto)+'</div>' +
+    (mostrarAbasto ? '<div class="abasto-box '+vAbasto.clase+'">'+escapeHtml(vAbasto.texto)+'</div>' : '');
 
   // Números
   el('detNums').innerHTML =
@@ -441,36 +564,55 @@ function renderDetalle(){
     aviso(el('avisoGlobal'), 'Este renglón no tiene consumo reciente. Si la unidad debe manejarlo (nueva inclusión), teclee un consumo mensual estimado arriba para calcular el pedido inicial.', '');
   } else { aviso(el('avisoGlobal'),'',''); }
 
-  dibujarCurva(saldos, UE_DATA.fechas, c);
+  dibujarCurva(saldos, UE_DATA.fechas, c, serieN1, serieN2, vAbasto);
 }
 
-function dibujarCurva(saldos, fechas, c){
+function dibujarCurva(saldos, fechas, c, serieN1, serieN2, vAbasto){
   var ctx = el('curva').getContext('2d');
   if (chart) chart.destroy();
   var n = fechas.length;
+  var ds = [
+    { label:'Saldo en la unidad', data:saldos, borderColor:'#1e5a9e', backgroundColor:'rgba(30,90,158,.08)',
+      borderWidth:2, pointRadius:0, tension:.15, fill:true, spanGaps:true, yAxisID:'y' },
+    { label:'Punto de reorden', data:new Array(n).fill(Math.round(c.reorden)),
+      borderColor:'#b8860b', borderWidth:1.5, borderDash:[6,4], pointRadius:0, yAxisID:'y' },
+    { label:'Piso de seguridad', data:new Array(n).fill(Math.round(c.seg)),
+      borderColor:'#a11', borderWidth:1.5, borderDash:[3,3], pointRadius:0, yAxisID:'y' },
+    { label:'Nivel objetivo', data:new Array(n).fill(Math.round(c.objetivo)),
+      borderColor:'#2e7d32', borderWidth:1.5, borderDash:[6,4], pointRadius:0, yAxisID:'y' }
+  ];
+  // Overlay aguas arriba: CEDIS regional (nivel 1) y CEDIS Panamá (nivel 2).
+  // Van en un segundo eje 'y2' porque las magnitudes del CEDIS suelen ser
+  // órdenes mayores que las de la UE; así ambas curvas se leen bien.
+  var hayCedis = false;
+  if (serieN1 && serieN1.some(function(x){ return x!==null; })){
+    hayCedis = true;
+    var lblN1 = (vAbasto && vAbasto.n1cedis) ? vAbasto.n1cedis : 'CEDIS que abastece';
+    ds.push({ label:'Inventario '+lblN1, data:serieN1, borderColor:'#7a5a2a',
+      borderWidth:1.5, pointRadius:0, tension:.15, spanGaps:true, borderDash:[2,2], yAxisID:'y2' });
+  }
+  if (serieN2 && serieN2.some(function(x){ return x!==null; })){
+    hayCedis = true;
+    ds.push({ label:'Inventario '+CEDIS_CENTRAL+' (central)', data:serieN2, borderColor:'#555',
+      borderWidth:1.5, pointRadius:0, tension:.15, spanGaps:true, borderDash:[8,3], yAxisID:'y2' });
+  }
+  var scales = {
+    x:{ ticks:{maxTicksLimit:10, font:{size:10}} },
+    y:{ beginAtZero:true, position:'left', ticks:{font:{size:10}},
+        title:{display:true, text:'Saldo unidad', font:{size:10}} }
+  };
+  if (hayCedis){
+    scales.y2 = { beginAtZero:true, position:'right', grid:{drawOnChartArea:false},
+                  ticks:{font:{size:10}}, title:{display:true, text:'Inventario CEDIS', font:{size:10}} };
+  }
   chart = new Chart(ctx, {
     type:'line',
-    data:{
-      labels: fechas,
-      datasets:[
-        { label:'Saldo', data:saldos, borderColor:'#1e5a9e', backgroundColor:'rgba(30,90,158,.08)',
-          borderWidth:2, pointRadius:0, tension:.15, fill:true, spanGaps:true },
-        { label:'Punto de reorden', data:new Array(n).fill(Math.round(c.reorden)),
-          borderColor:'#b8860b', borderWidth:1.5, borderDash:[6,4], pointRadius:0 },
-        { label:'Piso de seguridad', data:new Array(n).fill(Math.round(c.seg)),
-          borderColor:'#a11', borderWidth:1.5, borderDash:[3,3], pointRadius:0 },
-        { label:'Nivel objetivo', data:new Array(n).fill(Math.round(c.objetivo)),
-          borderColor:'#2e7d32', borderWidth:1.5, borderDash:[6,4], pointRadius:0 }
-      ]
-    },
+    data:{ labels: fechas, datasets: ds },
     options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'index', intersect:false},
       plugins:{ legend:{labels:{font:{size:11},boxWidth:18}} },
-      scales:{
-        x:{ ticks:{maxTicksLimit:10, font:{size:10}} },
-        y:{ beginAtZero:true, ticks:{font:{size:10}} }
-      }
+      scales: scales
     }
   });
 }
