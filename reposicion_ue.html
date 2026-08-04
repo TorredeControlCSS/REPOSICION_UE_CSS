@@ -116,6 +116,11 @@
         <div class="kicker">Renglones de la unidad · orden por urgencia</div>
         <button id="btnExcel" style="margin-left:auto;background:var(--verde);color:#fff;font-weight:700;">⬇ Descargar pre-pedido (Excel)</button>
       </div>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="buscarRenglon" placeholder="Buscar renglón por nombre o código…" autocomplete="off"
+               style="flex:1;min-width:220px;">
+        <span id="contadorRenglones" class="hint" style="margin:0;white-space:nowrap;"></span>
+      </div>
       <div class="hint" style="margin-top:4px;">El pre-pedido incluye los renglones que requieren reposición (urgentes y por vencer), con la cantidad sugerida.</div>
       <div style="overflow:auto;max-height:70vh;margin-top:8px;">
         <table class="lista" id="tablaLista">
@@ -465,7 +470,7 @@ function renderLista(){
   filas.sort(ordenUrgencia);
   FILAS_ACTUALES = filas;
 
-  // KPIs
+  // KPIs (siempre sobre el universo completo, no sobre el filtro)
   var enCero=0, pedirYa=0, pronto=0, ok=0, sinC=0;
   filas.forEach(function(f){
     var r=rankEstado(f.c);
@@ -479,10 +484,33 @@ function renderLista(){
     kpi('Cobertura ok', ok, 'var(--verde)') +
     kpi('Sin consumo', sinC, '#777');
 
-  // Tabla
+  var bus = el('buscarRenglon'); if(bus) bus.value='';   // limpiar búsqueda al cambiar de UE
+  pintarTabla();
+  el('cardLista').style.display='';
+}
+
+// Pinta la tabla aplicando el filtro de búsqueda (por nombre o código de renglón).
+function pintarTabla(){
+  var q = (el('buscarRenglon') ? el('buscarRenglon').value : '').trim().toUpperCase();
+  var visibles = FILAS_ACTUALES.filter(function(f){
+    if(!q) return true;
+    return (String(f.nombre||'').toUpperCase().indexOf(q) >= 0) ||
+           (String(f.cod||'').toUpperCase().indexOf(q) >= 0);
+  });
+
+  var cont = el('contadorRenglones');
+  if(cont) cont.textContent = q
+    ? (visibles.length+' de '+FILAS_ACTUALES.length+' renglones')
+    : (FILAS_ACTUALES.length+' renglones');
+
   var tb = el('tablaLista').querySelector('tbody');
   tb.innerHTML = '';
-  filas.forEach(function(f, i){
+  if(!visibles.length){
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#777;padding:16px;">'+
+                   'No hay renglones que coincidan con «'+escapeHtml(q)+'».</td></tr>';
+    return;
+  }
+  visibles.forEach(function(f, i){
     var c=f.c;
     var tr=document.createElement('tr');
     tr.className='clickable'+(f.vital?' vital':'');
@@ -504,7 +532,6 @@ function renderLista(){
     tr.addEventListener('click', function(){ abrirDetalle(f.cod); });
     tb.appendChild(tr);
   });
-  el('cardLista').style.display='';
 }
 
 function kpi(lab,val,color){
@@ -622,6 +649,15 @@ el('selUE').addEventListener('change', function(){
   var a=this.value; if(a) cargarUE(a);
 });
 el('btnBack').addEventListener('click', renderLista);
+
+// Buscador de renglones (filtra la tabla en vivo, con pequeño debounce)
+(function(){
+  var b = el('buscarRenglon');
+  if(b) b.addEventListener('input', function(){
+    clearTimeout(window._brt);
+    window._brt = setTimeout(pintarTabla, 120);
+  });
+})();
 
 // Exportar pre-pedido a Excel (solo renglones que requieren reposición)
 function exportarPrePedido(){
