@@ -220,7 +220,7 @@
       <div class="chart-box"><canvas id="curva"></canvas></div>
 
       <div class="nums" id="detNums"></div>
-      <div class="hint">La curva muestra el saldo real por día. Línea naranja: punto de reorden. Línea roja: piso de seguridad. Línea verde: nivel objetivo. Cuando el saldo cruza el reorden hacia abajo, es momento de pedir.</div>
+      <div class="hint">La curva muestra el saldo real por día. Línea naranja: punto de reorden. Línea roja: piso de seguridad. Línea verde: nivel objetivo. Cuando el saldo cruza el reorden hacia abajo, es momento de pedir. Las <b style="color:#c0392b;">barras rojas</b> (Urgencia) y <b style="color:#1e5a9e;">azules</b> (Mensual) marcan las Formas 8 que la unidad solicitó cada día: permiten ver si pidió reposición a tiempo frente a la caída del saldo.</div>
     </div>
   </div>
 
@@ -237,6 +237,7 @@ var INDICE = null;      // {fechas, ues:[{ue,archivo,cedis,renglones}], cedis_ur
 var UE_DATA = null;     // {ue, cedis, fechas, f:[{c, v:[[fecha,saldo]]}]}
 var CEDIS_DATA = null;  // {fechas, cedis:{'CEDIS X':[{c, v:[[fecha,saldo]]}]}}
 var UE_CEDIS = '';      // CEDIS que abastece a la UE activa (canónico, base sin acento)
+var F8_DATA = null;     // {ue, f:{cod:[[fechaISO,U,M],...]}}  eventos de Forma 8 por renglón
 var MAESTRO = {};       // cod -> {n:nombre, vit:0|1}
 var chart = null;
 
@@ -485,9 +486,43 @@ function cargarUE(archivo){
       if(!UE_CEDIS && data.cedis) UE_CEDIS = cedisCanon(data.cedis);
       var pb=el('panelBienvenida'); if(pb) pb.style.display='none';   // ocultar bienvenida
       aviso(el('avisoGlobal'),'','');
+      cargarF8(archivo);   // cargar las Formas 8 de esta UE (en paralelo)
       renderLista();
     })
     .catch(function(e){ aviso(el('avisoGlobal'),'Error cargando la unidad: '+e.message,'err'); });
+}
+
+// Carga los eventos de Forma 8 de la UE. El archivo se llama igual pero con
+// prefijo f8_eventos_ en vez de series_saldos_. Si no existe, la curva se
+// muestra sin barras de pedidos (degrada limpio).
+function cargarF8(archivoSaldos){
+  F8_DATA = null;
+  var archivoF8 = archivoSaldos.replace(/^series_saldos_/, 'f8_eventos_');
+  fetch(BASE+archivoF8+'?ts='+Date.now())
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if(data && data.f) F8_DATA = data;
+      if (el('vistaDetalle').classList.contains('on')) renderDetalle();
+    })
+    .catch(function(){ /* sin F8: la curva se muestra igual */ });
+}
+
+// Construye dos arreglos alineados al eje 'fechas' de la UE con la cantidad
+// pedida por día para el renglón actual: uno Urgencia, uno Mensual.
+function barrasF8(cod, fechas){
+  var U = new Array(fechas.length).fill(0);
+  var M = new Array(fechas.length).fill(0);
+  var hay = false;
+  if (F8_DATA && F8_DATA.f && F8_DATA.f[cod]){
+    var idxDe = {}; fechas.forEach(function(f,i){ idxDe[f]=i; });
+    F8_DATA.f[cod].forEach(function(ev){
+      var i = idxDe[ev[0]];   // ev = [fechaISO, U, M]
+      if (i===undefined) return;   // fuera de la ventana de la curva
+      U[i] += ev[1]||0; M[i] += ev[2]||0;
+      if ((ev[1]||0)>0 || (ev[2]||0)>0) hay = true;
+    });
+  }
+  return { U:U, M:M, hay:hay };
 }
 
 // ====== VISTA LISTA ======
@@ -741,6 +776,20 @@ function dibujarCurva(saldos, fechas, c, serieN1, serieN2, vAbasto){
     ds.push({ label:'Inventario '+CEDIS_CENTRAL+' (central)', data:serieN2, borderColor:'#555',
       borderWidth:1.5, pointRadius:0, tension:.15, spanGaps:true, borderDash:[8,3], yAxisID:'y2' });
   }
+
+  // Barras de Formas 8 (pedidos) por día para este renglón, separadas por tipo.
+  // Urgencia en rojo, Mensual en azul. Van en su propio eje 'yF8' a la derecha.
+  var f8 = barrasF8(COD_ACTUAL, fechas);
+  var hayF8 = f8.hay;
+  if (hayF8){
+    ds.push({ type:'bar', label:'F8 Urgencia', data:f8.U,
+      backgroundColor:'rgba(192,57,43,.75)', borderColor:'#c0392b', borderWidth:0,
+      yAxisID:'yF8', order:1, barPercentage:0.9, categoryPercentage:0.8, stack:'f8' });
+    ds.push({ type:'bar', label:'F8 Mensual', data:f8.M,
+      backgroundColor:'rgba(30,90,158,.6)', borderColor:'#1e5a9e', borderWidth:0,
+      yAxisID:'yF8', order:1, barPercentage:0.9, categoryPercentage:0.8, stack:'f8' });
+  }
+
   var scales = {
     x:{ ticks:{maxTicksLimit:10, font:{size:10}} },
     y:{ beginAtZero:true, position:'left', ticks:{font:{size:10}},
@@ -750,16 +799,40 @@ function dibujarCurva(saldos, fechas, c, serieN1, serieN2, vAbasto){
     scales.y2 = { beginAtZero:true, position:'right', grid:{drawOnChartArea:false},
                   ticks:{font:{size:10}}, title:{display:true, text:'Inventario CEDIS', font:{size:10}} };
   }
+  if (hayF8){
+    // Eje de barras F8: oculto para no saturar, pero acotado para que las barras
+    // no tapen la curva. Se dibuja en la mitad inferior del área.
+    scales.yF8 = { beginAtZero:true, position:'right', display:false,
+                   grid:{drawOnChartArea:false}, stacked:true,
+                   // techo generoso para que las barras queden en la franja baja
+                   suggestedMax: _maxF8(f8) * 2.2 };
+  }
   chart = new Chart(ctx, {
     type:'line',
     data:{ labels: fechas, datasets: ds },
     options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'index', intersect:false},
-      plugins:{ legend:{labels:{font:{size:11},boxWidth:18}} },
+      plugins:{ legend:{labels:{font:{size:11},boxWidth:18}},
+        tooltip:{ callbacks:{ label:function(ctx){
+          var v=ctx.parsed.y;
+          if(ctx.dataset.label && ctx.dataset.label.indexOf('F8')===0){
+            if(!v) return null;   // no mostrar F8 en 0
+            return ctx.dataset.label+': '+fmt(v)+' solicitado';
+          }
+          return ctx.dataset.label+': '+fmt(v);
+        } } }
+      },
       scales: scales
     }
   });
+}
+
+// Techo de las barras F8 (máximo total por día) para acotar su eje.
+function _maxF8(f8){
+  var m=0;
+  for(var i=0;i<f8.U.length;i++){ var t=(f8.U[i]||0)+(f8.M[i]||0); if(t>m) m=t; }
+  return m||1;
 }
 
 // ====== EVENTOS ======
