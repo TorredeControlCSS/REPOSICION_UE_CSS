@@ -117,14 +117,7 @@
     border:5px solid transparent;border-top-color:#243b53;}
   /* Aviso amable para el campo de consumo manual */
   .campo-nota{font-size:10px;color:var(--sub);margin-top:3px;line-height:1.3;}
-  /* Consumo calculado, mostrado de forma prominente */
-  .consumo-box{background:#eef4fb;border:1px solid #cfe0f2;border-left:4px solid var(--azul);
-    padding:9px 12px;margin:8px 0;font-size:13px;color:#243b53;line-height:1.5;}
-  .consumo-box b{font-family:Consolas,monospace;color:var(--azul2);font-size:14px;}
-  .consumo-box .cb-lab{font-weight:700;color:var(--azul);text-transform:uppercase;font-size:10.5px;letter-spacing:.3px;margin-right:6px;}
-  .consumo-box .cb-nota{font-size:11px;color:var(--sub);font-style:italic;}
-  .consumo-box.sinhist{background:#fff8ec;border-color:#f0d9a8;border-left-color:var(--ambar);}
-  .consumo-box.sinhist .cb-lab{color:var(--ambar);}
+
   /* Boxes didácticos de la pantalla de inicio */
   .didac-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0;}
   @media(max-width:640px){ .didac-row{grid-template-columns:1fr;} }
@@ -314,9 +307,6 @@
       <div class="kicker" id="detNombre">—</div>
       <div id="detVeredicto"></div>
 
-      <!-- Consumo calculado (visible siempre que hay historial) -->
-      <div id="consumoBox"></div>
-
       <div class="params">
         <div>
           <label class="lbl-ayuda">Tiempo de entrega (días)
@@ -341,7 +331,6 @@
             <span class="info-i">i<span class="tip">Este campo solo se usa cuando el renglón no tiene historial de consumo. En ese caso, escriba cuántas unidades usa su unidad al mes para estimar el pedido. Si ya hay historial, la calculadora usa el consumo real y este campo no hace falta.</span></span>
           </label>
           <input type="number" id="pConsManual" value="" min="0" placeholder="Solo si no hay historial">
-          <div class="campo-nota" id="notaConsManual">Opcional. Úselo únicamente cuando no hay historial de consumo.</div>
         </div>
       </div>
 
@@ -366,6 +355,7 @@ var UE_DATA = null;     // {ue, cedis, fechas, f:[{c, v:[[fecha,saldo]]}]}
 var CEDIS_DATA = null;  // {fechas, cedis:{'CEDIS X':[{c, v:[[fecha,saldo]]}]}}
 var UE_CEDIS = '';      // CEDIS que abastece a la UE activa (canónico, base sin acento)
 var F8_DATA = null;     // {ue, f:{cod:[[fechaISO,U,M],...]}}  eventos de Forma 8 por renglón
+var CONS_REP = null;    // {ue, c:{cod: consumoMensualReportado}}  declarado por la UE
 var MAESTRO = {};       // cod -> {n:nombre, vit:0|1}
 var chart = null;
 
@@ -614,6 +604,7 @@ function cargarUE(archivo){
       var pb=el('panelBienvenida'); if(pb) pb.style.display='none';   // ocultar bienvenida
       aviso(el('avisoGlobal'),'','');
       cargarF8(archivo);   // cargar las Formas 8 de esta UE (en paralelo)
+      cargarConsumoReportado(archivo);   // consumo declarado por la UE
       renderLista();
     })
     .catch(function(e){ aviso(el('avisoGlobal'),'Error cargando la unidad: '+e.message,'err'); });
@@ -634,6 +625,25 @@ function cargarF8(archivoSaldos){
     .catch(function(){ /* sin F8: la curva se muestra igual */ });
 }
 
+// Carga el consumo mensual reportado por la UE (hoja CONSUMOS_UE). Archivo
+// consumo_reportado_<UE>.json. Si no existe, se degrada sin él.
+function cargarConsumoReportado(archivoSaldos){
+  CONS_REP = null;
+  var archivo = archivoSaldos.replace(/^series_saldos_/, 'consumo_reportado_');
+  fetch(BASE+archivo+'?ts='+Date.now())
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if(data && data.c) CONS_REP = data;
+      if (el('vistaDetalle').classList.contains('on')) renderDetalle();
+    })
+    .catch(function(){ /* sin consumo reportado: se muestra igual */ });
+}
+// Devuelve el consumo mensual reportado para un renglón, o null.
+function consumoReportado(cod){
+  if(!CONS_REP || !CONS_REP.c) return null;
+  var v = CONS_REP.c[cod];
+  return (typeof v==='number' && v>0) ? v : null;
+}
 // Construye dos arreglos alineados al eje 'fechas' de la UE con la cantidad
 // pedida por día para el renglón actual: uno Urgencia, uno Mensual.
 function barrasF8(cod, fechas){
@@ -766,7 +776,8 @@ function pintarTabla(){
 }
 
 function kpi(lab,val,color,desc){
-  return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val" style="color:'+color+'">'+fmt(val)+'</div>'+
+  var shown = (typeof val==='number') ? fmt(val) : val;
+  return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val" style="color:'+color+'">'+shown+'</div>'+
          (desc?'<div class="kpi-desc">'+desc+'</div>':'')+'</div>';
 }
 function escapeHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -847,36 +858,15 @@ function renderDetalle(){
   var saldos = expandirSerie(rengln.v, UE_DATA.fechas);
   var c = calcular(saldos, UE_DATA.fechas, params, consManual);
 
-  // --- Consumo calculado, visible ---
-  // Si HAY historial: se muestra el consumo real que calculó el sistema y se
-  // atenúa el campo manual (no hace falta). Si NO hay historial: se resalta el
-  // campo manual como la única forma de estimar.
-  var hayHistorialReal = !c.sinHistoria;   // sinHistoria = no hubo bajas de saldo medibles
-  var consDia = c.consumo;
-  var consMes = consDia*30;
+  // Toggle del campo manual: solo relevante cuando NO hay historial.
+  var hayHistorialReal = !c.sinHistoria;
   var campoCM = el('campoConsManual');
   if (hayHistorialReal){
-    el('consumoBox').innerHTML =
-      '<div class="consumo-box">'+
-        '<span class="cb-lab">Consumo de esta unidad</span> '+
-        '<b>'+ (consDia>=1? Math.round(consDia).toLocaleString('es-PA') : consDia.toFixed(1)) +' / día</b>'+
-        ' &nbsp;·&nbsp; <b>'+ Math.round(consMes).toLocaleString('es-PA') +' / mes</b>'+
-        '<span class="cb-nota"> — calculado según el movimiento de existencia de los últimos '+VENTANA_CONSUMO+' días</span>'+
-      '</div>';
-    if (campoCM){ campoCM.style.opacity='.5'; }
+    if (campoCM){ campoCM.style.opacity='.45'; }
     el('pConsManual').disabled = true;
-    el('notaConsManual').textContent = 'No es necesario: esta unidad ya tiene historial de consumo.';
   } else {
-    el('consumoBox').innerHTML =
-      '<div class="consumo-box sinhist">'+
-        '<span class="cb-lab">Sin historial de consumo</span> — '+
-        'este renglón no registró movimiento de existencia en los últimos '+VENTANA_CONSUMO+' días, '+
-        'por lo que no se puede calcular el consumo automáticamente. '+
-        (consManual>0 ? 'Usando el consumo mensual que usted indicó.' : 'Si su unidad lo maneja, indique el consumo mensual estimado a la derecha.')+
-      '</div>';
     if (campoCM){ campoCM.style.opacity='1'; }
     el('pConsManual').disabled = false;
-    el('notaConsManual').textContent = 'Escriba cuántas unidades usa su unidad al mes para estimar el pedido.';
   }
 
   // Series de CEDIS aguas arriba (para overlay y veredicto)
@@ -890,9 +880,20 @@ function renderDetalle(){
     '<div class="veredicto-box '+c.estado+'">'+escapeHtml(c.veredicto)+'</div>' +
     (mostrarAbasto ? '<div class="abasto-box '+vAbasto.clase+'">'+escapeHtml(vAbasto.texto)+'</div>' : '');
 
-  // Números (etiquetas claras para usuario no logístico)
+  // Números (tarjetas en una fila; consumo real y reportado lado a lado)
+  var consDia = c.consumo;
+  var consMesReal = consDia>0 ? Math.round(consDia*30) : 0;
+  var consRep = consumoReportado(COD_ACTUAL);
+  // color del reportado: si difiere mucho del real, se resalta en ámbar
+  var colRep = 'var(--azul2)';
+  if (consRep!=null && consMesReal>0){
+    var ratio = consRep / consMesReal;
+    if (ratio>=1.5 || ratio<=0.5) colRep = 'var(--ambar)';
+  }
   el('detNums').innerHTML =
     kpi('Existencia hoy', c.inv, 'var(--azul2)') +
+    kpi('Consumo real / mes', consMesReal, 'var(--azul2)', 'Movimiento real de existencia (últimos '+VENTANA_CONSUMO+' días).') +
+    kpi('Consumo reportado / mes', (consRep!=null?consRep:'—'), colRep, 'Lo que la unidad declara consumir al mes.') +
     kpi('Nivel de alerta', c.reorden, 'var(--ambar)') +
     kpi('Existencia ideal', c.objetivo, 'var(--verde)') +
     kpi('Cantidad a pedir', c.pedir, 'var(--rojo)');
@@ -1066,31 +1067,31 @@ function exportarPrePedido(){
   var ws = wb.addWorksheet('Pre-pedido', { views:[{showGridLines:false, state:'frozen', ySplit:8}] });
 
   ws.columns = [
-    {width:11},{width:13},{width:52},{width:9},{width:13},{width:13},{width:15},{width:24}
+    {width:11},{width:13},{width:50},{width:9},{width:12},{width:12},{width:14},{width:13},{width:22}
   ];
 
   // --- Encabezado institucional ---
   ws.mergeCells('A1:B4');           // espacio para el logo
-  ws.mergeCells('C1:H1'); ws.getCell('C1').value='CAJA DE SEGURO SOCIAL';
-  ws.mergeCells('C2:H2'); ws.getCell('C2').value='Dirección Nacional de Logística · CEDIS Panamá · Torre de Control';
-  ws.mergeCells('C3:H3'); ws.getCell('C3').value='PRE-PEDIDO DE REPOSICIÓN';
+  ws.mergeCells('C1:I1'); ws.getCell('C1').value='CAJA DE SEGURO SOCIAL';
+  ws.mergeCells('C2:I2'); ws.getCell('C2').value='Dirección Nacional de Logística · CEDIS Panamá · Torre de Control';
+  ws.mergeCells('C3:I3'); ws.getCell('C3').value='PRE-PEDIDO DE REPOSICIÓN';
   ws.getCell('C1').font={bold:true,size:13,color:{argb:AZUL}};
   ws.getCell('C2').font={size:9,color:{argb:'FF555555'}};
   ws.getCell('C3').font={bold:true,size:12,color:{argb:AZUL2}};
 
-  ws.mergeCells('C4:H4');
+  ws.mergeCells('C4:I4');
   ws.getCell('C4').value='Unidad Ejecutora: '+ueNom+'    ·    Corte: '+corte+'    ·    Generado: '+new Date().toLocaleString('es-PA');
   ws.getCell('C4').font={size:9,italic:true,color:{argb:'FF555555'}};
 
   // nota explicativa
-  ws.mergeCells('A6:H6');
-  ws.getCell('A6').value='Incluye los renglones que requieren reposición (en cero, por debajo del nivel de alerta o próximos a él), con la cantidad sugerida a pedir según el consumo de los últimos días.';
+  ws.mergeCells('A6:I6');
+  ws.getCell('A6').value='Incluye los renglones que requieren reposición (en cero, por debajo del nivel de alerta o próximos a él), con la cantidad sugerida a pedir según el consumo de los últimos días. "Consumo real" es el movimiento de existencia medido; "Consumo reportado" es el que la unidad declara.';
   ws.getCell('A6').font={size:9,color:{argb:'FF555555'}};
-  ws.getRow(6).height=26;
+  ws.getRow(6).height=32;
   ws.getCell('A6').alignment={wrapText:true,vertical:'middle'};
 
   // --- Cabecera de tabla (fila 8) ---
-  var H=['Estado','Código','Renglón','Vital','Existencia','Consumo/día','Días a alerta','Cantidad a pedir'];
+  var H=['Estado','Código','Renglón','Vital','Existencia','Consumo real/mes','Consumo report./mes','Días a alerta','Cantidad a pedir'];
   var hr=ws.getRow(8); H.forEach(function(t,i){ hr.getCell(i+1).value=t; });
   hr.eachCell(function(cell){
     cell.font={bold:true,size:10,color:{argb:'FFFFFFFF'}};
@@ -1111,15 +1112,17 @@ function exportarPrePedido(){
     row.getCell(3).value = f.nombre;
     row.getCell(4).value = f.vital?'VITAL':'';
     row.getCell(5).value = Math.round(c.inv);
-    row.getCell(6).value = Number(c.consumo.toFixed(1));
-    row.getCell(7).value = (c.diasReorden==null?'':Math.round(c.diasReorden));
-    row.getCell(8).value = Math.round(c.pedir);
+    row.getCell(6).value = c.consumo>0 ? Math.round(c.consumo*30) : 0;
+    var cr = consumoReportado(f.cod);
+    row.getCell(7).value = (cr!=null ? cr : '');
+    row.getCell(8).value = (c.diasReorden==null?'':Math.round(c.diasReorden));
+    row.getCell(9).value = Math.round(c.pedir);
     // estilos
     row.getCell(1).font={bold:true,size:9,color:{argb:esRojo?ROJO:AMBAR}};
     row.getCell(4).font={bold:true,size:8,color:{argb:ROJO}};
     row.getCell(4).alignment={horizontal:'center'};
-    [5,6,7,8].forEach(function(ci){ row.getCell(ci).alignment={horizontal:'right'}; row.getCell(ci).font={name:'Consolas',size:10}; });
-    row.getCell(8).font={name:'Consolas',size:10,bold:true,color:{argb:esRojo?ROJO:AMBAR}};
+    [5,6,7,8,9].forEach(function(ci){ row.getCell(ci).alignment={horizontal:'right'}; row.getCell(ci).font={name:'Consolas',size:10}; });
+    row.getCell(9).font={name:'Consolas',size:10,bold:true,color:{argb:esRojo?ROJO:AMBAR}};
     row.getCell(3).font={size:10};
     // sombreado tenue por urgencia
     if (esRojo){ row.eachCell(function(cell){ cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFDECEC'}}; }); }
@@ -1128,11 +1131,11 @@ function exportarPrePedido(){
   });
 
   // total
-  ws.mergeCells('A'+(r+1)+':G'+(r+1));
+  ws.mergeCells('A'+(r+1)+':H'+(r+1));
   ws.getCell('A'+(r+1)).value='Total de renglones a pedir:';
   ws.getCell('A'+(r+1)).font={bold:true,size:10}; ws.getCell('A'+(r+1)).alignment={horizontal:'right'};
-  ws.getCell('H'+(r+1)).value=filas.length;
-  ws.getCell('H'+(r+1)).font={bold:true,size:11,color:{argb:AZUL2}}; ws.getCell('H'+(r+1)).alignment={horizontal:'right'};
+  ws.getCell('I'+(r+1)).value=filas.length;
+  ws.getCell('I'+(r+1)).font={bold:true,size:11,color:{argb:AZUL2}}; ws.getCell('I'+(r+1)).alignment={horizontal:'right'};
 
   var slug = ueNom.replace(/[^A-Za-z0-9]+/g,'_').slice(0,40);
   var nombreArchivo = 'Pre-pedido_'+slug+'_'+corte+'.xlsx';
