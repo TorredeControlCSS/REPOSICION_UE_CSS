@@ -78,6 +78,12 @@
   .btn-volver{background:var(--azul);color:#fff;border:1px solid var(--azul);font-weight:700;
     font-size:12.5px;padding:8px 16px;cursor:pointer;white-space:nowrap;margin:0;}
   .btn-volver:hover{background:var(--azul2);}
+  /* Los dos veredictos (estado + abastecimiento) lado a lado */
+  .veredicto-fila{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:stretch;}
+  .veredicto-fila > div{margin:0 !important;}
+  .veredicto-fila .veredicto-box{flex:0 0 auto;min-width:220px;display:flex;align-items:center;}
+  .veredicto-fila .abasto-box{flex:1;min-width:260px;display:flex;align-items:center;}
+  @media(max-width:640px){ .veredicto-fila{flex-direction:column;} }
   .veredicto-box{padding:12px 14px;font-size:15px;font-weight:700;margin-bottom:10px;border:1px solid;}
   .veredicto-box.r{background:#fdecec;border-color:var(--rojo);color:#7a1010;}
   .veredicto-box.a{background:#fff8e6;border-color:var(--ambar);color:#7a5a00;}
@@ -864,14 +870,16 @@ function renderDetalle(){
   var saldos = expandirSerie(rengln.v, UE_DATA.fechas);
   var c = calcular(saldos, UE_DATA.fechas, params, consManual);
 
-  // Toggle del campo manual: solo relevante cuando NO hay historial.
+  // El campo de consumo manual SOLO aparece cuando no hay historial (única
+  // situación donde se necesita). Con historial se oculta por completo, así no
+  // ocupa espacio ni confunde.
   var hayHistorialReal = !c.sinHistoria;
   var campoCM = el('campoConsManual');
   if (hayHistorialReal){
-    if (campoCM){ campoCM.style.opacity='.45'; }
+    if (campoCM){ campoCM.style.display='none'; }
     el('pConsManual').disabled = true;
   } else {
-    if (campoCM){ campoCM.style.opacity='1'; }
+    if (campoCM){ campoCM.style.display=''; }
     el('pConsManual').disabled = false;
   }
 
@@ -883,8 +891,10 @@ function renderDetalle(){
   var vAbasto = veredictoAbasto(COD_ACTUAL, c.inv, c.consumo);
   var mostrarAbasto = (c.estado==='r' || c.estado==='a');   // sólo cuando hay riesgo
   el('detVeredicto').innerHTML =
-    '<div class="veredicto-box '+c.estado+'">'+escapeHtml(c.veredicto)+'</div>' +
-    (mostrarAbasto ? '<div class="abasto-box '+vAbasto.clase+'">'+escapeHtml(vAbasto.texto)+'</div>' : '');
+    '<div class="veredicto-fila">'+
+      '<div class="veredicto-box '+c.estado+'">'+escapeHtml(c.veredicto)+'</div>' +
+      (mostrarAbasto ? '<div class="abasto-box '+vAbasto.clase+'">'+escapeHtml(vAbasto.texto)+'</div>' : '') +
+    '</div>';
 
   // Números (tarjetas en una fila; consumo real y reportado lado a lado)
   var consDia = c.consumo;
@@ -905,7 +915,7 @@ function renderDetalle(){
     kpi('Cantidad a pedir', c.pedir, 'var(--rojo)');
 
   if (c.sinHistoria && consManual<=0){
-    aviso(el('avisoGlobal'), 'Este renglón no tiene historial de consumo, por lo que no se puede calcular cuánto pedir. Si su unidad maneja este medicamento, escriba en "Consumo mensual estimado" cuántas unidades usa al mes.', '');
+    aviso(el('avisoGlobal'), 'Este renglón no tiene historial de consumo, por lo que no se puede calcular cuánto pedir. Si su unidad maneja este medicamento, escriba en el campo "Consumo mensual" (a la derecha) cuántas unidades usa al mes.', '');
   } else { aviso(el('avisoGlobal'),'',''); }
 
   dibujarCurva(saldos, UE_DATA.fechas, c, serieN1, serieN2, vAbasto);
