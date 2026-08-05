@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calculadora de Reposición · CEDIS Panamá</title>
+<link rel="icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
@@ -73,6 +75,9 @@
   .detalle{display:none;}
   .detalle.on{display:block;}
   .back{font-size:12px;color:var(--azul);cursor:pointer;margin-bottom:8px;display:inline-block;}
+  .btn-volver{background:var(--azul);color:#fff;border:1px solid var(--azul);font-weight:700;
+    font-size:12.5px;padding:8px 16px;cursor:pointer;white-space:nowrap;margin:0;}
+  .btn-volver:hover{background:var(--azul2);}
   .veredicto-box{padding:12px 14px;font-size:15px;font-weight:700;margin-bottom:10px;border:1px solid;}
   .veredicto-box.r{background:#fdecec;border-color:var(--rojo);color:#7a1010;}
   .veredicto-box.a{background:#fff8e6;border-color:var(--ambar);color:#7a5a00;}
@@ -126,12 +131,13 @@
   .didac-box.r{border-top-color:var(--rojo);}
   .didac-box.a{border-top-color:var(--ambar);}
   .didac-box.v{border-top-color:var(--verde);}
-  .didac-sem{display:inline-flex;flex-direction:column;gap:3px;background:#243b53;padding:5px 4px;
-    border-radius:6px;margin-bottom:8px;}
-  .didac-sem .luz{width:13px;height:13px;border-radius:50%;background:#3a4d63;opacity:.35;}
-  .didac-sem .luz.r.on{background:var(--rojo);opacity:1;box-shadow:0 0 6px var(--rojo);}
-  .didac-sem .luz.a.on{background:var(--ambar);opacity:1;box-shadow:0 0 6px var(--ambar);}
-  .didac-sem .luz.v.on{background:var(--verde);opacity:1;box-shadow:0 0 6px var(--verde);}
+  .didac-sem{display:inline-flex;flex-direction:column;gap:4px;background:#3a3a3a;padding:6px 5px;
+    border-radius:7px;margin-bottom:8px;box-shadow:inset 0 0 3px rgba(0,0,0,.4);}
+  .didac-sem .luz{width:15px;height:15px;border-radius:50%;background:#1a1a1a;opacity:1;
+    border:1px solid #000;}
+  .didac-sem .luz.r.on{background:radial-gradient(circle at 35% 30%, #ff7b6b, var(--rojo));box-shadow:0 0 8px 2px rgba(192,57,43,.8);}
+  .didac-sem .luz.a.on{background:radial-gradient(circle at 35% 30%, #ffd97a, var(--ambar));box-shadow:0 0 8px 2px rgba(184,134,11,.8);}
+  .didac-sem .luz.v.on{background:radial-gradient(circle at 35% 30%, #86e39a, var(--verde));box-shadow:0 0 8px 2px rgba(46,125,50,.8);}
   .didac-ico{font-size:26px;line-height:1;margin-bottom:8px;font-weight:700;}
   .didac-tit{font-size:13px;font-weight:700;margin-bottom:5px;}
   .didac-txt{font-size:11.5px;color:#555;line-height:1.4;}
@@ -289,7 +295,7 @@
   <!-- VISTA DETALLE / CURVA -->
   <div class="detalle" id="vistaDetalle">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
-      <span class="back" id="btnBack" style="margin:0;">← Volver a la lista</span>
+      <button class="btn-volver" id="btnBack">← Volver a la lista</button>
       <div style="flex:1;min-width:240px;display:flex;align-items:center;gap:8px;">
         <label style="margin:0;white-space:nowrap;">Cambiar renglón:</label>
         <div style="flex:1;min-width:200px;position:relative;">
