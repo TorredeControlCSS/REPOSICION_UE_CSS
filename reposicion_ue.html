@@ -419,18 +419,31 @@ function expandirSerie(vSparse, fechas){
 
 // Consumo diario = baja total de inventario en los últimos N días / N
 function consumoDiario(saldos, fechas){
-  // tomar los últimos VENTANA_CONSUMO puntos no nulos
+  // Consumo real = suma de las BAJAS día a día de la curva (ignora las subidas,
+  // que son reabastecimientos, no consumo). Se mide sobre una ventana de los
+  // últimos VENTANA_CONSUMO días CALENDARIO y se divide entre los días reales
+  // que abarca esa ventana — no entre un número fijo — porque las series son
+  // dispersas (los puntos no son diarios) y dividir entre 30 fijo inflaría el
+  // consumo cuando la ventana abarca más días de los que tiene puntos.
   var pares = [];
   for (var i=0;i<saldos.length;i++) if (saldos[i]!==null) pares.push({f:fechas[i], s:saldos[i]});
   if (pares.length < 2) return {cons:0, puntos:pares.length};
-  var ult = pares.slice(-VENTANA_CONSUMO);
+
+  // limitar la ventana a los últimos VENTANA_CONSUMO días calendario
+  var fUlt = new Date(pares[pares.length-1].f);
+  var corte = new Date(fUlt); corte.setDate(corte.getDate() - VENTANA_CONSUMO);
+  var ult = pares.filter(function(p){ return new Date(p.f) >= corte; });
+  if (ult.length < 2){ ult = pares.slice(-2); }   // asegurar al menos 2 puntos
+
   var baja = 0;
   for (var j=1;j<ult.length;j++){
     var d = ult[j-1].s - ult[j].s;
     if (d > 0) baja += d;   // solo bajas (consumo), ignorar reposiciones
   }
-  var dias = VENTANA_CONSUMO;
-  return {cons: baja/dias, puntos: ult.length};
+  // días calendario reales que abarca la ventana (mínimo 1)
+  var msDia = 86400000;
+  var diasReales = Math.max(1, Math.round((new Date(ult[ult.length-1].f) - new Date(ult[0].f)) / msDia));
+  return {cons: baja/diasReales, puntos: ult.length, dias: diasReales};
 }
 
 function invActual(saldos){
