@@ -147,6 +147,49 @@
   .didac-ico{font-size:26px;line-height:1;margin-bottom:8px;font-weight:700;}
   .didac-tit{font-size:13px;font-weight:700;margin-bottom:5px;}
   .didac-txt{font-size:11.5px;color:#555;line-height:1.4;}
+  /* Tablero ejecutivo nacional */
+  #tableroNacional{background:#fff;border:1px solid var(--bord);padding:16px 18px;margin-bottom:14px;}
+  .tn-titulo{font-size:15px;font-weight:700;color:var(--azul2);margin-bottom:12px;
+    border-bottom:2px solid var(--azul);padding-bottom:8px;}
+  .tn-corte{font-weight:400;font-size:12px;color:var(--sub);}
+  .tn-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px;}
+  @media(max-width:900px){ .tn-cards{grid-template-columns:repeat(2,1fr);} }
+  .tn-card{border:1px solid var(--bord);border-top:4px solid #999;padding:12px;background:#fafcfe;}
+  .tn-card.r{border-top-color:var(--rojo);}
+  .tn-card.a{border-top-color:var(--ambar);}
+  .tn-card.v{border-top-color:var(--verde);}
+  .tn-card.azul{border-top-color:var(--azul);}
+  .tn-card.gris{border-top-color:#777;}
+  .tn-num{font-family:Consolas,monospace;font-size:26px;font-weight:700;color:var(--azul2);line-height:1;}
+  .tn-card.r .tn-num{color:var(--rojo);}
+  .tn-card.a .tn-num{color:var(--ambar);}
+  .tn-card.v .tn-num{color:var(--verde);}
+  .tn-lab{font-size:12px;font-weight:700;color:#333;margin:6px 0 4px;}
+  .tn-sub{font-size:10.5px;color:var(--sub);line-height:1.35;}
+  .tn-diag-tit{font-size:13px;font-weight:700;color:#333;margin:6px 0 8px;}
+  .tn-diag{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+  @media(max-width:640px){ .tn-diag{grid-template-columns:1fr;} }
+  .tn-diag-box{padding:12px;border:1px solid var(--bord);border-left:4px solid #999;background:#fafcfe;}
+  .tn-diag-box.dist{border-left-color:var(--verde);}
+  .tn-diag-box.reab{border-left-color:var(--ambar);}
+  .tn-diag-box.compra{border-left-color:var(--rojo);}
+  .tn-diag-num{font-family:Consolas,monospace;font-size:22px;font-weight:700;color:var(--azul2);}
+  .tn-diag-box.dist .tn-diag-num{color:var(--verde);}
+  .tn-diag-box.reab .tn-diag-num{color:var(--ambar);}
+  .tn-diag-box.compra .tn-diag-num{color:var(--rojo);}
+  .tn-diag-lab{font-size:12.5px;font-weight:700;color:#333;margin:4px 0;}
+  .tn-diag-sub{font-size:10.5px;color:var(--sub);line-height:1.35;}
+  .tn-cedis-row-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  @media(max-width:640px){ .tn-cedis-row-wrap{grid-template-columns:1fr;} }
+  .tn-cedis{border:1px solid var(--bord);padding:12px;background:#fafcfe;}
+  .tn-cedis-tit{font-size:12.5px;font-weight:700;color:var(--azul2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #eee;}
+  .tn-cedis-row{font-size:12px;color:#444;margin:4px 0;display:flex;align-items:center;}
+  .tn-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px;}
+  .tn-dot.r{background:var(--rojo);}
+  .tn-dot.a{background:var(--ambar);}
+  .tn-dot.v{background:var(--verde);}
+  .tn-cedis-pedir{font-size:12px;color:#333;margin-top:8px;padding-top:6px;border-top:1px solid #eee;}
+  .tn-cedis-pedir b{font-family:Consolas,monospace;color:var(--azul2);}
   /* Tutorial guiado */
   #tourOverlay{position:fixed;inset:0;z-index:1000;}
   #tourBackdrop{position:absolute;inset:0;background:rgba(15,25,40,.55);}
@@ -187,6 +230,9 @@
   <!-- Panel de bienvenida / resumen de red (se oculta al elegir una UE) -->
   <div id="panelBienvenida">
     <div class="kpis" id="kpisRed" style="display:none;"></div>
+
+    <!-- Tablero ejecutivo nacional (para la Directiva) -->
+    <div id="tableroNacional" style="display:none;"></div>
     <div class="card" id="cardBienvenida">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div class="kicker">Bienvenido a la Calculadora de Reposición</div>
@@ -547,6 +593,8 @@ function cargarIndice(){
       cargarCedis(idx.cedis_url || 'series_saldos_CEDIS.json');
       // Resumen de red para el panel de bienvenida (llena el espacio vacío)
       pintarResumenRed(idx);
+      // Tablero ejecutivo nacional (pre-calculado en el backend)
+      cargarResumenNacional();
     })
     .catch(function(e){ aviso(el('avisoGlobal'), 'Error cargando el índice: '+e.message+'. Verifique que series_saldos_index.json esté publicado.', 'err'); });
 }
@@ -567,6 +615,76 @@ function pintarResumenRed(idx){
     kpi('Unidades que abastece Panamá', pa, 'var(--azul)', 'Reciben sus medicamentos del CEDIS central (Panamá).') +
     kpi('Unidades que abastece Divisa', di, 'var(--azul)', 'Reciben del CEDIS Divisa: Herrera, Los Santos, Coclé, Veraguas.') +
     kpi('Unidades que abastece Chiriquí', ch, 'var(--azul)', 'Reciben del CEDIS Chiriquí: Chiriquí y Bocas del Toro.');
+}
+
+// ====== TABLERO EJECUTIVO NACIONAL ======
+// Carga el resumen pre-calculado en el backend (resumen_nacional.json) y lo
+// pinta como un panel de métricas nacionales para la Directiva. Si no existe
+// (aún no publicado), el panel simplemente no aparece.
+function cargarResumenNacional(){
+  fetch(BASE+'resumen_nacional.json?ts='+Date.now())
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if(data && data.nacional) pintarTableroNacional(data);
+    })
+    .catch(function(){ /* sin resumen: no se muestra el tablero */ });
+}
+
+function pintarTableroNacional(data){
+  var t = el('tableroNacional'); if(!t) return;
+  var n = data.nacional;
+  var accionables = (n.rojo||0) + (n.ambar||0);   // renglones que requieren pedido
+  var pc = data.por_cedis || {};
+
+  function tarjetaCedis(nombre, etiqueta){
+    var c = pc[nombre] || {rojo:0,ambar:0,verde:0,pedirTotal:0};
+    var acc = (c.rojo||0)+(c.ambar||0);
+    return '<div class="tn-cedis">'+
+      '<div class="tn-cedis-tit">'+etiqueta+'</div>'+
+      '<div class="tn-cedis-row"><span class="tn-dot r"></span>'+fmt(c.rojo||0)+' en rojo</div>'+
+      '<div class="tn-cedis-row"><span class="tn-dot a"></span>'+fmt(c.ambar||0)+' en ámbar</div>'+
+      '<div class="tn-cedis-row"><span class="tn-dot v"></span>'+fmt(c.verde||0)+' con cobertura</div>'+
+      '<div class="tn-cedis-pedir">A pedir: <b>'+fmt(Math.round(c.pedirTotal||0))+'</b></div>'+
+    '</div>';
+  }
+
+  t.style.display='block';
+  t.innerHTML =
+    '<div class="tn-titulo">Panorama nacional de abastecimiento'+
+      (data.corte?' <span class="tn-corte">· corte '+data.corte+'</span>':'')+'</div>'+
+
+    // Fila 1: los grandes números nacionales
+    '<div class="tn-cards">'+
+      '<div class="tn-card r"><div class="tn-num">'+fmt(n.rojo||0)+'</div>'+
+        '<div class="tn-lab">Renglones en rojo</div><div class="tn-sub">Sin existencia o bajo el nivel de alerta, a nivel nacional.</div></div>'+
+      '<div class="tn-card a"><div class="tn-num">'+fmt(n.ambar||0)+'</div>'+
+        '<div class="tn-lab">Renglones en ámbar</div><div class="tn-sub">Próximos al punto de reposición.</div></div>'+
+      '<div class="tn-card v"><div class="tn-num">'+fmt(n.verde||0)+'</div>'+
+        '<div class="tn-lab">Renglones con cobertura</div><div class="tn-sub">Existencia suficiente por ahora.</div></div>'+
+      '<div class="tn-card azul"><div class="tn-num">'+fmt(Math.round(n.pedirTotal||0))+'</div>'+
+        '<div class="tn-lab">Total a pedir</div><div class="tn-sub">Suma de cantidades sugeridas en todos los renglones accionables.</div></div>'+
+      '<div class="tn-card gris"><div class="tn-num">'+fmt(n.uesCriticas||0)+'</div>'+
+        '<div class="tn-lab">Unidades críticas</div><div class="tn-sub">Con 20 o más renglones en rojo.</div></div>'+
+    '</div>'+
+
+    // Fila 2: desglose por diagnóstico (dónde se resuelve)
+    '<div class="tn-diag-tit">De los '+fmt(accionables)+' renglones que requieren pedido, ¿dónde se resuelve el problema?</div>'+
+    '<div class="tn-diag">'+
+      '<div class="tn-diag-box dist"><div class="tn-diag-num">'+fmt(n.dist||0)+'</div>'+
+        '<div class="tn-diag-lab">Distribución local</div><div class="tn-diag-sub">El CEDIS tiene existencia y debe despachar. Se resuelve con una Forma 8.</div></div>'+
+      '<div class="tn-diag-box reab"><div class="tn-diag-num">'+fmt(n.reab||0)+'</div>'+
+        '<div class="tn-diag-lab">Reabasto entre CEDIS</div><div class="tn-diag-sub">El CEDIS regional no tiene, pero Panamá sí. Panamá debe surtir al regional.</div></div>'+
+      '<div class="tn-diag-box compra"><div class="tn-diag-num">'+fmt(n.compra||0)+'</div>'+
+        '<div class="tn-diag-lab">Gestión de compras</div><div class="tn-diag-sub">Ningún CEDIS tiene existencia. Depende de una compra.</div></div>'+
+    '</div>'+
+
+    // Fila 3: desglose por CEDIS
+    '<div class="tn-diag-tit">Situación por CEDIS de abastecimiento</div>'+
+    '<div class="tn-cedis-row-wrap">'+
+      tarjetaCedis('CEDIS PANAMA','CEDIS Panamá (central)')+
+      tarjetaCedis('CEDIS DIVISA','CEDIS Divisa')+
+      tarjetaCedis('CEDIS CHIRIQUI','CEDIS Chiriquí')+
+    '</div>';
 }
 
 // Carga (una sola vez) las curvas de las tres bodegas CEDIS.
