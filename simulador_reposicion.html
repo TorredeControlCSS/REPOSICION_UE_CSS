@@ -1472,7 +1472,7 @@ function enlazarChips(){
    —o CEDIS Panamá— tienen existencia. Si nadie en la red tiene, es
    un asunto de compras y queda fuera de este panel.
    ================================================================ */
-const ALERTAS_URL = 'alertas_ue.json';
+const ALERTAS_URL = 'desabasto_ue.json';   // reporte rico del desabasto (mismo del correo)
 const TOPMOV = { ced:'', nivel:'ue', sev:'', topN:50, filtro:'', ue:'' };
 let DESAB = null;          // payload crudo del JSON
 let DESAB_ERR = '';
@@ -1536,6 +1536,15 @@ function agruparPorUE(filas){
 function colorSev(v){
   return v==='CRITICO' ? '#c0392b' : v==='ATENCION' ? '#8a5a2a' : '#2e7d32';
 }
+/* Celda de diagnóstico con color según el tipo (mismo criterio del reporte). */
+function diagCel(diag, txt){
+  txt = txt || '—';
+  let col = '#666';
+  if(diag==='NO_PIDIO') col = '#c0392b';                 // no requisó: crítico
+  else if(diag==='PENDIENTE_DESPACHO') col = '#8a5a2a';  // pidió, no despacharon
+  else if(diag==='DESPACHO_INSUFICIENTE') col = '#0C447C';
+  return '<span style="color:'+col+';font-weight:600">'+esc(txt)+'</span>';
+}
 
 function renderTopMov(){
   const cont = document.getElementById('topmovContenido');
@@ -1544,8 +1553,8 @@ function renderTopMov(){
 
   if(DESAB_ERR && !DESAB){
     resu.innerHTML='';
-    cont.innerHTML = '<div class="meta">No se pudo cargar <b>alertas_ue.json</b> ('+esc(DESAB_ERR)+').<br>'+
-      'Ejecuta <b>publicarAlertasAhora()</b> en el proyecto de Apps Script para generarlo.</div>';
+    cont.innerHTML = '<div class="meta">No se pudo cargar <b>desabasto_ue.json</b> ('+esc(DESAB_ERR)+').<br>'+
+      'Ejecuta <b>publicarDesabastoUE()</b> (menú 📊 Calculadora) en el proyecto de Apps Script para generarlo.</div>';
     return;
   }
   if(!DESAB){ cont.innerHTML='<div class="meta">Cargando alertas…</div>'; return; }
@@ -1569,7 +1578,12 @@ function renderTopMov(){
     '<span class="kpi-chip">UEs: <b style="font-family:Consolas">'+fmt(Object.keys(uesSet).length)+'</b></span>'+
     '<span class="kpi-chip">Renglones: <b style="font-family:Consolas">'+fmt(Object.keys(rengSet).length)+'</b></span>'+
     '<span class="kpi-chip">Consumo/mes desatendido: <b style="font-family:Consolas">'+fmt(Math.round(consumoTot))+'</b></span>'+
-    '<span class="kpi-chip">Corte: <b>'+esc(gen)+'</b></span>';
+    '<span class="kpi-chip">Corte: <b>'+esc(gen)+'</b></span>'+
+    ((k.noPidio!=null||k.pendienteDespacho!=null||k.despachoInsuficiente!=null) ?
+      '<span class="kpi-chip" style="border-color:#c0392b">Sin requisición: <b style="font-family:Consolas;color:#c0392b">'+fmt(k.noPidio||0)+'</b></span>'+
+      '<span class="kpi-chip" style="border-color:#8a5a2a">Pendiente despacho: <b style="font-family:Consolas;color:#8a5a2a">'+fmt(k.pendienteDespacho||0)+'</b></span>'+
+      '<span class="kpi-chip" style="border-color:#0C447C">Requiere revisión: <b style="font-family:Consolas;color:#0C447C">'+fmt(k.despachoInsuficiente||0)+'</b></span>'
+      : '');
 
   if(!filas.length){
     cont.innerHTML='<div class="meta">No hay líneas que cumplan el filtro seleccionado.</div>';
@@ -1622,6 +1636,7 @@ function renderTopMov(){
       '<th style="text-align:right">F8 YTD</th>'+
       '<th style="text-align:right">Nº F8</th>'+
       '<th>Última F8</th>'+
+      '<th>Diagnóstico</th>'+
       '</tr></thead><tbody>';
     most.forEach((f,i)=>{
       const sinF8 = !(f.fq>0);
@@ -1645,6 +1660,7 @@ function renderTopMov(){
         '<td style="text-align:right;font-family:Consolas">'+fmt(f.ip||0)+'</td>'+
         '<td style="text-align:right;font-family:Consolas">'+fmt(Math.round(f.co||0))+'</td>'+
         f8cel+
+        '<td style="font-size:11px">'+diagCel(f.diag, f.diagTxt)+'</td>'+
         '</tr>';
     });
     html+='</tbody></table></div>';
