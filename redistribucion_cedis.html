@@ -33,19 +33,19 @@
   /* KPIs nacionales */
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
   @media(max-width:900px){ .kpis{grid-template-columns:repeat(2,1fr);} }
-  .kpi{border:1px solid var(--bord);border-top:4px solid var(--azul);padding:10px 12px;background:#fafcfe;}
+  .kpi{border:1px solid #d8e0ea;border-radius:8px;padding:12px 14px;background:#eef4fb;}
   .kpi .lab{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
   .kpi .val{font-family:Consolas,monospace;font-size:22px;font-weight:700;color:var(--azul2);line-height:1.1;}
   .kpi .sub{font-size:10.5px;color:var(--sub);margin-top:3px;}
-  .kpi.cero{border-top-color:var(--rojo);}
+  .kpi.cero{background:#fdeeee;border-color:#f0d0d0;}
   .kpi.cero .val{color:var(--rojo);}
   /* Balance por CEDIS */
   .balance{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}
   @media(max-width:760px){ .balance{grid-template-columns:1fr;} }
-  .ced-box{border:1px solid var(--bord);padding:12px;background:#fafcfe;border-left:5px solid #999;}
-  .ced-box.pa{border-left-color:var(--pa);}
-  .ced-box.di{border-left-color:var(--di);}
-  .ced-box.ch{border-left-color:var(--ch);}
+  .ced-box{border:1px solid #d8e0ea;border-radius:8px;padding:12px 14px;background:#eef4fb;}
+  .ced-box.pa{background:#eaf1fb;border-color:#cfddf2;}
+  .ced-box.di{background:#eaf6ef;border-color:#cfe8d8;}
+  .ced-box.ch{background:#f8f2e6;border-color:#ecdfc4;}
   .ced-tit{font-size:12.5px;font-weight:700;color:var(--azul2);margin-bottom:6px;}
   .ced-row{font-size:11.5px;color:#444;margin:3px 0;display:flex;justify-content:space-between;}
   .ced-row b{font-family:Consolas,monospace;color:#222;}
