@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redistribución entre CEDIS · CSS</title>
+<link rel="icon" href="favicon.ico">
+<style>
+  :root{
+    --azul:#1e5a9e; --azul2:#0C447C; --bg:#ececec; --card:#fff;
+    --bord:#a8a8a8; --sub:#555; --verde:#2e7d32; --ambar:#b8860b; --rojo:#a11;
+    --pa:#0C447C; --di:#1e7a4a; --ch:#8a5a1a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);font-family:"Segoe UI",Tahoma,sans-serif;color:#222;}
+  .topbar{background:linear-gradient(90deg,var(--azul2),var(--azul));color:#fff;display:flex;align-items:center;gap:12px;padding:11px 16px;}
+  .topbar img{width:42px;height:42px;object-fit:contain;flex-shrink:0;background:transparent;}
+  .topbar .t1{font-size:15px;font-weight:700;line-height:1.2;}
+  .topbar .t2{font-size:11px;opacity:.85;}
+  .topbar .spacer{flex:1;}
+  .topbar .meta{font-size:10.5px;opacity:.9;text-align:right;line-height:1.5;}
+  .wrap{max-width:1300px;margin:0 auto;padding:12px 26px;}
+  .card{background:var(--card);border:1px solid var(--bord);padding:12px 14px;margin-bottom:10px;}
+  .intro{font-size:12.5px;color:#444;line-height:1.5;}
+  .intro b{color:var(--azul2);}
+  label{display:block;font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+  select,input{width:100%;padding:9px 10px;border:1px solid var(--bord);background:#fff;font-size:14px;border-radius:0;}
+  .row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;}
+  .row>div{flex:1;min-width:170px;}
+  button{font-family:inherit;border:1px solid var(--bord);border-radius:0;cursor:pointer;padding:8px 14px;font-size:12px;}
+  .btn-sec{background:#f4f4f4;color:#333;}
+  .btn-sec:hover{background:#e8e8e8;}
+  /* KPIs nacionales */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
+  @media(max-width:900px){ .kpis{grid-template-columns:repeat(2,1fr);} }
+  .kpi{border:1px solid var(--bord);border-top:4px solid var(--azul);padding:10px 12px;background:#fafcfe;}
+  .kpi .lab{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+  .kpi .val{font-family:Consolas,monospace;font-size:22px;font-weight:700;color:var(--azul2);line-height:1.1;}
+  .kpi .sub{font-size:10.5px;color:var(--sub);margin-top:3px;}
+  .kpi.cero{border-top-color:var(--rojo);}
+  .kpi.cero .val{color:var(--rojo);}
+  /* Balance por CEDIS */
+  .balance{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}
+  @media(max-width:760px){ .balance{grid-template-columns:1fr;} }
+  .ced-box{border:1px solid var(--bord);padding:12px;background:#fafcfe;border-left:5px solid #999;}
+  .ced-box.pa{border-left-color:var(--pa);}
+  .ced-box.di{border-left-color:var(--di);}
+  .ced-box.ch{border-left-color:var(--ch);}
+  .ced-tit{font-size:12.5px;font-weight:700;color:var(--azul2);margin-bottom:6px;}
+  .ced-row{font-size:11.5px;color:#444;margin:3px 0;display:flex;justify-content:space-between;}
+  .ced-row b{font-family:Consolas,monospace;color:#222;}
+  .ced-row.env b{color:var(--verde);}
+  .ced-row.rec b{color:var(--rojo);}
+  /* Filtros */
+  .filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:10px;}
+  .filtros>div{flex:1;min-width:150px;}
+  /* Tabla de órdenes */
+  .tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .tbl th,.tbl td{border:1px solid #ddd;padding:6px 9px;text-align:left;vertical-align:middle;}
+  .tbl th{background:#f4f7fb;color:var(--azul2);font-size:11px;text-transform:uppercase;letter-spacing:.3px;
+    cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0;}
+  .tbl th:hover{background:#e8eff8;}
+  .tbl th .arrow{font-size:9px;opacity:.6;margin-left:3px;}
+  .tbl tbody tr:hover{background:#f6f9fd;}
+  .tbl .num{font-family:Consolas,monospace;text-align:right;}
+  .tbl .cod{font-family:Consolas,monospace;color:var(--azul2);font-weight:700;white-space:nowrap;}
+  .mover{font-family:Consolas,monospace;font-weight:700;color:var(--azul2);}
+  .flujo{white-space:nowrap;font-weight:600;}
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:3px;color:#fff;}
+  .b-pa{background:var(--pa);}
+  .b-di{background:var(--di);}
+  .b-ch{background:var(--ch);}
+  .arrow-mid{color:#888;margin:0 5px;font-weight:400;}
+  .fila-cero{background:#fdf4f4;}
+  .fila-cero:hover{background:#fbe9e9;}
+  .tag-cero{font-size:10px;font-weight:700;color:var(--rojo);border:1px solid var(--rojo);border-radius:3px;padding:1px 5px;margin-left:6px;}
+  .tbl-wrap{max-height:560px;overflow-y:auto;border:1px solid var(--bord);}
+  .aviso{font-size:12px;padding:9px 12px;border:1px solid var(--ambar);background:#fff8e6;color:#7a5a00;margin-bottom:10px;}
+  .aviso.err{border-color:var(--rojo);background:#fdecec;color:#7a1010;}
+  .meta{font-size:11px;color:var(--sub);}
+  .foot{font-size:10px;color:#999;text-align:right;margin-top:10px;}
+  .conteo{font-size:11.5px;color:var(--sub);margin:6px 0;}
+  .leyenda{font-size:11px;color:#666;margin-top:8px;line-height:1.5;}
+  .leyenda b{color:var(--azul2);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img id="logo" src="https://raw.githubusercontent.com/TorredeControlCSS/REPOSICION_UE_CSS/main/icons/icon-192.png" alt="CSS">
+  <div>
+    <div class="t1">Redistribución entre CEDIS</div>
+    <div class="t2">Caja de Seguro Social · Dirección Nacional de Logística · Torre de Control</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="meta" id="meta"></div>
+</div>
+
+<div class="wrap">
+  <div id="avisoBox"></div>
+
+  <div class="card">
+    <div class="intro">
+      Este reporte compara la <b>cobertura</b> (días de inventario) de cada renglón en los tres CEDIS y propone
+      <b>traslados diarios</b> para equilibrarlos: mover del CEDIS con exceso al que está bajo o en cero, sin que
+      el que envía baje de su reserva mínima. El objetivo es que ningún CEDIS quede desabastecido mientras otro tiene de sobra.
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis" id="kpis"></div>
+
+  <!-- Balance por CEDIS -->
+  <div class="balance" id="balance"></div>
+
+  <!-- Órdenes de traslado -->
+  <div class="card">
+    <div class="filtros">
+      <div>
+        <label>CEDIS que envía</label>
+        <select id="fOrigen"><option value="">Todos</option></select>
+      </div>
+      <div>
+        <label>CEDIS que recibe</label>
+        <select id="fDestino"><option value="">Todos</option></select>
+      </div>
+      <div style="flex:2;">
+        <label>Buscar renglón (código o nombre)</label>
+        <input id="fBuscar" type="text" placeholder="Ej. amlodipina, 101086601…">
+      </div>
+      <div style="flex:0 0 auto;">
+        <button class="btn-sec" id="btnExcel">Descargar órdenes (Excel)</button>
+      </div>
+    </div>
+    <div class="conteo" id="conteo"></div>
+    <div class="tbl-wrap">
+      <table class="tbl" id="tabla">
+        <thead>
+          <tr>
+            <th data-k="cod">Código<span class="arrow"></span></th>
+            <th data-k="renglon">Renglón<span class="arrow"></span></th>
+            <th data-k="flujo">Traslado<span class="arrow"></span></th>
+            <th data-k="mover">Mover<span class="arrow"></span></th>
+            <th data-k="cobOrigenAntes">Cob. origen<span class="arrow"></span></th>
+            <th data-k="cobDestinoAntes">Cob. destino<span class="arrow"></span></th>
+            <th data-k="saldoDestino">Saldo destino<span class="arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="leyenda">
+      <b>Cómo leerlo:</b> cada fila es una orden de traslado. <b>Cob. origen / destino</b> son los días de inventario
+      antes del movimiento. Las filas resaltadas son destinos <b>en cero</b> (prioridad). "Mover" es la cantidad
+      sugerida en unidades de emisión, redondeada, que iguala la cobertura sin dejar al origen bajo su reserva mínima.
+    </div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+var DATA_URL = 'redistribucion_cedis.json';
+var REP = null;
+var SORT = { k:'saldoDestino', dir:1 };  // por defecto: destinos en cero primero
+
+function el(id){ return document.getElementById(id); }
+function fmt(n){ return (n==null||isNaN(n))?'—':Math.round(n).toLocaleString('es-PA'); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function aviso(html, clase){ el('avisoBox').innerHTML = html ? '<div class="aviso '+(clase||'')+'">'+html+'</div>' : ''; }
+
+var CED_ABBR = { 'CEDIS PANAMA':{s:'Panamá', b:'b-pa'}, 'CEDIS DIVISA':{s:'Divisa', b:'b-di'}, 'CEDIS CHIRIQUI':{s:'Chiriquí', b:'b-ch'} };
+function badge(ced){ var a = CED_ABBR[ced]||{s:ced,b:''}; return '<span class="badge '+a.b+'">'+esc(a.s)+'</span>'; }
+function cedClass(ced){ return ced==='CEDIS PANAMA'?'pa':ced==='CEDIS DIVISA'?'di':'ch'; }
+
+fetch(DATA_URL, {cache:'no-cache'})
+  .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(function(data){ REP = data; render(); })
+  .catch(function(e){
+    aviso('No se pudo cargar <b>redistribucion_cedis.json</b> ('+esc(e.message)+').<br>'+
+      'Ejecute <b>publicarRedistribucionCEDIS()</b> (menú 🔄 Actualizar Tableros) en el proyecto de Apps Script para generarlo.', 'err');
+  });
+
+function render(){
+  if(!REP){ return; }
+  el('meta').textContent = (REP.kpi&&REP.kpi.corte ? 'Corte '+REP.kpi.corte+' · ' : '') + 'generado '+esc(REP.generado||'');
+  el('foot').textContent = 'Dirección Nacional de Logística · Torre de Control';
+  pintarKpis();
+  pintarBalance();
+  poblarFiltros();
+  pintarTabla();
+}
+
+function pintarKpis(){
+  var k = REP.kpi||{};
+  el('kpis').innerHTML =
+    '<div class="kpi"><div class="lab">Traslados sugeridos</div><div class="val">'+fmt(k.totalTraslados)+'</div>'+
+      '<div class="sub">Órdenes de movimiento entre CEDIS.</div></div>'+
+    '<div class="kpi cero"><div class="lab">Destinos en cero</div><div class="val">'+fmt(k.destinosEnCero)+'</div>'+
+      '<div class="sub">Renglones que un CEDIS agotó y otro puede surtir.</div></div>'+
+    '<div class="kpi"><div class="lab">Unidades a movilizar</div><div class="val">'+fmt(k.unidadesTotales)+'</div>'+
+      '<div class="sub">Suma de todas las cantidades a trasladar.</div></div>'+
+    '<div class="kpi"><div class="lab">Corte de saldos</div><div class="val" style="font-size:16px;">'+esc(k.corte||'—')+'</div>'+
+      '<div class="sub">Fecha del inventario comparado.</div></div>';
+}
+
+function pintarBalance(){
+  var k = REP.kpi||{};
+  var po = k.porOrigen||{}, pd = k.porDestino||{};
+  var ceds = ['CEDIS PANAMA','CEDIS DIVISA','CEDIS CHIRIQUI'];
+  el('balance').innerHTML = ceds.map(function(ce){
+    var a = CED_ABBR[ce];
+    return '<div class="ced-box '+cedClass(ce)+'">'+
+      '<div class="ced-tit">'+esc(ce)+'</div>'+
+      '<div class="ced-row env"><span>Envía (es origen en)</span><b>'+fmt(po[ce]||0)+' renglones</b></div>'+
+      '<div class="ced-row rec"><span>Recibe (es destino en)</span><b>'+fmt(pd[ce]||0)+' renglones</b></div>'+
+    '</div>';
+  }).join('');
+}
+
+function poblarFiltros(){
+  var ceds = ['CEDIS PANAMA','CEDIS DIVISA','CEDIS CHIRIQUI'];
+  var o = el('fOrigen'), d = el('fDestino');
+  ceds.forEach(function(ce){
+    o.insertAdjacentHTML('beforeend','<option value="'+esc(ce)+'">'+esc(CED_ABBR[ce].s)+'</option>');
+    d.insertAdjacentHTML('beforeend','<option value="'+esc(ce)+'">'+esc(CED_ABBR[ce].s)+'</option>');
+  });
+  o.addEventListener('change', pintarTabla);
+  d.addEventListener('change', pintarTabla);
+  el('fBuscar').addEventListener('input', pintarTabla);
+  el('btnExcel').addEventListener('click', descargarExcel);
+  // ordenamiento por columnas
+  document.querySelectorAll('#tabla th').forEach(function(th){
+    th.addEventListener('click', function(){
+      var k = th.getAttribute('data-k');
+      if(SORT.k===k){ SORT.dir = -SORT.dir; } else { SORT.k=k; SORT.dir=1; }
+      pintarTabla();
+    });
+  });
+}
+
+function filas(){
+  var arr = (REP.f||[]).slice();
+  var fo = el('fOrigen').value, fd = el('fDestino').value;
+  var q = (el('fBuscar').value||'').trim().toUpperCase();
+  if(fo) arr = arr.filter(function(t){ return t.origen===fo; });
+  if(fd) arr = arr.filter(function(t){ return t.destino===fd; });
+  if(q) arr = arr.filter(function(t){ return ((t.cod||'')+' '+(t.renglon||'')).toUpperCase().indexOf(q)>=0; });
+  // ordenar
+  var k = SORT.k, dir = SORT.dir;
+  arr.sort(function(a,b){
+    var va, vb;
+    if(k==='flujo'){ va=(a.origen+a.destino); vb=(b.origen+b.destino); }
+    else if(k==='renglon'||k==='cod'){ va=String(a[k]||''); vb=String(b[k]||''); }
+    else { va=a[k]||0; vb=b[k]||0; }
+    if(va<vb) return -1*dir; if(va>vb) return 1*dir; return 0;
+  });
+  return arr;
+}
+
+function pintarTabla(){
+  var arr = filas();
+  el('conteo').textContent = arr.length + ' traslado' + (arr.length===1?'':'s') + ' según los filtros.';
+  var html = arr.map(function(t){
+    var enCero = (t.saldoDestino===0);
+    var flujo = badge(t.origen)+'<span class="arrow-mid">&rarr;</span>'+badge(t.destino);
+    return '<tr class="'+(enCero?'fila-cero':'')+'">'+
+      '<td class="cod">'+esc(t.cod)+'</td>'+
+      '<td>'+esc(t.renglon||'')+(enCero?'<span class="tag-cero">DESTINO EN CERO</span>':'')+'</td>'+
+      '<td class="flujo">'+flujo+'</td>'+
+      '<td class="num mover">'+fmt(t.mover)+'</td>'+
+      '<td class="num">'+fmt(t.cobOrigenAntes)+' d</td>'+
+      '<td class="num">'+fmt(t.cobDestinoAntes)+' d</td>'+
+      '<td class="num">'+fmt(t.saldoDestino)+'</td>'+
+    '</tr>';
+  }).join('');
+  el('tbody').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#888;padding:20px;">No hay traslados que cumplan el filtro.</td></tr>';
+  // indicador de orden en encabezados
+  document.querySelectorAll('#tabla th').forEach(function(th){
+    var a = th.querySelector('.arrow');
+    if(a) a.textContent = (th.getAttribute('data-k')===SORT.k) ? (SORT.dir>0?'▲':'▼') : '';
+  });
+}
+
+function descargarExcel(){
+  var arr = filas();
+  if(!arr.length){ aviso('No hay traslados para descargar con los filtros actuales.', ''); return; }
+  var cab = ['Código','Renglón','CEDIS origen','CEDIS destino','Unidades a mover','Cobertura origen (d)','Cobertura destino (d)','Saldo destino'];
+  var lineas = [cab.join('\t')];
+  arr.forEach(function(t){
+    lineas.push([t.cod, (t.renglon||'').replace(/\t/g,' '), t.origen, t.destino, t.mover, t.cobOrigenAntes, t.cobDestinoAntes, t.saldoDestino].join('\t'));
+  });
+  var blob = new Blob(['\ufeff'+lineas.join('\n')], {type:'application/vnd.ms-excel;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'ordenes_redistribucion_'+(REP.kpi&&REP.kpi.corte||'')+'.xls';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
