@@ -82,6 +82,33 @@
   .conteo{font-size:11.5px;color:var(--sub);margin:6px 0;}
   .leyenda{font-size:11px;color:#666;margin-top:8px;line-height:1.5;}
   .leyenda b{color:var(--azul2);}
+  /* Gráfica por renglón (panel del solapamiento) */
+  #panelReng{margin-bottom:10px;display:none;}
+  .reng-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;}
+  .reng-tit{font-size:13px;font-weight:700;color:var(--azul2);}
+  .reng-tit .cod{font-family:Consolas,monospace;}
+  .reng-close{cursor:pointer;font-size:12px;color:var(--sub);border:1px solid var(--bord);background:#f4f4f4;padding:4px 10px;}
+  .plot-cedis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media(max-width:760px){ .plot-cedis{grid-template-columns:1fr;} }
+  .plot-col{text-align:center;}
+  .plot-col .cn{font-size:12px;font-weight:700;margin-bottom:6px;}
+  .plot-col.pa .cn{color:var(--pa);} .plot-col.di .cn{color:var(--di);} .plot-col.ch .cn{color:var(--ch);}
+  .plot-svg{width:100%;height:180px;}
+  .plot-stat{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.5;}
+  .plot-stat b{font-family:Consolas,monospace;color:#222;font-size:13px;}
+  .plot-cero{color:var(--rojo);font-weight:700;}
+  /* Mapa de calor general */
+  #panelHeat .hm-head{font-size:13px;font-weight:700;color:var(--azul2);margin-bottom:4px;}
+  #panelHeat .hm-sub{font-size:11px;color:var(--sub);margin-bottom:10px;}
+  .hm-wrap{overflow-x:auto;max-height:460px;overflow-y:auto;border:1px solid var(--bord);}
+  .hm-tbl{border-collapse:collapse;font-size:11.5px;width:100%;}
+  .hm-tbl th,.hm-tbl td{border:1px solid #e4e4e4;padding:5px 8px;text-align:center;white-space:nowrap;}
+  .hm-tbl th{background:#f4f7fb;color:var(--azul2);font-size:10.5px;text-transform:uppercase;position:sticky;top:0;cursor:pointer;}
+  .hm-tbl td.rn{text-align:left;max-width:280px;overflow:hidden;text-overflow:ellipsis;}
+  .hm-tbl td.cd{font-family:Consolas,monospace;color:var(--azul2);font-weight:700;cursor:pointer;}
+  .hm-cell{font-family:Consolas,monospace;font-weight:600;cursor:pointer;}
+  .hm-legend{display:flex;gap:14px;align-items:center;margin-top:8px;font-size:11px;color:#666;flex-wrap:wrap;}
+  .hm-sw{display:inline-block;width:16px;height:12px;border:1px solid #ccc;margin-right:4px;vertical-align:middle;}
 </style>
 </head>
 <body>
@@ -111,6 +138,16 @@
 
   <!-- Balance por CEDIS -->
   <div class="balance" id="balance"></div>
+
+  <!-- Gráfica de solapamiento por renglón (se abre al elegir uno) -->
+  <div class="card" id="panelReng">
+    <div class="reng-head">
+      <div class="reng-tit" id="rengTit"></div>
+      <div class="reng-close" id="rengClose">Cerrar gráfica</div>
+    </div>
+    <div class="plot-cedis" id="plotCedis"></div>
+    <div class="leyenda" id="rengLeyenda"></div>
+  </div>
 
   <!-- Órdenes de traslado -->
   <div class="card">
@@ -155,6 +192,33 @@
     </div>
   </div>
 
+  <!-- Mapa de calor: solapamiento entre CEDIS -->
+  <div class="card" id="panelHeat">
+    <div class="hm-head">Mapa de solapamiento entre CEDIS</div>
+    <div class="hm-sub">Cada fila es un renglón con desequilibrio; el color muestra la cobertura (días de inventario) de cada CEDIS. Rojo = en cero o crítico, verde = con holgura. Haga clic en una fila para ver su gráfica.</div>
+    <div class="hm-wrap">
+      <table class="hm-tbl" id="heatTbl">
+        <thead>
+          <tr>
+            <th data-hk="cod">Código</th>
+            <th data-hk="renglon">Renglón</th>
+            <th data-hk="pa">Panamá</th>
+            <th data-hk="di">Divisa</th>
+            <th data-hk="ch">Chiriquí</th>
+          </tr>
+        </thead>
+        <tbody id="heatBody"></tbody>
+      </table>
+    </div>
+    <div class="hm-legend">
+      <span><span class="hm-sw" style="background:#c0392b;"></span>0 días (en cero)</span>
+      <span><span class="hm-sw" style="background:#e8a13a;"></span>bajo el mínimo</span>
+      <span><span class="hm-sw" style="background:#f2e6a0;"></span>ajustado</span>
+      <span><span class="hm-sw" style="background:#8fca7f;"></span>holgado</span>
+      <span><span class="hm-sw" style="background:#e8eef5;"></span>sin consumo (saldo sin demanda)</span>
+    </div>
+  </div>
+
   <div class="foot" id="foot"></div>
 </div>
 
@@ -188,7 +252,114 @@ function render(){
   pintarBalance();
   poblarFiltros();
   pintarTabla();
+  pintarHeatmap();
 }
+
+// ====== Color de cobertura (compartido por gráfica y mapa de calor) ======
+function colorCob(dias, minDias){
+  if(dias===-1) return '#e8eef5';        // sin consumo: saldo sin demanda
+  if(dias<=0)   return '#c0392b';        // en cero
+  if(dias < minDias) return '#e8a13a';   // bajo el mínimo
+  if(dias < minDias*2) return '#f2e6a0'; // ajustado
+  return '#8fca7f';                      // holgado
+}
+function txtCob(dias){
+  if(dias===-1) return 's/c';            // sin consumo
+  if(dias>=9999) return '∞';
+  return dias+'d';
+}
+
+// ====== Gráfica de solapamiento por renglón (corte actual) ======
+var CEDS3 = [
+  {k:'CEDIS PANAMA', s:'Panamá', c:'pa', col:'#0C447C'},
+  {k:'CEDIS DIVISA', s:'Divisa', c:'di', col:'#1e7a4a'},
+  {k:'CEDIS CHIRIQUI', s:'Chiriquí', c:'ch', col:'#8a5a1a'}
+];
+function abrirGrafica(cod){
+  var t = (REP.f||[]).find(function(x){ return String(x.cod)===String(cod); });
+  if(!t){ return; }
+  var minD = (REP.kpi&&REP.kpi.minDias)||15;
+  el('rengTit').innerHTML = '<span class="cod">'+esc(t.cod)+'</span> — '+esc(t.renglon||'');
+  // escala común de cobertura para los 3 (para que el solapamiento se vea)
+  var cobs = CEDS3.map(function(c){ var v=t.cobertura[c.k]; return v===-1?0:v; });
+  var maxC = Math.max(minD*2, Math.max.apply(null,cobs), 1);
+  var H=180, W=140, base=H-24, top=14;
+  el('plotCedis').innerHTML = CEDS3.map(function(c){
+    var cob = t.cobertura[c.k], sal = t.saldos[c.k]||0;
+    var vis = cob===-1?0:Math.max(0,cob);
+    var h = Math.round((Math.min(vis,maxC)/maxC)*(base-top));
+    var y = base - h;
+    var yMin = base - Math.round((Math.min(minD,maxC)/maxC)*(base-top));
+    var enCero = (sal===0);
+    var barCol = colorCob(cob, minD);
+    var svg =
+      '<svg class="plot-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+
+        // eje
+        '<line x1="20" y1="'+base+'" x2="'+(W-10)+'" y2="'+base+'" stroke="#bbb" stroke-width="1"/>'+
+        // línea del mínimo
+        '<line x1="20" y1="'+yMin+'" x2="'+(W-10)+'" y2="'+yMin+'" stroke="#c0392b" stroke-width="1" stroke-dasharray="4 3"/>'+
+        '<text x="'+(W-12)+'" y="'+(yMin-3)+'" font-size="8" fill="#c0392b" text-anchor="end">mín '+minD+'d</text>'+
+        // barra/nivel del CEDIS
+        '<rect x="42" y="'+y+'" width="'+(W-84)+'" height="'+h+'" fill="'+barCol+'" opacity="0.85"/>'+
+        // etiqueta de cobertura arriba de la barra
+        '<text x="'+(W/2)+'" y="'+(y-4>top?y-4:top)+'" font-size="13" font-weight="700" fill="#222" text-anchor="middle">'+txtCob(cob)+'</text>'+
+      '</svg>';
+    return '<div class="plot-col '+c.c+'">'+
+      '<div class="cn">'+esc(c.s)+'</div>'+ svg +
+      '<div class="plot-stat">Saldo: <b>'+fmt(sal)+'</b>'+(enCero?' <span class="plot-cero">EN CERO</span>':'')+'<br>Cobertura: <b>'+txtCob(cob)+'</b></div>'+
+    '</div>';
+  }).join('');
+  var ley = 'Traslado sugerido: <b>'+fmt(t.mover)+'</b> unidades de <b>'+esc(CED_ABBR[t.origen].s)+
+    '</b> &rarr; <b>'+esc(CED_ABBR[t.destino].s)+'</b>. '+
+    'La línea roja marca la reserva mínima ('+minD+' días) que el origen debe conservar. '+
+    '"s/c" = el CEDIS tiene saldo pero sin consumo registrado.';
+  el('rengLeyenda').innerHTML = ley;
+  el('panelReng').style.display = 'block';
+  el('panelReng').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ====== Mapa de calor: todos los renglones con solapamiento ======
+var HEAT_SORT = { k:'brecha', dir:-1 };
+function pintarHeatmap(){
+  var minD = (REP.kpi&&REP.kpi.minDias)||15;
+  var arr = (REP.f||[]).slice();
+  // ordenar
+  var k = HEAT_SORT.k, dir = HEAT_SORT.dir;
+  arr.sort(function(a,b){
+    var va,vb;
+    if(k==='pa'){ va=a.cobertura['CEDIS PANAMA']; vb=b.cobertura['CEDIS PANAMA']; }
+    else if(k==='di'){ va=a.cobertura['CEDIS DIVISA']; vb=b.cobertura['CEDIS DIVISA']; }
+    else if(k==='ch'){ va=a.cobertura['CEDIS CHIRIQUI']; vb=b.cobertura['CEDIS CHIRIQUI']; }
+    else if(k==='cod'||k==='renglon'){ va=String(a[k]||''); vb=String(b[k]||''); }
+    else { va=a[k]||0; vb=b[k]||0; }
+    if(va<vb) return -1*dir; if(va>vb) return 1*dir; return 0;
+  });
+  function celda(cob){
+    return '<td class="hm-cell" style="background:'+colorCob(cob,minD)+';color:'+(cob>0&&cob<minD*2?'#333':(cob<=0&&cob!==-1?'#fff':'#333'))+';">'+txtCob(cob)+'</td>';
+  }
+  el('heatBody').innerHTML = arr.map(function(t){
+    return '<tr data-cod="'+esc(t.cod)+'">'+
+      '<td class="cd" data-cod="'+esc(t.cod)+'">'+esc(t.cod)+'</td>'+
+      '<td class="rn">'+esc(t.renglon||'')+'</td>'+
+      celda(t.cobertura['CEDIS PANAMA'])+
+      celda(t.cobertura['CEDIS DIVISA'])+
+      celda(t.cobertura['CEDIS CHIRIQUI'])+
+    '</tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:#888;padding:16px;">Sin datos.</td></tr>';
+  // clic en fila abre la gráfica
+  el('heatBody').querySelectorAll('tr').forEach(function(tr){
+    tr.addEventListener('click', function(){ var c=tr.getAttribute('data-cod'); if(c) abrirGrafica(c); });
+  });
+  // orden por columnas del heatmap
+  document.querySelectorAll('#heatTbl th').forEach(function(th){
+    th.onclick = function(){
+      var hk = th.getAttribute('data-hk');
+      if(HEAT_SORT.k===hk){ HEAT_SORT.dir=-HEAT_SORT.dir; } else { HEAT_SORT.k=hk; HEAT_SORT.dir=1; }
+      pintarHeatmap();
+    };
+  });
+}
+function _noop(){}
 
 function pintarKpis(){
   var k = REP.kpi||{};
@@ -227,7 +398,11 @@ function poblarFiltros(){
   o.addEventListener('change', pintarTabla);
   d.addEventListener('change', pintarTabla);
   el('fBuscar').addEventListener('input', pintarTabla);
+  el('fBuscar').addEventListener('keydown', function(ev){
+    if(ev.key==='Enter'){ var arr=filas(); if(arr.length){ abrirGrafica(arr[0].cod); } }
+  });
   el('btnExcel').addEventListener('click', descargarExcel);
+  el('rengClose').addEventListener('click', function(){ el('panelReng').style.display='none'; });
   // ordenamiento por columnas
   document.querySelectorAll('#tabla th').forEach(function(th){
     th.addEventListener('click', function(){
@@ -263,7 +438,7 @@ function pintarTabla(){
   var html = arr.map(function(t){
     var enCero = (t.saldoDestino===0);
     var flujo = badge(t.origen)+'<span class="arrow-mid">&rarr;</span>'+badge(t.destino);
-    return '<tr class="'+(enCero?'fila-cero':'')+'">'+
+    return '<tr class="'+(enCero?'fila-cero':'')+'" data-cod="'+esc(t.cod)+'" style="cursor:pointer;">'+
       '<td class="cod">'+esc(t.cod)+'</td>'+
       '<td>'+esc(t.renglon||'')+(enCero?'<span class="tag-cero">DESTINO EN CERO</span>':'')+'</td>'+
       '<td class="flujo">'+flujo+'</td>'+
@@ -274,6 +449,10 @@ function pintarTabla(){
     '</tr>';
   }).join('');
   el('tbody').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#888;padding:20px;">No hay traslados que cumplan el filtro.</td></tr>';
+  // clic en fila de la tabla abre la gráfica del renglón
+  el('tbody').querySelectorAll('tr[data-cod]').forEach(function(tr){
+    tr.addEventListener('click', function(){ var c=tr.getAttribute('data-cod'); if(c) abrirGrafica(c); });
+  });
   // indicador de orden en encabezados
   document.querySelectorAll('#tabla th').forEach(function(th){
     var a = th.querySelector('.arrow');
