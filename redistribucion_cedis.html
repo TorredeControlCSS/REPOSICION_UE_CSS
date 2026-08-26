@@ -73,7 +73,10 @@
   .arrow-mid{color:#888;margin:0 5px;font-weight:400;}
   .fila-cero{background:#fdf4f4;}
   .fila-cero:hover{background:#fbe9e9;}
-  .tag-cero{font-size:10px;font-weight:700;color:var(--rojo);border:1px solid var(--rojo);border-radius:3px;padding:1px 5px;margin-left:6px;}
+  .tag-cero{font-size:10px;font-weight:600;color:#999;border:1px solid #ccc;border-radius:3px;padding:1px 5px;margin-left:6px;}
+  .fila-urgente{background:#fff0f0;box-shadow:inset 3px 0 0 var(--rojo);}
+  .fila-urgente:hover{background:#ffe4e4;}
+  .tag-urgente{font-size:10px;font-weight:700;color:#fff;background:var(--rojo);border-radius:3px;padding:2px 7px;margin-left:6px;letter-spacing:.3px;}
   .tbl-wrap{max-height:560px;overflow-y:auto;border:1px solid var(--bord);}
   .aviso{font-size:12px;padding:9px 12px;border:1px solid var(--ambar);background:#fff8e6;color:#7a5a00;margin-bottom:10px;}
   .aviso.err{border-color:var(--rojo);background:#fdecec;color:#7a1010;}
@@ -116,7 +119,7 @@
   <img id="logo" src="https://raw.githubusercontent.com/TorredeControlCSS/REPOSICION_UE_CSS/main/icons/icon-192.png" alt="CSS">
   <div>
     <div class="t1">Redistribución entre CEDIS</div>
-    <div class="t2">Caja de Seguro Social | Dirección Nacional de Logística | Torre de Control</div>
+    <div class="t2">Caja de Seguro Social · Dirección Nacional de Logística · Torre de Control</div>
   </div>
   <div class="spacer"></div>
   <div class="meta" id="meta"></div>
@@ -264,9 +267,12 @@ function colorCob(dias, minDias){
   return '#8fca7f';                      // holgado
 }
 function txtCob(dias){
-  if(dias===-1) return 's/c';            // sin consumo
-  if(dias>=9999) return '∞';
+  if(dias===-1 || dias>=9999) return 's/c';   // sin consumo (compacto para el mapa de calor)
   return dias+'d';
+}
+function txtCobTabla(dias){
+  if(dias===-1 || dias>=9999) return '<span style="color:#888;" title="Saldo sin consumo registrado">sin consumo</span>';
+  return dias+' d';
 }
 
 // ====== Gráfica de solapamiento por renglón (corte actual) ======
@@ -364,12 +370,12 @@ function _noop(){}
 function pintarKpis(){
   var k = REP.kpi||{};
   el('kpis').innerHTML =
-    '<div class="kpi"><div class="lab">Traslados sugeridos</div><div class="val">'+fmt(k.totalTraslados)+'</div>'+
-      '<div class="sub">Órdenes de movimiento entre CEDIS.</div></div>'+
-    '<div class="kpi cero"><div class="lab">Destinos en cero</div><div class="val">'+fmt(k.destinosEnCero)+'</div>'+
-      '<div class="sub">Renglones que un CEDIS agotó y otro puede surtir.</div></div>'+
-    '<div class="kpi"><div class="lab">Unidades a movilizar</div><div class="val">'+fmt(k.unidadesTotales)+'</div>'+
-      '<div class="sub">Suma de todas las cantidades a trasladar.</div></div>'+
+    '<div class="kpi cero"><div class="lab">Mover HOY (urgente)</div><div class="val">'+fmt(k.urgentes)+'</div>'+
+      '<div class="sub">Destinos en cero que un CEDIS con consumo real puede surtir.</div></div>'+
+    '<div class="kpi"><div class="lab">Unidades urgentes</div><div class="val">'+fmt(k.unidadesUrgentes)+'</div>'+
+      '<div class="sub">Total a movilizar solo en los traslados urgentes.</div></div>'+
+    '<div class="kpi"><div class="lab">Traslados totales</div><div class="val">'+fmt(k.totalTraslados)+'</div>'+
+      '<div class="sub">Incluye ajustes de cobertura menos urgentes.</div></div>'+
     '<div class="kpi"><div class="lab">Corte de saldos</div><div class="val" style="font-size:16px;">'+esc(k.corte||'—')+'</div>'+
       '<div class="sub">Fecha del inventario comparado.</div></div>';
 }
@@ -436,15 +442,18 @@ function pintarTabla(){
   var arr = filas();
   el('conteo').textContent = arr.length + ' traslado' + (arr.length===1?'':'s') + ' según los filtros.';
   var html = arr.map(function(t){
-    var enCero = (t.saldoDestino===0);
+    var enCero = (t.destinoEnCero!==undefined ? t.destinoEnCero : (t.saldoDestino===0));
+    var urgente = enCero && !t.origenSinConsumo;
     var flujo = badge(t.origen)+'<span class="arrow-mid">&rarr;</span>'+badge(t.destino);
-    return '<tr class="'+(enCero?'fila-cero':'')+'" data-cod="'+esc(t.cod)+'" style="cursor:pointer;">'+
+    var tag = urgente ? '<span class="tag-urgente">MOVER HOY</span>'
+            : (enCero ? '<span class="tag-cero">EN CERO · origen s/c</span>' : '');
+    return '<tr class="'+(urgente?'fila-urgente':(enCero?'fila-cero':''))+'" data-cod="'+esc(t.cod)+'" style="cursor:pointer;">'+
       '<td class="cod">'+esc(t.cod)+'</td>'+
-      '<td>'+esc(t.renglon||'')+(enCero?'<span class="tag-cero">DESTINO EN CERO</span>':'')+'</td>'+
+      '<td>'+esc(t.renglon||'')+' '+tag+'</td>'+
       '<td class="flujo">'+flujo+'</td>'+
       '<td class="num mover">'+fmt(t.mover)+'</td>'+
-      '<td class="num">'+fmt(t.cobOrigenAntes)+' d</td>'+
-      '<td class="num">'+fmt(t.cobDestinoAntes)+' d</td>'+
+      '<td class="num">'+txtCobTabla(t.cobOrigenAntes)+'</td>'+
+      '<td class="num">'+txtCobTabla(t.cobDestinoAntes)+'</td>'+
       '<td class="num">'+fmt(t.saldoDestino)+'</td>'+
     '</tr>';
   }).join('');
