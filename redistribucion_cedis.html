@@ -111,6 +111,9 @@
   .sk-btn.sk-on{background:var(--azul);color:#fff;border-color:var(--azul);}
   .sk-btn:first-child{border-radius:6px 0 0 6px;}
   .sk-btn:last-child{border-radius:0 6px 6px 0;border-left:none;}
+  .sk-filtros{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:4px 0 8px;padding:8px 10px;background:#f7f9fc;border:1px solid var(--bord);border-radius:6px;}
+  .sk-filtros label{font-size:12px;color:#444;display:flex;align-items:center;gap:6px;}
+  .sk-filtros select{font-size:12px;padding:4px 8px;border:1px solid var(--bord);border-radius:5px;background:#fff;}
   #sankeyWrap svg{width:100%;height:auto;display:block;}
   .sk-flow{cursor:pointer;transition:opacity .15s;}
   .sk-flow:hover{opacity:.75;}
@@ -232,6 +235,11 @@
         <button id="skUrg" class="sk-btn">Solo urgentes</button>
       </div>
     </div>
+    <div class="sk-filtros">
+      <label>Ver envíos de: <select id="skFiltroO"><option value="">Todos los CEDIS</option></select></label>
+      <label>Ver lo que recibe: <select id="skFiltroD"><option value="">Todos los CEDIS</option></select></label>
+      <button id="skFiltroReset" class="sk-btn" style="border-radius:6px;">Quitar filtros</button>
+    </div>
     <div id="sankeyWrap"></div>
     <div id="sankeyDetalle"></div>
   </div>
@@ -348,6 +356,8 @@ function abrirGrafica(cod){
 // ====== Mapa de calor: todos los renglones con solapamiento ======
 // ====== SANKEY de flujos entre CEDIS ======
 var SK_MODO = 'todos';   // 'todos' | 'urgentes'
+var SK_FO = '';          // filtro origen (vacío = todos)
+var SK_FD = '';          // filtro destino
 var CED_SK = [
   {k:'CEDIS PANAMA',   s:'Panamá',   col:'#0C447C'},
   {k:'CEDIS DIVISA',   s:'Divisa',   col:'#1e7a4a'},
@@ -355,11 +365,13 @@ var CED_SK = [
 ];
 function pintarSankey(){
   var flu = (SK_MODO==='urgentes') ? (REP.flujosUrg||{}) : (REP.flujos||{});
-  // recolectar corrientes con unidades > 0
+  // recolectar corrientes con unidades > 0, aplicando filtros por CEDIS
   var corr = [];
   CED_SK.forEach(function(o){
     CED_SK.forEach(function(d){
       if (o.k===d.k) return;
+      if (SK_FO && o.k!==SK_FO) return;     // filtro: solo envíos de X
+      if (SK_FD && d.k!==SK_FD) return;     // filtro: solo lo que recibe Y
       var f = (flu[o.k]||{})[d.k];
       if (f && f.unidades>0) corr.push({ o:o, d:d, unidades:f.unidades, renglones:f.renglones });
     });
@@ -372,7 +384,7 @@ function pintarSankey(){
   var maxU = Math.max.apply(null, corr.map(function(c){return c.unidades;}));
 
   // layout: origen a la izquierda, destino a la derecha
-  var W=900, H=380, colO=180, colD=W-180, nodoW=26, top=40, bot=H-30, alto=bot-top;
+  var W=900, H=400, colO=180, colD=W-180, nodoW=26, top=64, bot=H-30, alto=bot-top;
   // posición vertical de cada CEDIS (mismo orden en ambas columnas)
   var yDe={}; CED_SK.forEach(function(c,i){ yDe[c.k] = top + (alto/(CED_SK.length-1))*i; });
   // grosor máximo de una corriente
@@ -413,9 +425,9 @@ function pintarSankey(){
     svg += '<rect x="'+(colD)+'" y="'+(y-26)+'" width="'+nodoW+'" height="52" rx="4" fill="'+c.col+'"/>';
     svg += '<text class="sk-nodo-lbl" x="'+(colD+nodoW+8)+'" y="'+(y+4)+'" text-anchor="start" fill="'+c.col+'">'+c.s+'</text>';
   });
-  // encabezados de columna (subidos para no chocar con nodos/corrientes)
-  svg += '<text x="'+(colO+nodoW/2)+'" y="14" text-anchor="middle" font-size="10" fill="#999" font-weight="700" letter-spacing="1">ENVÍA</text>';
-  svg += '<text x="'+(colD+nodoW/2)+'" y="14" text-anchor="middle" font-size="10" fill="#999" font-weight="700" letter-spacing="1">RECIBE</text>';
+  // encabezados de columna (en el margen superior, con aire respecto a los nodos)
+  svg += '<text x="'+(colO+nodoW/2)+'" y="28" text-anchor="middle" font-size="10" fill="#999" font-weight="700" letter-spacing="1">ENVÍA</text>';
+  svg += '<text x="'+(colD+nodoW/2)+'" y="28" text-anchor="middle" font-size="10" fill="#999" font-weight="700" letter-spacing="1">RECIBE</text>';
   svg += etiquetas;   // etiquetas al final, encima de todo
   svg += '</svg>';
   el('sankeyWrap').innerHTML = svg;
@@ -498,6 +510,14 @@ function poblarFiltros(){
   // toggle del Sankey
   el('skTodos').addEventListener('click', function(){ SK_MODO='todos'; el('skTodos').classList.add('sk-on'); el('skUrg').classList.remove('sk-on'); pintarSankey(); });
   el('skUrg').addEventListener('click', function(){ SK_MODO='urgentes'; el('skUrg').classList.add('sk-on'); el('skTodos').classList.remove('sk-on'); pintarSankey(); });
+  // filtros por CEDIS del Sankey
+  CED_SK.forEach(function(c){
+    el('skFiltroO').insertAdjacentHTML('beforeend','<option value="'+esc(c.k)+'">'+esc(c.s)+'</option>');
+    el('skFiltroD').insertAdjacentHTML('beforeend','<option value="'+esc(c.k)+'">'+esc(c.s)+'</option>');
+  });
+  el('skFiltroO').addEventListener('change', function(){ SK_FO=this.value; pintarSankey(); });
+  el('skFiltroD').addEventListener('change', function(){ SK_FD=this.value; pintarSankey(); });
+  el('skFiltroReset').addEventListener('click', function(){ SK_FO=''; SK_FD=''; el('skFiltroO').value=''; el('skFiltroD').value=''; pintarSankey(); });
   // cerrar modal
   el('modalX').addEventListener('click', function(){ el('modalReng').style.display='none'; });
   el('modalReng').addEventListener('click', function(ev){ if(ev.target===el('modalReng')) el('modalReng').style.display='none'; });
