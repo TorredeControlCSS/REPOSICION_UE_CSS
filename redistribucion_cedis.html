@@ -379,7 +379,24 @@ var CED_SK = [
   {k:'CEDIS CHIRIQUI', s:'Chiriquí', col:'#8a5a1a'}
 ];
 function pintarSankey(){
-  var flu = (SK_MODO==='urgentes') ? (REP.flujosUrg||{}) : (REP.flujos||{});
+  var q = (el('fBuscar') ? (el('fBuscar').value||'').trim().toUpperCase() : '');
+  var flu;
+  if (q){
+    // Hay búsqueda de renglón: construir los flujos SOLO con los traslados que
+    // coinciden, para que el Sankey muestre de dónde a dónde se mueve ese renglón.
+    flu = {}; CED_SK.forEach(function(a){ flu[a.k]={}; CED_SK.forEach(function(b){ if(a!==b) flu[a.k][b.k]={unidades:0,renglones:0}; }); });
+    (REP.f||[]).forEach(function(t){
+      if (((t.cod||'')+' '+(t.renglon||'')).toUpperCase().indexOf(q)<0) return;
+      if (SK_MODO==='urgentes' && !(t.destinoEnCero && !t.origenSinConsumo)) return;
+      if (t.origen===t.destino) return;
+      if (flu[t.origen] && flu[t.origen][t.destino]){
+        flu[t.origen][t.destino].unidades += t.mover;
+        flu[t.origen][t.destino].renglones += 1;
+      }
+    });
+  } else {
+    flu = (SK_MODO==='urgentes') ? (REP.flujosUrg||{}) : (REP.flujos||{});
+  }
   // recolectar corrientes con unidades > 0, aplicando filtros por CEDIS
   var corr = [];
   CED_SK.forEach(function(o){
@@ -524,7 +541,7 @@ function poblarFiltros(){
   });
   o.addEventListener('change', pintarTabla);
   d.addEventListener('change', pintarTabla);
-  el('fBuscar').addEventListener('input', pintarTabla);
+  el('fBuscar').addEventListener('input', function(){ pintarTabla(); pintarSankey(); });
   el('fBuscar').addEventListener('keydown', function(ev){
     if(ev.key==='Enter'){ var arr=filas(); if(arr.length){ abrirGrafica(arr[0].cod); } }
   });
