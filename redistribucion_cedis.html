@@ -225,7 +225,7 @@
     <div class="sk-head">
       <div>
         <div class="hm-head">Flujo de traslados entre CEDIS</div>
-        <div class="hm-sub">El grosor de cada corriente es proporcional a las unidades que se mueven de un CEDIS a otro. Haga clic en una corriente para ver sus renglones.</div>
+        <div class="hm-sub">El grosor de cada corriente es proporcional a las <b>unidades de emisión</b> que se mueven de un CEDIS a otro. Haga clic en una corriente para ver sus renglones.</div>
       </div>
       <div class="sk-toggle">
         <button id="skTodos" class="sk-btn sk-on">Todos los traslados</button>
@@ -382,33 +382,41 @@ function pintarSankey(){
   var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
   // corrientes (curvas bezier)
   corr.sort(function(a,b){ return b.unidades-a.unidades; });
+  var etiquetas = '';   // se dibujan al final, encima de todas las corrientes
   corr.forEach(function(c,idx){
     var y1=yDe[c.o.k], y2=yDe[c.d.k], g=grosor(c.unidades);
     var x1=colO+nodoW, x2=colD;
     var mx=(x1+x2)/2;
     var path='M '+x1+' '+y1+' C '+mx+' '+y1+', '+mx+' '+y2+', '+x2+' '+y2;
-    // gradiente origen->destino
     svg += '<defs><linearGradient id="g'+idx+'" x1="0" x2="1">'+
            '<stop offset="0" stop-color="'+c.o.col+'"/><stop offset="1" stop-color="'+c.d.col+'"/></linearGradient></defs>';
-    svg += '<path class="sk-flow" d="'+path+'" stroke="url(#g'+idx+')" stroke-width="'+g+'" fill="none" opacity="0.5" '+
+    svg += '<path class="sk-flow" d="'+path+'" stroke="url(#g'+idx+')" stroke-width="'+g+'" fill="none" opacity="0.45" '+
            'data-o="'+c.o.k+'" data-d="'+c.d.k+'">'+
            '<title>'+c.o.s+' → '+c.d.s+': '+fmt(c.unidades)+' unidades · '+c.renglones+' renglones</title></path>';
-    // etiqueta de volumen a mitad
-    svg += '<text class="sk-flow-lbl" x="'+mx+'" y="'+((y1+y2)/2-4)+'" text-anchor="middle" fill="#333" style="font-size:10px;">'+fmt(c.unidades)+'</text>';
+    // etiqueta cerca del ORIGEN (a 22% del recorrido), donde las corrientes aún
+    // no se cruzan. Bezier en t=0.22: mezcla suave entre y1 y y2.
+    var t=0.22, yb = (1-t)*(1-t)*y1 + 2*(1-t)*t*((y1+y2)/2) + t*t*y2;
+    var xb = x1 + (x2-x1)*t;
+    var txt = fmt(c.unidades);
+    var wLbl = txt.length*7 + 10;
+    etiquetas += '<g pointer-events="none">'+
+      '<rect x="'+(xb-wLbl/2)+'" y="'+(yb-9)+'" width="'+wLbl+'" height="26" rx="3" fill="#ffffff" opacity="0.9" stroke="'+c.o.col+'" stroke-width="0.5"/>'+
+      '<text x="'+xb+'" y="'+(yb+2)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+c.o.col+'">'+txt+'</text>'+
+      '<text x="'+xb+'" y="'+(yb+12)+'" text-anchor="middle" font-size="8" fill="#888">unidades</text>'+
+      '</g>';
   });
   // nodos
   CED_SK.forEach(function(c){
     var y=yDe[c.k];
-    // nodo origen (izq)
     svg += '<rect x="'+colO+'" y="'+(y-26)+'" width="'+nodoW+'" height="52" rx="4" fill="'+c.col+'"/>';
     svg += '<text class="sk-nodo-lbl" x="'+(colO-8)+'" y="'+(y+4)+'" text-anchor="end" fill="'+c.col+'">'+c.s+'</text>';
-    // nodo destino (der)
     svg += '<rect x="'+(colD)+'" y="'+(y-26)+'" width="'+nodoW+'" height="52" rx="4" fill="'+c.col+'"/>';
     svg += '<text class="sk-nodo-lbl" x="'+(colD+nodoW+8)+'" y="'+(y+4)+'" text-anchor="start" fill="'+c.col+'">'+c.s+'</text>';
   });
-  // encabezados de columna
-  svg += '<text x="'+(colO+nodoW/2)+'" y="20" text-anchor="middle" font-size="11" fill="#888" font-weight="700">ENVÍA</text>';
-  svg += '<text x="'+(colD+nodoW/2)+'" y="20" text-anchor="middle" font-size="11" fill="#888" font-weight="700">RECIBE</text>';
+  // encabezados de columna (subidos para no chocar con nodos/corrientes)
+  svg += '<text x="'+(colO+nodoW/2)+'" y="14" text-anchor="middle" font-size="10" fill="#999" font-weight="700" letter-spacing="1">ENVÍA</text>';
+  svg += '<text x="'+(colD+nodoW/2)+'" y="14" text-anchor="middle" font-size="10" fill="#999" font-weight="700" letter-spacing="1">RECIBE</text>';
+  svg += etiquetas;   // etiquetas al final, encima de todo
   svg += '</svg>';
   el('sankeyWrap').innerHTML = svg;
   el('sankeyDetalle').innerHTML = '';
