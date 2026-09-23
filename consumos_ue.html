@@ -424,9 +424,9 @@ $('lnkSol').onclick=async()=>{
  '<label>Unidad Ejecutora</label><select id="sUe"><option value=""></option>'+U.map(u=>'<option>'+esc(u)+'</option>').join('')+'</select>'+
  '<label>Categorías</label><div class="chk">'+['MED','MQ','LAB'].map(c=>'<label><input type="checkbox" value="'+c+'"> '+c+' · '+CATN[c]+'</label>').join('')+'</div>'+
  '<label>Rol solicitado</label><select id="sRol"><option>CARGA</option><option>LECTURA</option></select><label>Justificación</label><textarea id="sJus" rows="2"></textarea>'+
- '<label>PIN que usará (4 a 6 dígitos)</label><input id="sPin" type="password" maxlength="6" inputmode="numeric"><button class="pri" id="solOk">Enviar solicitud</button>',
+ '<div class="note">Cuando la Dirección apruebe su solicitud, recibirá en su correo un PIN temporal para ingresar; la primera vez el sistema le pedirá definir uno propio.</div><button class="pri" id="solOk">Enviar solicitud</button>',
  b=>$('solOk').onclick=async()=>{const cats=[...b.querySelectorAll('.chk input:checked')].map(x=>x.value).join(',');
-  try{await jsonp({accion:'solicitar_acceso',cedula:$('sCed').value,nombre:$('sNom').value,cargo:$('sCar').value,correo:$('sCor').value,telefono:$('sTel').value,ue:$('sUe').value,cats,rol:$('sRol').value,justificacion:$('sJus').value,pin:$('sPin').value},{reintentos:0});
+  try{await jsonp({accion:'solicitar_acceso',cedula:$('sCed').value,nombre:$('sNom').value,cargo:$('sCar').value,correo:$('sCor').value,telefono:$('sTel').value,ue:$('sUe').value,cats,rol:$('sRol').value,justificacion:$('sJus').value},{reintentos:0});
    cerrarModal();toast('Solicitud enviada. Le enviamos una confirmación a su correo y le avisaremos cuando sea resuelta.',7000);}catch(e){err(e);}});};
 
 async function entrar(s){
@@ -879,7 +879,8 @@ $('sEst').onchange=()=>pintarSol();
 function pintarSol(){const fe=$('sEst').value;
  table($('tSol'),[{k:'id',l:'Solicitud'},{k:'f',l:'Fecha'},{k:'ced',l:'Cédula'},{k:'n',l:'Nombre'},{k:'cargo',l:'Cargo'},{k:'ue',l:'Unidad Ejecutora'},{k:'cats',l:'Categorías'},{k:'rol',l:'Rol'},{k:'j',l:'Justificación'},{k:'e',l:'Estado',f:v=>st(v)},
   {k:'id',l:'',ns:1,f:(v,r)=>r.e==='PENDIENTE'?'<button class="bad" data-r="'+esc(v)+'">Rechazar</button> <button class="ok" data-a="'+esc(v)+'">Aprobar</button>':esc(r.rpor||'')}],SOL.filter(s=>!fe||s.e===fe),{vacio:'No hay solicitudes en esta lista.',after:el=>{
-  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const x=await jsonp({accion:'resolver_solicitud',id:b.dataset.a,decision:'APROBAR'},{reintentos:0});toast('Acceso aprobado. La persona ya puede ingresar con el PIN que definió.'+(/^enviado/.test(x.correo||'')?' Se le avisó por correo.':' No se envió correo: '+(x.correo||'')+'.'),6000);rSol();}catch(e){b.disabled=false;err(e);}});
+  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const x=await jsonp({accion:'resolver_solicitud',id:b.dataset.a,decision:'APROBAR'},{reintentos:0});if(/^enviado/.test(x.correo||''))toast('Acceso aprobado. Se le envió por correo ('+x.correo.replace('enviado a ','')+') con sus datos'+(x.pinTemporal?' y su PIN temporal.':'.'),7000);
+   else modal('Acceso aprobado','<div class="note" style="font-size:13px">No se pudo enviar el correo ('+esc(x.correo||'')+').'+(x.pinTemporal?' Entregue este PIN temporal a la persona; se muestra una sola vez:</div><div class="legend num" style="font-size:20px">'+esc(x.pinTemporal)+'</div>':'</div>'));rSol();}catch(e){b.disabled=false;err(e);}});
   el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>modal('Rechazar '+b.dataset.r,'<label>Motivo (obligatorio)</label><textarea rows="3" id="rm" style="width:100%"></textarea><button class="pri" id="rOk">Rechazar</button>',
    ()=>$('rOk').onclick=async()=>{if(!$('rm').value.trim()){toast('El motivo es obligatorio');return;}try{await jsonp({accion:'resolver_solicitud',id:b.dataset.r,decision:'RECHAZAR',motivo:$('rm').value},{reintentos:0});cerrarModal();toast('Solicitud rechazada. Se le informó el motivo por correo.');rSol();}catch(e){err(e);}}));}});}
 async function rPer(){try{PERS=(await jsonp({accion:'periodos'})).periodos;}catch(e){err(e);return;}
