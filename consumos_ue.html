@@ -446,20 +446,21 @@ function pedirCambioPin(){
  modal('Cambio de PIN obligatorio','<div class="note">Está usando un PIN temporal. Defina un PIN nuevo de 4 a 6 dígitos. Se guarda cifrado; nadie, ni el administrador, puede verlo.</div><label>PIN nuevo</label><input id="p1" type="password" maxlength="6" inputmode="numeric"><label>Repetir PIN</label><input id="p2" type="password" maxlength="6" inputmode="numeric"><button class="pri" id="pinOk">Guardar e ingresar</button>',
  ()=>{$('mX').style.display='none';$('pinOk').onclick=async()=>{const p1=$('p1').value.trim(),p2=$('p2').value.trim();if(!/^\d{4,6}$/.test(p1)){toast('El PIN debe tener de 4 a 6 dígitos');return;}if(p1!==p2){toast('Los dos PIN no coinciden');return;}
   const fin=espera($('pinOk'),'Guardando su PIN…');try{const r=await jsonp({accion:'cambiar_pin',pin:p1,pin2:p2},{reintentos:0,timeout:60000});$('pinOk').textContent='Entrando…';cerrarModal();toast('PIN actualizado');await entrar(r.sesion);}catch(e){fin();err(e);}};});}
-$('lnkOlv').onclick=()=>modal('Olvidé mi PIN','<div class="note" style="font-size:13px">Pida a Planificación o a un administrador que restablezca su PIN. Después ingrese con su cédula y los <b>últimos 4 dígitos de su cédula</b> como PIN temporal; el sistema le pedirá definir uno nuevo.</div>');
+$('lnkOlv').onclick=()=>modal('Olvidé mi PIN','<div class="note" style="font-size:13.5px;line-height:1.6">Para restablecer su PIN, comuníquese con:<br><br><b>Lic. Vladimir De León</b><br>Planificación · Dirección Nacional de Logística<br><a href="mailto:vdeleon@css.gob.pa">vdeleon@css.gob.pa</a><br><br>Indíquele su nombre y su cédula. Cuando lo restablezca, ingrese con su cédula y los <b>últimos 4 dígitos de su cédula</b> como PIN; el sistema le pedirá definir uno nuevo.</div>');
 $('lnkSol').onclick=async()=>{
  let U=[];try{const c=await getJ('catalogo.json');U=c?c.U.map(u=>u[0]):(await jsonp({accion:'ues_publico'})).ues;}catch(e){err(e);return;}
  modal('Solicitar acceso','<div class="note" style="font-size:13px">Llene sus datos. Planificación revisará la solicitud y le avisará al teléfono que indique.</div>'+
  '<label>Cédula</label><input id="sCed" placeholder="8-123-4567" value="'+esc(cedTxt($('lgCed').value))+'"><div class="hint">Con guiones, como aparece en su documento.</div>'+
- '<label>Nombre completo</label><input id="sNom"><label>Cargo</label><input id="sCar"><label>Teléfono de contacto</label><input id="sTel" inputmode="tel" placeholder="6000-0000">'+
+ '<label>Nombre completo</label><input id="sNom"><label>Cargo</label><input id="sCar"><label>Correo institucional</label><input id="sCor" type="email" placeholder="nombre@css.gob.pa"><label>Teléfono de contacto</label><input id="sTel" inputmode="tel" placeholder="6000-0000">'+
  '<label>Unidad Ejecutora</label><select id="sUe"><option value=""></option>'+U.map(u=>'<option>'+esc(u)+'</option>').join('')+'</select>'+
  '<label>Categorías que reporta</label><div class="chk">'+['MED','MQ','LAB'].map(c=>'<label><input type="checkbox" value="'+c+'"> '+CATN[c]+'</label>').join('')+'</div>'+
  '<label>Tipo de acceso</label><select id="sRol"><option value="CARGA">Reportar el consumo de mi unidad</option><option value="LECTURA">Solo consultar</option></select>'+
  '<button class="pri" id="solOk">Enviar solicitud</button>',
  b=>$('solOk').onclick=async()=>{const ced=cedTxt($('sCed').value);$('sCed').value=ced;
   if(!CED_RE.test(ced)){toast('Escriba la cédula con guiones. Ejemplo: 8-123-4567');$('sCed').focus();return;}
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('sCor').value.trim())){toast('Escriba su correo institucional. Ejemplo: nombre@css.gob.pa');$('sCor').focus();return;}
   const cats=[...b.querySelectorAll('.chk input:checked')].map(x=>x.value).join(',');const fin=espera($('solOk'),'Enviando…');
-  try{const r=await jsonp({accion:'solicitar_acceso',cedula:ced,nombre:$('sNom').value,cargo:$('sCar').value,telefono:$('sTel').value,ue:$('sUe').value,cats,rol:$('sRol').value},{reintentos:0});
+  try{const r=await jsonp({accion:'solicitar_acceso',cedula:ced,nombre:$('sNom').value,cargo:$('sCar').value,correo:$('sCor').value.trim(),telefono:$('sTel').value,ue:$('sUe').value,cats,rol:$('sRol').value},{reintentos:0});
    $('lgCed').value=ced;lgMsg('');
    modal('Solicitud enviada','<div class="note" style="font-size:13.5px;line-height:1.6">Su solicitud <b>'+esc(r.id)+'</b> quedó registrada.<br><br>Cuando Planificación la apruebe, entre con su cédula <b>'+esc(ced)+'</b> y, como PIN, los <b>últimos 4 dígitos de su cédula</b>. El sistema le pedirá cambiarlo por uno propio.</div><button class="pri" id="solFin">Entendido</button>',()=>$('solFin').onclick=cerrarModal);}
   catch(e){fin();err(e);}});};
