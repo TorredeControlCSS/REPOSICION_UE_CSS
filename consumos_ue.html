@@ -233,6 +233,9 @@ td input:disabled{background:#f3f3f3;color:#333}
    <div class="panel" style="margin-top:10px"><div class="ph">Publicaciones anteriores</div><div class="pb"><div id="tPubs"></div></div></div>
   </div>
   <div id="d-json"><div class="legend">Los tableros leen archivos JSON publicados en el repositorio, no el script. Se actualizan solos cuando llega un envío, una firma o una publicación. Use <b>Regenerar JSON</b> la primera vez y si algún tablero muestra datos desactualizados.</div><div class="ctrl"><button class="pri" id="jReg">Regenerar JSON</button><span class="note" id="jInfo"></span></div></div>
+  <div id="d-mail"><div class="legend">Prueba del envío de correos. El correo de prueba es de texto simple, sin formato ni imágenes: si este llega y los del sistema no, el problema es el formato; si tampoco llega, el problema está en la entrega del lado del destinatario.</div>
+   <div class="kpis" id="mK"></div>
+   <div class="ctrl"><label>Enviar prueba a</label><input id="mPara" type="email" placeholder="correo@dominio" style="width:280px"><button class="pri" id="mOk">Enviar correo de prueba</button></div><div id="mR"></div></div>
   <div id="d-log"><div class="ctrl"><input id="lQ" placeholder="Buscar en la bitácora" style="width:260px"><select id="lAcc"><option value="">Todas las acciones</option></select><button id="lRef">Actualizar</button><button class="b-cl" id="lXls">Descargar bitácora completa en Excel</button><span class="note" id="lTot"></span></div><div id="tLog"></div></div>
  </div>
 </div></div>
@@ -873,13 +876,13 @@ function pintarCob(){if(!ESTP)return;if(!ME.nacional)return pintarCobUE();$('kNa
  *  4 · ADMINISTRACIÓN
  * ==================================================================== */
 let dS='',USR=[],LOG=[],SOL=[],SIM=null;
-const DSUB=[['usr','Usuarios','ADMIN'],['sol','Solicitudes de acceso','APRUEBA'],['per','Periodos','ADMIN'],['pub','Publicación al Motor','ADMIN'],['json','JSON de los tableros','ADMIN'],['log','Bitácora','ADMIN']];
+const DSUB=[['usr','Usuarios','ADMIN'],['sol','Solicitudes de acceso','APRUEBA'],['per','Periodos','ADMIN'],['pub','Publicación al Motor','ADMIN'],['json','JSON de los tableros','ADMIN'],['mail','Correo','ADMIN'],['log','Bitácora','ADMIN']];
 function rAdm(){
  const subs=DSUB.filter(x=>tiene(x[2]));if(!subs.find(x=>x[0]===dS))dS=subs[0][0];
  $('dSub').innerHTML=subs.map(x=>'<div data-s="'+x[0]+'" class="'+(x[0]===dS?'active':'')+'">'+x[1]+'</div>').join('');
  $('dSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{dS=d.dataset.s;rAdm();});
  DSUB.forEach(x=>$('d-'+x[0]).style.display=x[0]===dS?'':'none');
- return ({usr:rUsr,sol:rSol,per:rPer,pub:rPub,json:rJson,log:rLog})[dS]();}
+ return ({usr:rUsr,sol:rSol,per:rPer,pub:rPub,json:rJson,mail:rMail,log:rLog})[dS]();}
 async function rUsr(){$('tUsr').innerHTML='<div class="cargando">Cargando…</div>';try{USR=(await jsonp({accion:'usuarios'})).usuarios;}catch(e){err(e);return;}pintarUsr();}
 $('uQ').oninput=()=>pintarUsr();$('uRol').onchange=()=>pintarUsr();
 function pintarUsr(){const q=$('uQ').value.trim().toLowerCase(),fr=$('uRol').value;
@@ -935,6 +938,13 @@ async function rJson(){try{const r=await jsonp({accion:'estado_json'});$('jInfo'
 $('jReg').onclick=async()=>{const b=$('jReg');b.disabled=true;b.textContent='Regenerando… (hasta 2 minutos)';
  try{const r=await jsonp({accion:'regenerar_json'},{reintentos:0,timeout:330000});toast(r.archivos+' archivos publicados en '+r.segundos+' s. Los tableros los verán en 1 a 2 minutos.',7000);Object.keys(JC).forEach(k=>delete JC[k]);rJson();}
  catch(e){err(e);}finally{b.disabled=false;b.textContent='Regenerar JSON';}};
+async function rMail(){$('mK').innerHTML='<div class="cargando">Consultando…</div>';try{const r=await jsonp({accion:'correo_prueba'});
+ $('mK').innerHTML=kpi('Correos disponibles hoy',fmt(r.cuota),r.cuota>20?'ve':'ro','se renueva cada 24 horas')+kpi('Cuenta que envía',esc(r.cuenta||'—'),'gr','la que implementó el script');}catch(e){err(e);}}
+$('mOk').onclick=async()=>{const para=$('mPara').value.trim();if(!para){toast('Escriba un correo');return;}const fin=espera($('mOk'),'Enviando…');
+ try{const r=await jsonp({accion:'correo_prueba',para},{reintentos:0,timeout:60000});
+  $('mR').innerHTML=r.enviado?'<div class="legend"><b>Enviado a '+esc(para)+'</b> a las '+esc(r.hora)+' desde <b>'+esc(r.cuenta)+'</b>. Cuota: '+r.antes+' → '+r.cuota+'.<br>Revise esa bandeja en 1 a 2 minutos, incluidas Spam y Todos (<code>from:'+esc(r.cuenta)+' in:anywhere</code>). Si no aparece, en admin.google.com › Informes › Búsqueda de registros de correo electrónico verá su estado de entrega.</div>':'<div class="warn">'+esc(r.motivo)+'</div>';
+  $('mK').innerHTML=kpi('Correos disponibles hoy',fmt(r.cuota),r.cuota>20?'ve':'ro','se renueva cada 24 horas')+kpi('Cuenta que envía',esc(r.cuenta||'—'),'gr','la que implementó el script');}
+ catch(e){err(e);}finally{fin();}};
 async function rLog(){$('tLog').innerHTML='<div class="cargando">Cargando…</div>';let r;try{r=await jsonp({accion:'bitacora'});}catch(e){err(e);return;}LOG=r.eventos;
  $('lTot').textContent=r.total>LOG.length?'mostrando los '+LOG.length+' eventos más recientes de '+r.total:r.total+' eventos';
  const acc=[...new Set(LOG.map(x=>x.a))].sort(),sel=$('lAcc').value;$('lAcc').innerHTML='<option value="">Todas las acciones</option>'+acc.map(a=>'<option'+(a===sel?' selected':'')+'>'+esc(a)+'</option>').join('');pintarLog();}
