@@ -295,6 +295,14 @@ let UMBRAL=3;
 function marcado(prev,v){if(v===''||v==null)return false;if(prev==null||prev===0)return v>0;const r=v/prev;return r>=UMBRAL||r<=1/UMBRAL;}
 const ss={get:k=>{try{return sessionStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{sessionStorage.setItem(k,v);}catch(e){}},del:k=>{try{sessionStorage.removeItem(k);}catch(e){}}};
 const ls={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);return true;}catch(e){return false;}},del:k=>{try{localStorage.removeItem(k);}catch(e){}}};
+/* Estado de un envío: lo publicado manda; la copia local del navegador solo cubre
+   el minuto o dos que tarda en publicarse un envío recién hecho, y luego se borra. */
+function envEfectivo(pub,clave,generado){let loc=null;try{loc=JSON.parse(ls.get(clave)||'null');}catch(e){}
+ if(!loc)return pub;
+ const gen=Date.parse(generado||0);
+ if(pub&&(pub.ver>loc.ver||(pub.ver===loc.ver&&(pub.e!=='ENVIADO'||gen>loc.t)))){ls.del(clave);return pub;}
+ if(!pub&&Date.now()-loc.t>20*60000){ls.del(clave);return null;}
+ return loc;}
 const slug=n=>String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 
 /* ---------- lectura de JSON publicados (sin el script) ---------- */
@@ -522,8 +530,7 @@ async function rRep(fresco){
  $('cTit').textContent=C.ue+' · '+CATN[C.cat];$('tCarga').innerHTML='<div class="cargando">Cargando…</div>';$('cEstado').innerHTML='';
  try{if(!C.J||fresco)C.J=await ueJson(C.ue,fresco);}catch(e){err(e);$('tCarga').innerHTML='<div class="cargando">'+esc(e.message)+'</div>';return;}
  UMBRAL=C.J.umbral||3;C.ult=C.J.ult||{};
- const lo=ls.get('cons_env|'+C.ue+'|'+C.cat+'|'+C.per);let e=(C.J.env[C.cat]||{})[C.per]||null;
- if(lo){try{const x=JSON.parse(lo);if(!e||x.ver>e.ver||(x.ver===e.ver&&x.t>Date.parse(C.J.generado)))e=x;}catch(z){}}
+ let e=envEfectivo((C.J.env[C.cat]||{})[C.per]||null,'cons_env|'+C.ue+'|'+C.cat+'|'+C.per,C.J.generado);
  C.env=e;const est=e?e.e:'SIN_REPORTE';
  const abierto=reportable(P),bloq=['VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
  C.soloLectura=!abierto||bloq;
@@ -533,9 +540,9 @@ async function rRep(fresco){
  const enviado=['ENVIADO','VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
  $('cEstado').innerHTML=(enviado&&e?'<div class="okbox">✓ <b>Reporte recibido</b> el '+esc(e.f||'')+' · '+esc(e.id)+' · versión '+e.ver+(e.n?' · '+e.n+' renglones':'')+'</div>':'')+
   '<b>Reporte de '+CATN[C.cat].toLowerCase()+' de '+MES+':</b> '+(MSG[est]||est)+(e&&!enviado?' <span class="note">('+esc(e.id)+', versión '+e.ver+')</span>':'')+
-  (e?' <span class="lnk" id="cRefE" title="Consultar si ya fue validado o aprobado">Actualizar estado</span>':'')+
+  ' <button class="b-cl" id="cRefE" style="padding:3px 10px;margin-left:6px" title="Vuelve a consultar el estado de su reporte">⟳ Actualizar estado</button>'+
   (e&&e.obs?'<div class="warn" style="margin:6px 0 0"><b>Qué debe corregir (Planificación):</b> '+esc(e.obs)+'</div>':'')+(C.soloLectura?'<div class="note" style="margin-top:4px">'+por+'</div>':'');
- if($('cRefE'))$('cRefE').onclick=()=>{C.J=null;rRep(true);};
+ if($('cRefE'))$('cRefE').onclick=()=>{$('cRefE').disabled=true;$('cRefE').textContent='Actualizando…';C.J=null;Object.keys(JC).forEach(k=>{if(/^ue\/|^envio/.test(k)){delete JC[k];delete JT[k];}});rRep(true);};
  $('cSteps').style.display=C.soloLectura?'none':'';$('cClr').style.display=C.soloLectura?'none':'';$('cTit').textContent=C.ue+' · '+CATN[C.cat]+' · '+C.per;
  let d=draft();
  if(e&&e.id&&!d._t&&(est==='OBSERVADO'||est==='ENVIADO'||est==='EN_CORRECCION'||C.soloLectura)){
@@ -886,8 +893,7 @@ async function pintarCobUE(){
  $('kNac').style.display='none';$('pCobCh').style.display='none';$('kTit').textContent='Sus reportes mes a mes';
  const P=PERS.find(p=>p.p===ESTP.p)||{},cats=misCats(),ues=ME.ues.length?ME.ues:[];
  const J=await Promise.all(ues.map(u=>getJ('ue/'+slug(u)+'.json',true).catch(()=>null)));
- const ovr=u=>{const o={};cats.forEach(c=>{const l=ls.get('cons_env|'+u+'|'+c+'|'+ESTP.p);if(l)try{o[c]=JSON.parse(l);}catch(e){}});return o;};
- const est=(j,u,c,p)=>{const x=((j&&j.env[c])||{})[p];const l=p===ESTP.p?ovr(u)[c]:null;return l&&(!x||l.ver>=x.ver)?l:x;};
+ const est=(j,u,c,p)=>{const x=((j&&j.env[c])||{})[p]||null;return p===ESTP.p?envEfectivo(x,'cons_env|'+u+'|'+c+'|'+p,j&&j.generado):x;};
  const mes=[];ues.forEach((u,i)=>cats.forEach(c=>mes.push(est(J[i],u,c,ESTP.p))));
  const n=s=>mes.filter(x=>x&&s.includes(x.e)).length;let dias='—';if(P.lim){const d=Math.ceil((new Date(P.lim+'T23:59:59-05:00')-new Date())/864e5);dias=d>=0?String(d):'vencido';}
  $('kCob').innerHTML=kpi('Reportes de '+ESTP.p,mes.length,'gr',cats.join(' · '))+kpi('Pendientes de enviar',mes.filter(x=>!x).length,'ro')+kpi('Enviados o en revisión',n(['ENVIADO','OBSERVADO','VALIDADO','DEVUELTO','EN_CORRECCION']),'')+kpi('Aprobados',n(['APROBADO','PUBLICADO']),'ve')+kpi('Días para el vencimiento',dias,'gr',P.lim?'vence '+P.lim:'');
