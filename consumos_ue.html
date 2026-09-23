@@ -5,6 +5,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--az:#0C447C;--az2:#1E5A9E;--bg:#ececec;--bd:#a8a8a8;--sub:#d9d9d9;--up:#b3261e;--ok:#2e7d32;--txt2:#555}
@@ -38,9 +39,15 @@ button.ok:hover{background:#1b5e20}
 .ac-item .ac-cod{font-family:Consolas,monospace;font-weight:700;color:#1e5a9e}
 .ac-item .ac-grp{display:block;font-size:11px;color:#6b7a88;margin-top:1px}
 .heat th{cursor:pointer}
-.rep-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
-.rep-est{flex:1;min-width:320px;font-size:13.5px;line-height:1.6}
-.rep-send{text-align:right}
+.kpis.sm{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-bottom:8px}
+.kpis.sm .kpi{padding:5px 9px}.kpis.sm .kpi .v{font-size:17px;margin-top:0}.kpis.sm .kpi .l{font-size:11.5px}.kpis.sm .kpi .d{font-size:10.5px;margin-top:0}
+.kpi.clk{cursor:pointer}.kpi.clk:hover{filter:brightness(.97)}.kpi.act{outline:2px solid #0C447C;outline-offset:-2px}
+.rep-bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:8px 10px}
+.rep-est{flex:1 1 280px;font-size:13px;line-height:1.5}
+.rep-tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.rep-send{text-align:right;min-width:220px}
+.chip.cat{font-weight:600}
+button.flagbtn{background:#fdecea;border-color:#e6a39e;color:#8c1d16;font-weight:700}
 button.big{font-size:15px;padding:10px 24px;font-weight:700}
 button.b-up{background:#c25e00;color:#fff;border-color:#c25e00;font-weight:700;padding:8px 18px;font-size:14px}button.b-up:hover{background:#9c4b00}
 .sep{width:1px;height:28px;background:#c3d2e4;margin:0 6px}
@@ -141,20 +148,21 @@ td input:disabled{background:#f3f3f3;color:#333}
  <!-- 1 · REPORTAR -->
  <div class="view" id="v-rep">
   <div class="ctrl"><label>Periodo</label><select id="cPer"></select><span id="cPerInfo" class="note"></span>
-   <span id="cUeBox"><label>Unidad Ejecutora</label> <select id="cUe" style="max-width:420px"></select></span></div>
-  <div class="sub" id="cCat"></div>
-  <div class="panel" id="cCab"><div class="pb">
-   <div class="rep-top"><div class="rep-est" id="cEstado"></div>
-    <div class="rep-send"><button class="ok big" id="cSend" disabled>Enviar a validación</button><div class="note" id="cRes" style="margin-top:4px"></div></div></div>
-   <div class="pasos" id="cPasos"><span><b>1</b>Llene la columna <i>Consumo del mes</i>: en pantalla, o descargue la plantilla, llénela y súbala.</span><span><b>2</b>Justifique las filas en rojo.</span><span><b>3</b>Pulse <i>Enviar a validación</i>.</span></div>
-   <div class="ctrl" id="cTools" style="margin:10px 0 0">
-    <button class="b-up" id="cUp">Subir plantilla llena</button><span class="sep"></span>
-    <button class="b-cl" id="cTpl">Descargar plantilla Excel</button>
+   <span id="cUeBox"><label>Unidad Ejecutora</label> <select id="cUe" style="max-width:420px"></select></span>
+   <span class="chips" id="cCat" style="margin-left:6px"></span></div>
+  <div class="panel" id="cCab"><div class="pb rep-bar">
+   <div class="rep-est" id="cEstado"></div>
+   <div class="rep-tools" id="cTools">
+    <button class="b-up" id="cUp">Subir plantilla llena</button>
+    <button class="b-cl" id="cTpl">Descargar plantilla</button>
     <button class="b-cl" id="cCopy">Rellenar con el último consumo aprobado</button>
-    <span style="flex:1"></span><button class="bad" id="cClr">Descartar lo escrito</button>
+    <button class="bad" id="cClr">Descartar lo escrito</button>
    </div>
+   <div class="rep-send"><button class="ok big" id="cSend" disabled>Enviar a validación</button><div class="note" id="cRes"></div></div>
   </div></div>
-  <div class="ctrl" id="cVisBox"><input id="cQ" placeholder="Buscar código o descripción" style="width:260px"><span class="note">Mostrar:</span><div class="chips" id="cVis"></div><button class="ayuda" data-ayuda="mostrar">?</button></div>
+  <div class="ctrl" id="cVisBox"><input id="cQ" placeholder="Buscar código o descripción" style="width:280px">
+   <label class="note" style="cursor:pointer"><input type="checkbox" id="cTodo"> Ver todo el catálogo de la categoría <span id="cTodoN"></span></label>
+   <span id="cFlag"></span><span style="flex:1"></span><button class="ayuda" data-ayuda="reportar" title="Cómo reportar">?</button></div>
   <div class="panel" id="cPanel"><div class="ph"><span id="cTit"></span><small>consumo mensual en unidades del renglón · <span id="cDraft"></span></small></div><div class="pb"><div id="tCarga"><div class="cargando">Cargando…</div></div></div></div>
   <div class="panel" id="hPanel"><div class="ph">Historial de envíos de la unidad <small>clic en un envío para ver lo que se cargó</small></div><div class="pb"><div id="tHist"></div></div></div>
   <div class="panel" id="hDet" style="display:none"><div class="ph"><span id="hT"></span><small>consumo mensual</small></div><div class="pb"><div id="hInfo"></div><div id="tHDet"></div></div></div>
@@ -179,18 +187,18 @@ td input:disabled{background:#f3f3f3;color:#333}
    <label>Categoría</label><select id="aCat"><option value="">Todas</option><option>MED</option><option>MQ</option><option>LAB</option></select>
    <label>UE</label><select id="aUe" style="max-width:300px"><option value="">Todas</option></select>
    <span class="acw"><input id="aRen" placeholder="Renglón: código o nombre" autocomplete="off" style="width:260px"><div class="ac-panel" id="aRenAC"></div></span>
-   <label>Brecha a partir de</label><select id="aThr"><option value="1.5">1,5 veces</option><option value="2" selected>2 veces</option><option value="3">3 veces</option></select><button class="ayuda" data-ayuda="brecha">?</button>
-   <button id="aClr">Limpiar</button></div>
-  <div class="kpis" id="aK"></div><div class="note" style="margin:-4px 0 8px">¿Qué significan estas tarjetas? <button class="ayuda" data-ayuda="kpis">?</button></div>
+   <label>Brecha a partir de</label><select id="aThr"><option value="1.5">1,5 veces</option><option value="2" selected>2 veces</option><option value="3">3 veces</option></select>
+   <button id="aClr">Limpiar</button><button class="ayuda" data-ayuda="analisis" title="Cómo leer este análisis">?</button></div>
+  <div class="kpis sm" id="aK"></div>
   <div class="sub" id="aSub"><div data-s="gra" class="active">Gráficos</div><div data-s="ren">Por renglón</div><div data-s="ue">Por Unidad Ejecutora</div><div data-s="bre">Brechas UE–renglón</div><div data-s="cob">Cobertura del mes</div></div>
   <div id="a-gra">
-   <div class="legend" id="aGLeg"></div>
+   <div class="note" id="aGLeg" style="margin:0 0 8px"></div>
    <div class="grid2">
-    <div class="panel" id="pEvo"><div class="ph"><span id="tEvo">Evolución nacional del renglón</span><small>consumo mensual · UE que reportan <button class="ayuda" data-ayuda="evo">?</button></small></div><div class="pb"><div class="cbox"><canvas id="chEvo"></canvas></div></div></div>
+    <div class="panel" id="pEvo"><div class="ph"><span id="tEvo">Evolución nacional del renglón</span><small><span id="sEvo">consumo mensual · UE que reportan</span> <button class="ayuda" data-ayuda="evo">?</button></small></div><div class="pb"><div class="cbox"><canvas id="chEvo"></canvas></div></div></div>
     <div class="panel" id="pDis"><div class="ph"><span id="tDis">Dispersión</span><small>cada punto es una UE y un renglón · escala logarítmica <button class="ayuda" data-ayuda="dis">?</button></small></div><div class="pb"><div class="cbox"><canvas id="chDis"></canvas></div><div class="note">Sobre la diagonal: sin cambio. Lejos de ella: brecha. Haga clic en un punto para analizar ese renglón.</div></div></div>
    </div>
-   <div class="panel" id="pUes"><div class="ph"><span id="tUes">El renglón UE por UE</span><small>consumo mensual en los dos periodos <button class="ayuda" data-ayuda="ues">?</button></small></div><div class="pb"><div class="cbox t"><canvas id="chUes"></canvas></div></div></div>
    <div class="panel" id="pHeat"><div class="ph"><span id="tHeat">Mapa de calor por periodo</span><small>consumo mensual · clic en un encabezado para ordenar <button class="ayuda" data-ayuda="heat">?</button></small></div><div class="pb"><div id="heat"></div></div></div>
+   <div class="panel" id="pUes"><div class="ph"><span id="tUes">El renglón UE por UE</span><small>consumo mensual en los dos periodos</small></div><div class="pb"><div class="cbox t"><canvas id="chUes"></canvas></div></div></div>
   </div>
   <div id="a-tab" style="display:none"><div class="panel"><div class="ph"><span id="aTit"></span><small>consumo mensual en unidades del renglón</small></div><div class="pb"><div class="ctrl"><button class="b-cl" id="aCsv">Descargar en Excel</button></div><div id="tAna"></div></div></div></div>
   <div id="a-cob" style="display:none">
@@ -242,10 +250,13 @@ function cerrarModal(){$('mb').classList.remove('show');$('mX').style.display=''
 $('mX').onclick=cerrarModal;
 const CATN={MED:'Medicamentos',MQ:'Material quirúrgico',LAB:'Laboratorio y radiología'};
 const AYUDA={
+ reportar:['Cómo reportar','<b>1.</b> Llene la columna <i>Consumo del mes</i> con el consumo mensual de cada renglón, en unidades. Puede escribir en la pantalla, o usar <i>Descargar plantilla</i>, llenarla en su computadora y <i>Subir plantilla llena</i>. <b>2.</b> Si una fila se pone en rojo es porque cambió 3 veces o más frente al último consumo aprobado: escriba el motivo en la última columna. El botón rojo sobre la tabla le muestra solo esas filas. <b>3.</b> Pulse <i>Enviar a validación</i>.<br><br>Deje vacío un renglón para conservar su último valor aprobado; escriba 0 si no hubo consumo. <i>Rellenar con el último consumo aprobado</i> copia los valores anteriores en los vacíos, para que solo cambie lo que varió. La tabla muestra los renglones que su unidad consume; marque <i>Ver todo el catálogo</i> para reportar uno nuevo. Lo que escribe se guarda en su equipo hasta que lo envíe.'],
+ plazo:['Plazo de entrega','El P-240 (Rev. 7.0, Medidas de Control VI.B.11, pág. 10) establece que los consumos del mes se remiten en los cinco primeros días del mes siguiente. Pasada esa fecha el sistema sigue recibiendo el reporte, pero queda registrado fuera de plazo en la cobertura.'],
  mostrar:['Qué renglones ver','<b>Los que su unidad consume</b>: los que tienen un consumo aprobado mayor que cero o que ya llenó; es la vista normal para reportar. <b>Todos los de la categoría</b>: el catálogo completo, para reportar un renglón que su unidad empezó a consumir. <b>Ya llenados este mes</b>: para revisar lo que escribió antes de enviar. <b>Por justificar</b>: los que cambiaron mucho y necesitan una explicación. Cambiar la vista no borra nada de lo escrito.'],
+ analisis:['Cómo leer este análisis','<b>Compare</b> dos periodos y, si quiere, acote por categoría, UE o renglón. Todos los valores son consumo mensual.<br><br><b>Brecha a partir de</b>: cuándo un cambio cuenta. Con 2 veces, un par UE–renglón está <b>en alza</b> si su consumo se duplicó o más y <b>en baja</b> si cayó a la mitad o menos. <b>Nuevos</b>: no tenían consumo y ahora sí. <b>Cesan</b>: tenían y ahora reportan cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.<br><br><b>Las tarjetas son filtros</b>: haga clic en <i>En alza</i> y los gráficos y las tablas muestran solo esos pares; clic de nuevo o en <i>Pares UE–renglón</i> para ver todo.<br><br>Con una UE elegida, los gráficos cambian a la vista de esa unidad: su evolución y sus renglones con mayor brecha.'],
  brecha:['Brecha a partir de','Define cuándo un cambio entre los dos periodos se considera una brecha. Con <b>2 veces</b>: está en <b>alza</b> si el consumo se duplicó o más, y en <b>baja</b> si cayó a la mitad o menos. Con 1,5 veces se marcan cambios más pequeños; con 3 veces, solo los muy grandes. <b>Nuevo</b>: no tenía consumo y ahora sí. <b>Cesa</b>: tenía consumo y ahora reporta cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.'],
  kpis:['Las tarjetas','<b>UE que reportan</b>: cuántas unidades enviaron datos en cada periodo. <b>Pares UE–renglón</b>: cada combinación de una unidad y un renglón con consumo. <b>En alza / En baja</b>: pares que cambiaron más que la brecha elegida. <b>Nuevos / Cesan</b>: aparecen o desaparecen. <b>Sin reporte</b>: pares con dato en el primer periodo de unidades que no reportaron el segundo.'],
- evo:['Evolución nacional','La línea es la suma del consumo mensual de todas las Unidades Ejecutoras en cada periodo; las barras, cuántas lo reportaron. Si la línea baja al mismo tiempo que las barras, faltaron unidades, no bajó el consumo. Los CEDIS no se suman aquí porque lo que distribuyen es reabastecimiento, no consumo de pacientes.'],
+ evo:['Evolución','Con una UE elegida, muestra el consumo mensual de esa unidad para el renglón en cada periodo. Sin UE, la línea es la suma del consumo mensual de todas las Unidades Ejecutoras en cada periodo; las barras, cuántas lo reportaron. Si la línea baja al mismo tiempo que las barras, faltaron unidades, no bajó el consumo. Los CEDIS no se suman aquí porque lo que distribuyen es reabastecimiento, no consumo de pacientes.'],
  dis:['Dispersión','Responde a los filtros: si elige un renglón, muestra ese renglón en cada unidad; si elige una UE, todos los renglones de esa unidad; si no elige nada, todos los pares. Cada punto es una unidad con un renglón: a la izquierda su consumo en el primer periodo elegido, arriba el del segundo. Sobre la diagonal no hubo cambio; mientras más lejos, mayor la brecha. Compara siempre los dos periodos que elija arriba: hoy los dos semestres; cuando haya meses, un mes contra otro o contra un semestre. Haga clic en un punto para analizar ese renglón.'],
  ues:['UE por UE','El consumo mensual del renglón elegido en cada unidad, en los dos periodos. Muestra las 30 unidades con mayor consumo.'],
  heat:['Mapa de calor','Cada fila es una unidad (o un renglón, si eligió una UE) y cada columna un periodo. Cada celda se compara con el último periodo en que hubo dato: rojo si sube, azul si baja; más intenso, mayor cambio. Gris: la unidad no reportó ese periodo. Clic en un encabezado para ordenar.']};
@@ -313,11 +324,36 @@ function table(el,cols,rows,opt={}){
  if(opt.after)opt.after(el,sh);
  el._rows=so;el._cols=cols;
 }
-function xls(name,cols,rows,hoja){
- if(!window.XLSX){toast('No se pudo cargar el componente de Excel. Revise la conexión.');return;}
- const cs=cols.filter(c=>!c.ns),aoa=[cs.map(c=>c.l.replace(/<[^>]+>/g,''))].concat(rows.map(r=>cs.map(c=>{const v=c.x?c.x(r):r[c.k];return v==null?'':v;})));
- const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=cs.map(c=>({wch:c.t==='n'?14:Math.min(60,Math.max(10,c.l.length+4))}));
- XLSX.utils.book_append_sheet(wb,ws,(hoja||'DATOS').slice(0,30));XLSX.writeFile(wb,name.replace(/\.csv$/,'')+'.xlsx');}
+/* Excel institucional (mismo formato que el panel de entradas): logo, encabezado CSS,
+   datos del reporte, tabla con encabezado azul y filas coloreadas por clase. */
+const XA='FF0C447C',XFILL={ALZA:'FFF4DEDD',BAJA:'FFE1EBF7',NUEVO:'FFDCEBDF',CESA:'FFEFE7E3',SIN_REPORTE:'FFF6EDD6',OBSERVADO:'FFF6EDD6',DEVUELTO:'FFF4DEDD',APROBADO:'FFDCEBDF',PUBLICADO:'FFDCEBDF',FLAG:'FFF4DEDD'};
+async function xlsLogo(wb){try{const r=await fetch('icons/icon-192.png');if(!r.ok)return null;const b64=await new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(',')[1]);fr.onerror=no;r.blob().then(x=>fr.readAsDataURL(x));});return wb.addImage({base64:b64,extension:'png'});}catch(e){return null;}}
+async function xls(name,cols,rows,hoja,opt){
+ opt=opt||{};const cs=cols.filter(c=>!c.ns);
+ const val=(c,r)=>{let v=c.x?c.x(r):r[c.k];if(v==null)return '';if(c.k==='dp'&&typeof v==='number')return v;return v;};
+ if(typeof ExcelJS==='undefined'){ /* respaldo: Excel simple */
+  if(!window.XLSX){toast('No se pudo cargar el componente de Excel. Revise la conexión.');return;}
+  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([cs.map(c=>c.l.replace(/<[^>]+>/g,''))].concat(rows.map(r=>cs.map(c=>val(c,r)))));XLSX.utils.book_append_sheet(wb,ws,(hoja||'DATOS').slice(0,30));XLSX.writeFile(wb,name+'.xlsx');return;}
+ toast('Preparando el Excel…');
+ const wb=new ExcelJS.Workbook();wb.creator='Dirección Nacional de Logística';
+ const ws=wb.addWorksheet((hoja||'Datos').replace(/[\\/?*\[\]:]/g,' ').slice(0,30),{views:[{showGridLines:false}]});
+ const n=Math.max(cs.length,3),logo=await xlsLogo(wb);
+ ws.getColumn(1).width=14;if(logo!==null)ws.addImage(logo,{tl:{col:0.15,row:0.2},ext:{width:52,height:52}});
+ [['CAJA DE SEGURO SOCIAL',11,true,'FF444444'],['Dirección Nacional de Logística  ·  Registro de Consumos por Unidad Ejecutora',10,false,'FF666666'],[opt.titulo||name,14,true,XA]].forEach((l,i)=>{
+  ws.mergeCells(i+1,2,i+1,n);const c=ws.getCell(i+1,2);c.value=l[0];c.font={name:'Calibri',size:l[1],bold:l[2],color:{argb:l[3]}};c.alignment={vertical:'middle'};ws.getRow(i+1).height=i===2?22:16;});
+ let fl=5;(opt.meta||[]).concat([['Generado',new Date().toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16)+' (hora de Panamá) · '+(ME?ME.nombre:'')]]).forEach(m=>{
+  ws.getCell(fl,1).value=m[0];ws.getCell(fl,1).font={name:'Calibri',size:9,bold:true,color:{argb:'FF555555'}};ws.mergeCells(fl,2,fl,n);ws.getCell(fl,2).value=m[1];ws.getCell(fl,2).font={name:'Calibri',size:9,color:{argb:'FF333333'}};ws.getRow(fl).height=13;fl++;});
+ fl++;
+ cs.forEach((c,i)=>{const cel=ws.getCell(fl,i+1);cel.value=c.l.replace(/<[^>]+>/g,'');cel.font={name:'Calibri',size:10,bold:true,color:{argb:'FFFFFFFF'}};
+  cel.fill={type:'pattern',pattern:'solid',fgColor:{argb:XA}};cel.alignment={vertical:'middle',horizontal:c.t==='n'?'right':'left',wrapText:true};
+  const w=c.t==='n'?15:Math.min(58,Math.max(12,...rows.slice(0,300).map(r=>String(val(c,r)).length+2),c.l.length+2));ws.getColumn(i+1).width=w;});
+ ws.getRow(fl).height=30;ws.views=[{state:'frozen',ySplit:fl,showGridLines:false}];ws.autoFilter={from:{row:fl,column:1},to:{row:fl,column:cs.length}};
+ rows.forEach((r,j)=>{const fila=fl+1+j,fill=opt.color?opt.color(r):null;
+  cs.forEach((c,i)=>{const cel=ws.getCell(fila,i+1);let v=val(c,r);cel.value=v;const num=c.t==='n'&&typeof v==='number';
+   cel.font={name:num?'Consolas':'Calibri',size:9.5};cel.alignment={vertical:'top',horizontal:num?'right':'left'};
+   if(num)cel.numFmt=c.k==='dp'?'0.0%':(Math.abs(v)<10&&v%1?'#,##0.00':'#,##0');
+   if(fill)cel.fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}};cel.border={bottom:{style:'hair',color:{argb:'FFCCCCCC'}}};});});
+ const buf=await wb.xlsx.writeBuffer();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=name+'.xlsx';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);}
 function csv(name,cols,rows){
  const q=v=>{v=v==null?'':String(v);return /[",;\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
  const txt='\ufeff'+cols.filter(c=>!c.ns).map(c=>q(c.l.replace(/<[^>]+>/g,''))).join(',')+'\n'+rows.map(r=>cols.filter(c=>!c.ns).map(c=>q(r[c.k])).join(',')).join('\n');
@@ -424,15 +460,15 @@ function initSelects(){
 let C={ue:'',cat:'',per:'',J:null,ult:{},env:null,soloLectura:false,archivo:null,d:{}};
 function dkey(){return 'cons_draft|'+ME.cedula+'|'+C.ue+'|'+C.cat+'|'+C.per;}
 function draft(){try{return JSON.parse(ls.get(dkey())||'{}');}catch(e){return {};}}
-function saveDraft(d){d._t=new Date().toISOString();if(ls.set(dkey(),JSON.stringify(d)))$('cDraft').textContent='guardado en este equipo '+new Date().toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit'});}
+function saveDraft(d){d._t=new Date().toISOString();if(ls.set(dkey(),JSON.stringify(d)))$('cDraft').textContent='guardado en este equipo '+new Date().toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit',timeZone:'America/Panama'});}
 $('cPer').onchange=()=>rRep();$('cUe').onchange=()=>{C.J=null;rRep();};
 async function rRep(fresco){
  const ueN=$('cUe').value;if(ueN!==C.ue)C.J=null;C.per=$('cPer').value;C.ue=ueN;C.archivo=null;
  const cats=misCats();if(!cats.includes(C.cat))C.cat=cats[0];
  const P=PERS.find(p=>p.p===C.per)||{};
- $('cPerInfo').innerHTML=st(estadoPer(P))+(P.lim?' Fecha límite '+P.lim+' (P-240: cinco primeros días del mes siguiente)':'');
- $('cCat').innerHTML=cats.map(c=>'<div data-c="'+c+'" class="'+(c===C.cat?'active':'')+'">'+c+' · '+CATN[c]+'</div>').join('');
- $('cCat').querySelectorAll('div').forEach(d=>d.onclick=()=>{C.cat=d.dataset.c;rRep();});
+ $('cPerInfo').innerHTML=(P.lim?'vence '+P.lim+' <button class="ayuda" data-ayuda="plazo">?</button>':'');
+ $('cCat').innerHTML=cats.map(c=>'<span data-c="'+c+'" class="chip cat'+(c===C.cat?' on':'')+'">'+CATN[c]+'</span>').join('');
+ $('cCat').querySelectorAll('span').forEach(d=>d.onclick=()=>{C.cat=d.dataset.c;rRep();});
  $('cTit').textContent=C.ue+' · '+CATN[C.cat];$('tCarga').innerHTML='<div class="cargando">Cargando…</div>';$('cEstado').innerHTML='';
  try{if(!C.J||fresco)C.J=await ueJson(C.ue,fresco);}catch(e){err(e);$('tCarga').innerHTML='<div class="cargando">'+esc(e.message)+'</div>';return;}
  UMBRAL=C.J.umbral||3;C.ult=C.J.ult||{};
@@ -443,9 +479,9 @@ async function rRep(fresco){
  C.soloLectura=!abierto||bloq;
  const MSG={SIN_REPORTE:'Su unidad todavía no ha enviado este reporte.',ENVIADO:'Enviado. Está esperando la revisión de Planificación; mientras tanto puede corregirlo y volver a enviarlo.',OBSERVADO:'Planificación le hizo una observación. Corrija lo indicado y envíe de nuevo.',VALIDADO:'Validado por Planificación. Espera la aprobación de la jefatura.',DEVUELTO:'La jefatura lo devolvió a Planificación para revisión.',APROBADO:'Aprobado. Ya es el consumo oficial de su unidad.',PUBLICADO:'Aprobado y publicado al Motor de Asignación.'};
  const por=!abierto?(estadoPer(P)==='CERRADO'?'La Dirección cerró este periodo. Si necesita corregir algo, comuníquese con Planificación.':'Este mes todavía no comienza; se podrá reportar desde el '+P.ini+'.'):'Como ya está en revisión o aprobado, no se puede modificar. Si hay un error, pida a Planificación que lo observe.';
- $('cEstado').innerHTML='<b>'+CATN[C.cat]+' · '+C.per+'</b> '+st(est)+'<br>'+(MSG[est]||'')+(e?' <span class="note">('+esc(e.id)+' · versión '+e.ver+' · '+esc(e.f||'')+')</span>':'')+
+ $('cEstado').innerHTML=st(est)+' '+(MSG[est]||'')+(e?' <span class="note">'+esc(e.id)+' · v'+e.ver+'</span>':'')+
   (e&&e.obs?'<br><b>Observación de Planificación:</b> '+esc(e.obs):'')+(C.soloLectura?'<br>'+por:'');
- $('cPasos').style.display=C.soloLectura?'none':'';$('cTools').style.display=C.soloLectura?'none':'';
+ $('cTools').style.display=C.soloLectura?'none':'';$('cTit').textContent=C.ue+' · '+CATN[C.cat]+' · '+C.per;
  let d=draft();
  if(e&&e.id&&!d._t&&(est==='OBSERVADO'||est==='ENVIADO'||C.soloLectura)){
   try{const x=await getJ('envio/'+e.id+'.json',true);if(!x)throw new Error('El detalle del envío aún no está publicado; intente en un minuto.');const dd={};x.filas.forEach(f=>dd[f[0]]={v:f[1],j:f[4]});if(C.soloLectura)d=dd;else{d=dd;saveDraft(d);}}catch(z){err(z);}
@@ -460,11 +496,11 @@ function cRows(){const d=C.d||{};
 let VIS='prev';
 function renderCarga(){
  const q=$('cQ').value.trim().toLowerCase();let rows=cRows();
- const n={prev:rows.filter(r=>r.prev>0||r.v!=='').length,all:rows.length,mod:rows.filter(r=>r.v!=='').length,flag:rows.filter(r=>r.fl).length};
- if(VIS==='prev'&&!n.prev)VIS='all';
- const L={prev:'Los que su unidad consume',all:'Todos los de la categoría',mod:'Ya llenados este mes',flag:'Por justificar'};
- $('cVis').innerHTML=Object.keys(L).map(k=>'<span class="chip'+(k===VIS?' on':'')+'" data-v="'+k+'">'+L[k]+'<span class="n">'+n[k]+'</span></span>').join('');
- $('cVis').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{VIS=c.dataset.v;renderCarga();});
+ const nP=rows.filter(r=>r.prev>0||r.v!=='').length,pend=rows.filter(r=>r.fl&&!String(r.j).trim()).length;
+ if(VIS==='prev'&&!nP)VIS='all';if(VIS==='flag'&&!rows.some(r=>r.fl))VIS='prev';
+ $('cTodo').checked=VIS==='all';$('cTodoN').textContent='('+rows.length+')';
+ $('cFlag').innerHTML=VIS==='flag'?'<button class="b-cl" id="cFlagB">Ver todos los renglones</button>':pend?'<button class="flagbtn" id="cFlagB">'+pend+' '+(pend===1?'fila cambió':'filas cambiaron')+' mucho y necesita'+(pend===1?'':'n')+' justificación: ver</button>':'';
+ if($('cFlagB'))$('cFlagB').onclick=()=>{VIS=VIS==='flag'?'prev':'flag';renderCarga();};
  const ff=VIS;
  rows=rows.filter(r=>(!q||r.cod.includes(q)||r.des.toLowerCase().includes(q))&&(ff==='all'||(ff==='prev'&&(r.prev>0||r.v!==''))||(ff==='mod'&&r.v!=='')||(ff==='flag'&&r.fl)));
  const dis=C.soloLectura?' disabled':'';
@@ -481,10 +517,10 @@ function resumen(){const rows=cRows();const con=rows.filter(r=>r.v!=='').length,
  $('cSend').textContent='Enviar a validación'+(con?' ('+con+')':'');
  $('cRes').innerHTML=C.soloLectura?'':(fl?'<span style="color:#b3261e"><b>'+fl+'</b> filas por justificar antes de enviar</span>':con?'<b>'+con+'</b> renglones con dato'+(sin?' · '+sin+' vacíos conservarán su último valor':''):'Aún no hay renglones con dato');
  $('cSend').disabled=C.soloLectura||!con||fl>0;}
-$('cQ').oninput=()=>renderCarga();
+$('cQ').oninput=()=>renderCarga();$('cTodo').onchange=()=>{VIS=$('cTodo').checked?'all':'prev';renderCarga();};
 $('cCopy').onclick=()=>{const vac=cRows().filter(r=>r.v===''&&r.prev>0);if(!vac.length){toast('No hay renglones vacíos con consumo aprobado.');return;}
  modal('Rellenar con el último consumo aprobado','<div class="note" style="font-size:13px">Se escribirá el último consumo aprobado en los <b>'+vac.length+'</b> renglones que están vacíos. Así solo tiene que cambiar los que variaron este mes. Lo que ya escribió no se modifica.</div><button class="pri" id="cpOk">Rellenar '+vac.length+' renglones</button>',
- ()=>$('cpOk').onclick=()=>{const d=C.d;vac.forEach(r=>{d[r.cod]=Object.assign(d[r.cod]||{},{v:r.prev});});saveDraft(d);cerrarModal();VIS='mod';renderCarga();toast(vac.length+' renglones rellenados. Cambie los que variaron y envíe.');});};
+ ()=>$('cpOk').onclick=()=>{const d=C.d;vac.forEach(r=>{d[r.cod]=Object.assign(d[r.cod]||{},{v:r.prev});});saveDraft(d);cerrarModal();renderCarga();toast(vac.length+' renglones rellenados. Cambie los que variaron y envíe.');});};
 $('cClr').onclick=()=>modal('Descartar lo escrito','<div class="note" style="font-size:13px">Se borra todo lo que escribió y aún no ha enviado para '+esc(C.ue)+' · '+C.cat+' · '+C.per+', y la tabla vuelve a quedar vacía. Lo que ya envió no se modifica.</div><button class="bad" id="clrOk">Descartar lo escrito</button>',()=>$('clrOk').onclick=()=>{ls.del(dkey());C.d={};C.archivo=null;cerrarModal();renderCarga();$('cDraft').textContent='';});
 $('cTpl').onclick=()=>{
  if(!window.XLSX){toast('No se pudo cargar el componente de Excel. Revise la conexión.');return;}
@@ -517,7 +553,7 @@ function leerExcel(f){
    out.map(x=>'<tr class="'+(x.ok?'':'flag')+'"><td class="n">'+x.fila+'</td><td>'+esc(x.cod)+'</td><td>'+esc(x.des)+'</td><td class="n">'+fmU(x.prev)+'</td><td class="n">'+fmU(x.v)+'</td><td>'+esc(x.res)+'</td></tr>').join('')+'</tbody></table></div><button class="pri" id="upOk"'+(okN?'':' disabled')+'>Aplicar '+okN+' valores al formulario</button>';
   $('upOk').onclick=()=>{const d=C.d;out.filter(x=>x.ok).forEach(x=>{d[x.cod]=Object.assign(d[x.cod]||{},{v:x.v});if(x.j)d[x.cod].j=x.j;});saveDraft(d);
    const r2=new FileReader();r2.onload=()=>{C.archivo={nombre:f.name,mime:f.type||'application/octet-stream',b64:String(r2.result).split(',')[1]};};r2.readAsDataURL(f);
-   cerrarModal();VIS='mod';renderCarga();toast(okN+' valores aplicados. Revise y envíe.');};};rd.readAsArrayBuffer(f);}
+   cerrarModal();VIS='prev';renderCarga();toast(okN+' valores aplicados. Revise y envíe.');};};rd.readAsArrayBuffer(f);}
 $('cSend').onclick=()=>{const rows=cRows().filter(r=>r.v!=='');
  modal('Confirmar envío','<div class="note">Se enviará a validación el consumo de <b>'+esc(CATN[C.cat].toLowerCase())+'</b> de <b>'+esc(C.ue)+'</b> para <b>'+C.per+'</b>: '+rows.length+' renglones'+(C.archivo?', con el archivo <b>'+esc(C.archivo.nombre)+'</b> como respaldo':'')+'. Quedará registrado a su nombre con fecha y hora de Panamá. Después de enviar no se edita: una corrección genera una versión nueva.</div><button class="pri" id="sOk">Enviar</button>',
  ()=>$('sOk').onclick=async()=>{const b=$('sOk');b.disabled=true;b.textContent='Enviando…';
@@ -550,7 +586,7 @@ async function verEnvio(id,dest){
 function descargarEnvio(r){const e=r.envio;
  const rows=r.filas.map(f=>({cod:f[0],des:desc(f[0]),grp:grupo(f[0]),v:f[1],prev:f[2],pp:f[3],dp:f[2]?(f[1]-f[2])/f[2]:'',j:f[4],o:f[5]}));
  const cols=[{k:'cod',l:'CODIGO'},{k:'des',l:'DESCRIPCION'},{k:'grp',l:'GRUPO'},{k:'v',l:'CONSUMO_MENSUAL_'+e.per,t:'n'}].concat(e.e==='HISTORICO'?[{k:'o',l:'HOJA_Y_CELDA_DEL_LIBRO_ORIGEN'}]:[{k:'prev',l:'ULTIMO_APROBADO_AL_ENVIAR',t:'n'},{k:'pp',l:'PERIODO_DEL_DATO'},{k:'dp',l:'VARIACION',t:'n'},{k:'j',l:'JUSTIFICACION'}]);
- xls(e.id+'_'+slug(e.ue).slice(0,30),cols,rows,e.cat+' '+e.per);}
+ xls(e.id+'_'+slug(e.ue).slice(0,30),cols,rows,e.cat+' '+e.per,{titulo:'Envío '+e.id+' · '+e.ue,meta:[['Unidad Ejecutora',e.ue],['Categoría y periodo',CATN[e.cat]+' · '+e.per],['Estado',e.e+' · versión '+e.ver],['Cargado por',e.cpor+' · '+e.fc],['Validado por',(e.vpor||'—')+(e.fv?' · '+e.fv:'')],['Aprobado por',(e.apor||'—')+(e.fa?' · '+e.fa:'')]].concat(e.obs&&e.e!=='HISTORICO'?[['Observación',e.obs]]:[]),color:r=>r.dp!==''&&r.prev!=null&&marcado(r.prev,r.v)?XFILL.FLAG:null});}
 function colsDet(e){return e.e==='HISTORICO'
  ?[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'v',l:'Consumo mensual',t:'n',f:fmU}]
  :[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'prev',l:'Último aprobado al enviar',t:'n',f:(v,r)=>fmU(v)+(r.pp?' <span class="note">'+esc(r.pp)+'</span>':'')},{k:'v',l:'Reportado '+e.per,t:'n',f:fmU},{k:'dp',l:'Δ %',t:'n',f:v=>pct(v)},{k:'j',l:'Justificación de la UE'}];}
@@ -586,7 +622,7 @@ function pintarRev(){
  const rows=base.filter(e=>RSUB[rS].est.includes(e.e)).map(e=>Object.assign({ced:(UEI[e.ue]||{}).ced||''},e));
  $('rTit').innerHTML=RSUB[rS].l+' · '+rows.length+' envíos · periodo '+esc($('rPer').value)+' <button class="b-cl" id="rXls" style="margin-left:8px;padding:2px 8px">Descargar lista en Excel</button>';
  table($('tRev'),[{k:'id',l:'Envío'},{k:'ue',l:'Unidad Ejecutora'},{k:'ced',l:'CEDIS'},{k:'cat',l:'Cat.'},{k:'ver',l:'Versión',t:'n'},{k:'canal',l:'Canal'},{k:'fc',l:'Recibido'},{k:'n',l:'Renglones',t:'n'},{k:'nm',l:'Variaciones marcadas',t:'n',f:v=>v?'<b style="color:#b3261e">'+v+'</b>':'0'},{k:'vpor',l:'Validado por'},{k:'e',l:'Estado',f:v=>st(v)}],rows,
-  {after:()=>{$('rXls').onclick=()=>xls('ENVIOS_'+$('rPer').value+'_'+rS,$('tRev')._cols,$('tRev')._rows);},sort:'fc',dir:1,reset:true,vacio:({val:'No hay envíos esperando validación en '+$('rPer').value+'.',apr:'No hay envíos esperando aprobación en '+$('rPer').value+'.',obs:'No hay envíos observados en '+$('rPer').value+'.',fin:'Aún no hay envíos aprobados en '+$('rPer').value+'.',his:'La carga histórica está en los periodos semestrales: elija 2025-S2 o 2026-S1 en Periodo.'})[rS],click:x=>verEnvio(x.id,'r')});}
+  {after:()=>{$('rXls').onclick=()=>xls('ENVIOS_'+$('rPer').value+'_'+rS,$('tRev')._cols,$('tRev')._rows,RSUB[rS].l,{titulo:'Envíos de consumo · '+RSUB[rS].l+' · '+$('rPer').value,meta:[['Periodo',$('rPer').value],['Lista',RSUB[rS].l],['Filtros',[$('rCat').value?'Categoría '+$('rCat').value:'Todas las categorías',$('rUe').value||'Todas las UE'].join('  ·  ')]],color:r=>XFILL[r.e]||null});},sort:'fc',dir:1,reset:true,vacio:({val:'No hay envíos esperando validación en '+$('rPer').value+'.',apr:'No hay envíos esperando aprobación en '+$('rPer').value+'.',obs:'No hay envíos observados en '+$('rPer').value+'.',fin:'Aún no hay envíos aprobados en '+$('rPer').value+'.',his:'La carga histórica está en los periodos semestrales: elija 2025-S2 o 2026-S1 en Periodo.'})[rS],click:x=>verEnvio(x.id,'r')});}
 $('rQ').oninput=()=>rDetalle();$('rOnly').onchange=()=>rDetalle();
 function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.trim().toLowerCase(),only=$('rOnly').checked;
  const rows=($('tRDet')._all||[]).filter(x=>(!q||x.cod.includes(q)||x.des.toLowerCase().includes(q))&&(!only||x.fl));
@@ -612,7 +648,9 @@ function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.tri
 /* ======================================================================
  *  3 · ANÁLISIS (todo desde JSON)
  * ==================================================================== */
-let NAC=null,PA=null,PB=null,aS='gra',SELR='',SELM=false,ESTP=null;
+let NAC=null,PA=null,PB=null,aS='gra',SELR='',SELM=false,ESTP=null,CF='';
+const CFN={ALZA:'en alza',BAJA:'en baja',NUEVO:'nuevos',CESA:'que cesan',SIN_REPORTE:'sin reporte'};
+function filtrosTxt(){const t=[];if($('aCat').value)t.push('Categoría '+$('aCat').value);if($('aUe').value)t.push('UE '+$('aUe').value);if(SELM)t.push('Renglón '+SELR);if(CF)t.push('Solo pares '+CFN[CF]);return t.length?t.join('  ·  '):'Sin filtros';}
 ['aA','aB'].forEach(id=>$(id).onchange=()=>rAna());['aCat','aUe','aThr'].forEach(id=>$(id).onchange=()=>pintarAna());
 let AC=[],ACI=-1;
 const acNorm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -628,7 +666,7 @@ $('aRen').oninput=acBuscar;$('aRen').onfocus=acBuscar;$('aRen').onblur=()=>setTi
 $('aRen').onkeydown=e=>{const it=[...$('aRenAC').querySelectorAll('.ac-item')];if(!it.length)return;
  if(e.key==='ArrowDown'){ACI=Math.min(it.length-1,ACI+1);e.preventDefault();}else if(e.key==='ArrowUp'){ACI=Math.max(0,ACI-1);e.preventDefault();}else if(e.key==='Enter'){acElegir(ACI<0?0:ACI);e.preventDefault();return;}else return;
  it.forEach((x,k)=>x.classList.toggle('sel',k===ACI));if(it[ACI])it[ACI].scrollIntoView({block:'nearest'});};
-$('aClr').onclick=()=>{$('aRen').value='';SELR='';SELM=false;$('aCat').value='';if(ME.nacional)$('aUe').value='';pintarAna();};
+$('aClr').onclick=()=>{$('aRen').value='';SELR='';SELM=false;CF='';$('aCat').value='';if(ME.nacional)$('aUe').value='';pintarAna();};
 $('aSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{aS=d.dataset.s;$('aSub').querySelectorAll('div').forEach(x=>x.classList.toggle('active',x===d));$('tAna')._s=null;vistaAna();});
 function clase(a,b,f){if(a===0&&b===0)return 'ESTABLE';if(a===0)return 'NUEVO';if(b===0)return 'CESA';const r=b/a;return r>=f?'ALZA':r<=1/f?'BAJA':'ESTABLE';}
 async function rAna(){
@@ -646,32 +684,48 @@ function paresFiltrados(){
 function pintarAna(){
  if(!PA||!PB)return;const V=paresFiltrados(),a=PA.p,b=PB.p;const cc={};V.forEach(x=>cc[x.cls]=(cc[x.cls]||0)+1);
  const fu=$('aUe').value;const repA=fu?(PA.reportan.includes(fu)?1:0):PA.reportan.length,repB=fu?(PB.reportan.includes(fu)?1:0):PB.reportan.length;
- $('aK').innerHTML=kpi('UE que reportan',repA+' → '+repB,'',a+' → '+b)+kpi('Pares UE–renglón',fmt(V.length),'gr')+kpi('En alza',fmt(cc.ALZA||0),'ro','subieron '+$('aThr').selectedOptions[0].text+' o más')+kpi('En baja',fmt(cc.BAJA||0),'','bajaron a 1/'+String(+$('aThr').value).replace('.',',')+' o menos')+kpi('Nuevos',fmt(cc.NUEVO||0),'ve')+kpi('Cesan',fmt(cc.CESA||0),'am')+kpi('Sin reporte en '+b,fmt(cc.SIN_REPORTE||0),'li','pares con dato en '+a);
- if(!SELR||!V.some(x=>x.cod===SELR)){const top={};V.forEach(x=>{top[x.cod]=(top[x.cod]||0)+Math.abs(x.d);});SELR=Object.keys(top).sort((x,y)=>top[y]-top[x])[0]||'';}
- PAR=V;vistaAna();}
+ const K=(l,v,c,d,cf)=>'<div class="kpi '+c+(cf!==undefined?' clk':'')+(cf!==undefined&&CF===cf?' act':'')+'"'+(cf!==undefined?' data-cf="'+cf+'" title="Clic para filtrar"':'')+'><div class="l">'+l+'</div><div class="v">'+v+'</div>'+(d?'<div class="d">'+d+'</div>':'')+'</div>';
+ $('aK').innerHTML=K('UE que reportan',repA+' → '+repB,'',a+' → '+b)+K('Pares UE–renglón',fmt(V.length),'gr','ver todos','')+K('En alza',fmt(cc.ALZA||0),'ro','×'+String(+$('aThr').value).replace('.',',')+' o más','ALZA')+K('En baja',fmt(cc.BAJA||0),'','a 1/'+String(+$('aThr').value).replace('.',',')+' o menos','BAJA')+K('Nuevos',fmt(cc.NUEVO||0),'ve','','NUEVO')+K('Cesan',fmt(cc.CESA||0),'am','','CESA')+K('Sin reporte en '+b,fmt(cc.SIN_REPORTE||0),'li','','SIN_REPORTE');
+ $('aK').querySelectorAll('[data-cf]').forEach(k=>k.onclick=()=>{CF=CF===k.dataset.cf?'':k.dataset.cf;$('tAna')._s=null;pintarAna();});
+ PAR=CF?V.filter(x=>x.cls===CF):V;
+ if(!SELR||!PAR.some(x=>x.cod===SELR)){const top={};PAR.forEach(x=>{top[x.cod]=(top[x.cod]||0)+Math.abs(x.d);});SELR=Object.keys(top).sort((x,y)=>top[y]-top[x])[0]||'';SELM=false;}
+ vistaAna();}
 let PAR=[];
 function vistaAna(){
  ['gra','cob'].forEach(s=>$('a-'+s).style.display=aS===s?'':'none');$('a-tab').style.display=['ren','ue','bre'].includes(aS)?'':'none';
  if(aS==='gra')graficos();else if(aS==='cob')rCob();else tablasAna();}
+/* etiquetas de valor sobre las barras cuando hay pocas */
+const etiquetas={id:'etiquetas',afterDatasetsDraw(ch,args,op){if(!op||!op.on)return;const ctx=ch.ctx;ctx.save();ctx.font='11px Consolas, monospace';ctx.fillStyle='#333';ctx.textAlign='center';
+ ch.data.datasets.forEach((ds,i)=>{const m=ch.getDatasetMeta(i);if(m.hidden||(ds.type&&ds.type!=='bar'&&ch.config.type!=='bar'&&ds.type!=='line'))return;if(m.data.length>30)return;
+  m.data.forEach((el,j)=>{const v=ds.data[j];if(v==null||!isFinite(v)||v===0)return;ctx.fillText(fmU(v),el.x,el.y-5);});});ctx.restore();}};
+if(window.Chart)Chart.register(etiquetas);
 function graficos(){
  const a=PA.p,b=PB.p,cod=SELR,fu=$('aUe').value;
- $('aGLeg').innerHTML='Renglón analizado: <b>'+esc(cod)+' · '+esc(desc(cod))+'</b>'+(fu?' · UE: <b>'+esc(fu)+'</b>':'')+'. Elija otro en el buscador de renglón, en las tablas o haciendo clic en un punto de la dispersión. Todos los valores son consumo mensual.';
- /* 1. evolución nacional */
- const n=NAC&&NAC.R[cod];$('tEvo').textContent='Evolución nacional · '+cod;
- if(n)chart('chEvo',{data:{labels:NAC.P,datasets:[{type:'line',label:'Consumo mensual nacional',data:n[0],borderColor:CB,backgroundColor:CB,yAxisID:'y',tension:.2},{type:'bar',label:'UE que lo reportan',data:n[1],backgroundColor:'#c8d9ec',yAxisID:'y2'}]},options:{maintainAspectRatio:false,scales:{y:{beginAtZero:true,title:{display:true,text:'unidades'}},y2:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'UE'}}}}});
- /* 2. UE por UE */
- const rows=PAR.filter(x=>x.cod===cod).sort((x,y)=>Math.max(y.a,y.b)-Math.max(x.a,x.b)).slice(0,30);
- $('tUes').textContent='UE por UE · '+cod+' · '+a+' contra '+b;
- chart('chUes',{type:'bar',data:{labels:rows.map(x=>x.ue.length>28?x.ue.slice(0,26)+'…':x.ue),datasets:[{label:a,data:rows.map(x=>x.a),backgroundColor:CA},{label:b,data:rows.map(x=>x.b),backgroundColor:CB}]},options:{maintainAspectRatio:false,plugins:{tooltip:{callbacks:{title:c=>rows[c[0].dataIndex].ue,afterBody:c=>{const r=rows[c[0].dataIndex];return 'Δ '+pct(r.dp);}}}},scales:{x:{ticks:{autoSkip:false,maxRotation:60,minRotation:45,font:{size:10}}}}}});
- /* 3. dispersión */
- const col={ALZA:'#b3261e',BAJA:'#1E5A9E',NUEVO:'#2e7d32',CESA:'#6d4c41',ESTABLE:'#b9b9b9',SIN_REPORTE:'#e0a800'};
- const pts=(SELM?PAR.filter(x=>x.cod===cod):PAR).filter(x=>x.a>0&&x.b>0).slice(0,6000);
- $('tDis').textContent='Dispersión: '+a+' contra '+b+(SELM?' · '+cod:'')+(fu?' · '+fu:'')+(SELM||fu?'':' · todos los pares');
+ $('aGLeg').innerHTML='<b>'+esc(cod)+' · '+esc(desc(cod))+'</b>'+(fu?' · <b>'+esc(fu)+'</b>':'')+(CF?' · solo pares <b>'+CFN[CF]+'</b>':'')+' <span class="note">· consumo mensual</span>';
+ /* 1. evolución: de la UE si hay una elegida; si no, nacional */
+ $('sEvo').textContent=fu?'consumo mensual de la unidad por periodo':'consumo mensual nacional · UE que reportan';
+ if(fu){$('tEvo').textContent='Evolución en la UE · '+cod;
+  getJ('ue/'+slug(fu)+'.json').then(J=>{if(!J)return;const s=(J.R[cod]||[]);const Ps=J.P;
+   chart('chEvo',{type:'line',data:{labels:Ps,datasets:[{label:'Consumo mensual de '+fu,data:s,borderColor:CB,backgroundColor:CB,tension:.2,pointRadius:5,spanGaps:true}]},options:{maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{etiquetas:{on:true}},scales:{y:{beginAtZero:true,title:{display:true,text:'unidades por mes'}}}}});}).catch(()=>{});}
+ else{const n=NAC&&NAC.R[cod];$('tEvo').textContent='Evolución nacional · '+cod;
+  if(n)chart('chEvo',{data:{labels:NAC.P,datasets:[{type:'line',label:'Consumo mensual nacional',data:n[0],borderColor:CB,backgroundColor:CB,yAxisID:'y',tension:.2,pointRadius:5},{type:'bar',label:'UE que lo reportan',data:n[1],backgroundColor:'#c8d9ec',yAxisID:'y2'}]},options:{maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{etiquetas:{on:true}},scales:{y:{beginAtZero:true,title:{display:true,text:'unidades por mes'}},y2:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'UE que reportan'}}}}});}
+ /* 2. dispersión */
+ const col={ALZA:'#b3261e',BAJA:'#1E5A9E',NUEVO:'#2e7d32',CESA:'#6d4c41',ESTABLE:'#9a9a9a',SIN_REPORTE:'#e0a800'};
+ const pts=(SELM?PAR.filter(x=>x.cod===cod):PAR).filter(x=>x.a>0&&x.b>0).slice(0,6000),poco=pts.length<=40;
+ $('tDis').textContent='Dispersión: '+a+' contra '+b+(SELM?' · '+cod:'')+(fu?' · '+fu:'')+(CF?' · '+CFN[CF]:'');
  const grupos={};pts.forEach(x=>(grupos[x.cls]=grupos[x.cls]||[]).push({x:x.a,y:x.b,r:x}));
  const mx=Math.max(1,...pts.map(x=>Math.max(x.a,x.b)));
- chart('chDis',{type:'scatter',data:{datasets:Object.keys(grupos).map(k=>({label:k.replace('_',' '),data:grupos[k],backgroundColor:col[k],pointRadius:k==='ESTABLE'?2:3})).concat([{type:'line',label:'Sin cambio',data:[{x:0.1,y:0.1},{x:mx,y:mx}],borderColor:'#888',borderDash:[4,4],pointRadius:0}])},
-  options:{maintainAspectRatio:false,scales:{x:{type:'logarithmic',title:{display:true,text:a}},y:{type:'logarithmic',title:{display:true,text:b}}},plugins:{tooltip:{callbacks:{label:c=>{const r=c.raw.r;return r?[r.ue,r.cod+' '+r.des.slice(0,40),fmU(r.a)+' → '+fmU(r.b)+' ('+pct(r.dp)+')']:'';}}}},
+ chart('chDis',{type:'scatter',data:{datasets:Object.keys(grupos).map(k=>({label:k.replace('_',' '),data:grupos[k],backgroundColor:col[k],pointRadius:poco?7:(k==='ESTABLE'?2:3),pointHoverRadius:9})).concat([{type:'line',label:'Sin cambio',data:[{x:0.1,y:0.1},{x:mx*1.2,y:mx*1.2}],borderColor:'#888',borderDash:[4,4],pointRadius:0}])},
+  options:{maintainAspectRatio:false,scales:{x:{type:'logarithmic',title:{display:true,text:'Consumo mensual '+a}},y:{type:'logarithmic',title:{display:true,text:'Consumo mensual '+b}}},plugins:{tooltip:{callbacks:{label:c=>{const r=c.raw.r;return r?[r.ue,r.cod+' '+r.des.slice(0,40),fmU(r.a)+' → '+fmU(r.b)+' ('+pct(r.dp)+')']:'';}}}},
    onClick:(e,el)=>{if(!el.length)return;const r=CH.chDis.data.datasets[el[0].datasetIndex].data[el[0].index].r;if(!r)return;SELR=r.cod;SELM=true;$('aRen').value=r.cod+' · '+r.des;graficos();}}});
+ /* 3. con UE: sus renglones con mayor brecha; sin UE: el renglón UE por UE */
+ let rows,lab,tip;
+ if(fu){rows=PAR.slice().sort((x,y)=>{const f=r=>r.a>0&&r.b>0?Math.abs(Math.log(r.b/r.a)):99+Math.max(r.a,r.b)/1e9;return f(y)-f(x);}).slice(0,25);
+  lab=rows.map(x=>x.cod);tip=i=>rows[i].cod+' · '+rows[i].des;$('tUes').textContent='Renglones de '+fu+' con mayor brecha · '+a+' contra '+b;}
+ else{rows=PAR.filter(x=>x.cod===cod).sort((x,y)=>Math.max(y.a,y.b)-Math.max(x.a,x.b)).slice(0,30);
+  lab=rows.map(x=>x.ue.length>28?x.ue.slice(0,26)+'…':x.ue);tip=i=>rows[i].ue;$('tUes').textContent='UE por UE · '+cod+' · '+a+' contra '+b;}
+ chart('chUes',{type:'bar',data:{labels:lab,datasets:[{label:a,data:rows.map(x=>x.a),backgroundColor:CA},{label:b,data:rows.map(x=>x.b),backgroundColor:CB}]},options:{maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{etiquetas:{on:rows.length<=12},tooltip:{callbacks:{title:c=>tip(c[0].dataIndex),afterBody:c=>{const r=rows[c[0].dataIndex];return 'Δ '+pct(r.dp);}}}},scales:{y:{title:{display:true,text:'unidades por mes'}},x:{ticks:{autoSkip:false,maxRotation:60,minRotation:rows.length>8?45:0,font:{size:10}}}},
+  onClick:(e,el)=>{if(fu&&el.length){const r=rows[el[0].index];SELR=r.cod;SELM=true;$('aRen').value=r.cod+' · '+r.des;graficos();}}}});
  heatmap();}
 async function heatmap(){
  const cod=SELR,fu=$('aUe').value,P=PERS.filter(p=>p.e!=='PROGRAMADO').map(p=>p.p);
@@ -686,6 +740,7 @@ async function heatmap(){
   const m={};ok.forEach(([p,J])=>{const ri=J.R.indexOf(cod);if(ri<0)return;J.V.forEach(v=>{if(v[1]!==ri)return;const u=J.U[v[0]];(m[u]=m[u]||{})[p]=v[2];});});
   filas=Object.keys(m).map(u=>({k:u,l:u,v:m[u]}));}
  const ps=ok.map(x=>x[0]);
+ if(CF){const al=new Set(PAR.filter(x=>fu||x.cod===cod).map(x=>fu?x.cod:x.ue));filas=filas.filter(r=>al.has(r.k));}
  filas.forEach(f=>{let s=1;const vs=ps.map(p=>f.v[p]).filter(v=>v>0);for(let i=1;i<vs.length;i++)s=Math.max(s,vs[i]/vs[i-1],vs[i-1]/vs[i]);f.s=s;});
  filas=ordenarHeat(filas,ps).slice(0,40);
  $('tHeat').textContent=titulo;
@@ -718,7 +773,8 @@ function tablasAna(){
   cols=[{k:'ue',l:'Unidad Ejecutora'},{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'a',l:A,t:'n',f:fmU},{k:'b',l:B,t:'n',f:fmU},{k:'d',l:'Δ',t:'n',f:fmU},{k:'dp',l:'Δ %',t:'n',f:v=>pct(v)},{k:'cls',l:'Clase',f:v=>st(v)}];
   $('aTit').textContent='Brechas UE–renglón · '+A+' contra '+B+' · clic para graficar';}
  table($('tAna'),cols,rows,{sort:aS==='ue'?'ue':'d',dir:aS==='ue'?1:-1,click:r=>{if(r.cod){SELR=r.cod;SELM=true;$('aRen').value=r.cod+' · '+r.des;}if(aS==='ue'&&ME.nacional){$('aUe').value=r.ue;pintarAna();}aS='gra';$('aSub').querySelectorAll('div').forEach(x=>x.classList.toggle('active',x.dataset.s==='gra'));vistaAna();window.scrollTo({top:0,behavior:'smooth'});}});}
-$('aCsv').onclick=()=>{const el=$('tAna');if(el._rows)xls('CONSUMOS_'+aS+'_'+PA.p+'_'+PB.p,el._cols,el._rows);};
+$('aCsv').onclick=()=>{const el=$('tAna');if(!el._rows)return;const T={ren:'Por renglón',ue:'Por Unidad Ejecutora',bre:'Brechas UE–renglón'}[aS];
+ xls('CONSUMOS_'+aS+'_'+PA.p+'_'+PB.p,el._cols,el._rows,T,{titulo:'Análisis de consumos · '+T+' · '+PA.p+' contra '+PB.p,meta:[['Periodos',PA.p+' contra '+PB.p+' (consumo mensual)'],['Filtros',filtrosTxt()],['Brecha','a partir de '+$('aThr').selectedOptions[0].text]],color:r=>XFILL[r.cls]||null});};
 /* cobertura del mes */
 $('kPer').onchange=()=>rCob();$('kCed').onchange=()=>pintarCob();$('kQ').oninput=()=>pintarCob();
 async function rCob(){$('tCob').innerHTML='<div class="cargando">Cargando…</div>';
