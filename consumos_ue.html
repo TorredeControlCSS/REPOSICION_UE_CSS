@@ -210,10 +210,10 @@ td input:disabled{background:#f3f3f3;color:#333}
   </div>
   <div id="a-tab" style="display:none"><div class="panel"><div class="ph"><span id="aTit"></span><small>consumo mensual en unidades del renglón</small></div><div class="pb"><div class="ctrl"><button class="b-cl" id="aCsv">Descargar en Excel</button></div><div id="tAna"></div></div></div></div>
   <div id="a-cob" style="display:none">
-   <div class="ctrl"><label>Periodo</label><select id="kPer"></select><label>CEDIS</label><select id="kCed"><option value="">Todos</option></select><input id="kQ" placeholder="Buscar UE" style="width:220px"></div>
+   <div class="ctrl"><label>Periodo</label><select id="kPer"></select><span id="kNac"><label>CEDIS</label><select id="kCed"><option value="">Todos</option></select><input id="kQ" placeholder="Buscar UE" style="width:220px"></span></div>
    <div class="kpis" id="kCob"></div>
-   <div class="panel"><div class="ph">Estado de los envíos por CEDIS<small id="kSub"></small></div><div class="pb"><div class="cbox"><canvas id="chCob"></canvas></div></div></div>
-   <div class="panel"><div class="ph">Cobertura por UE y categoría</div><div class="pb"><div id="tCob"></div></div></div>
+   <div class="panel" id="pCobCh"><div class="ph">Estado de los envíos por CEDIS<small id="kSub"></small></div><div class="pb"><div class="cbox"><canvas id="chCob"></canvas></div></div></div>
+   <div class="panel"><div class="ph"><span id="kTit">Cobertura por UE y categoría</span></div><div class="pb"><div id="tCob"></div></div></div>
   </div>
  </div>
 
@@ -461,7 +461,7 @@ function initSelects(){
  $('rCat').innerHTML='<option value="">Todas mis categorías</option>'+misCats().map(c=>'<option>'+c+'</option>').join('');
  $('rUe').innerHTML='<option value="">Todas</option>'+CAT.U.map(u=>'<option>'+esc(u.n)+'</option>').join('');
  $('kCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(String))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');
- const todos=PERS.filter(p=>p.e!=='PROGRAMADO').map(p=>p.p);$('aA').innerHTML=todos.map(p=>'<option>'+p+'</option>').join('');$('aB').innerHTML=$('aA').innerHTML;
+ const todos=PERS.filter(p=>estadoPer(p)!=='PROGRAMADO').map(p=>p.p);$('aA').innerHTML=todos.map(p=>'<option>'+p+'</option>').join('');$('aB').innerHTML=$('aA').innerHTML;
  const hs=todos.filter(p=>/S\d/.test(p));$('aA').value=hs.length>=2?hs[hs.length-2]:todos[0];$('aB').value=hs.length>=1?hs[hs.length-1]:todos[todos.length-1];
  const soloUE=!ME.nacional;const uesA=soloUE?ME.ues:CAT.U.map(u=>u.n);
  $('aUe').innerHTML=(soloUE?'':'<option value="">Todas</option>')+uesA.map(u=>'<option>'+esc(u)+'</option>').join('');
@@ -744,7 +744,7 @@ function graficos(){
   onClick:(e,el)=>{if(fu&&el.length){const r=rows[el[0].index];SELR=r.cod;SELM=true;$('aRen').value=r.cod+' · '+r.des;graficos();}}}});
  heatmap();}
 async function heatmap(){
- const cod=SELR,fu=$('aUe').value,P=PERS.filter(p=>p.e!=='PROGRAMADO').map(p=>p.p);
+ const cod=SELR,fu=$('aUe').value,P=PERS.filter(p=>estadoPer(p)!=='PROGRAMADO').map(p=>p.p);
  $('heat').innerHTML='<div class="cargando">Cargando periodos…</div>';
  const F=await Promise.all(P.map(p=>getJ('periodo_'+p+'.json').catch(()=>null)));
  const ok=P.map((p,i)=>[p,F[i]]).filter(x=>x[1]);
@@ -795,15 +795,30 @@ $('aCsv').onclick=()=>{const el=$('tAna');if(!el._rows)return;const T={ren:'Por 
 $('kPer').onchange=()=>rCob();$('kCed').onchange=()=>pintarCob();$('kQ').oninput=()=>pintarCob();
 async function rCob(){$('tCob').innerHTML='<div class="cargando">Cargando…</div>';
  try{ESTP=await getJ('estado_'+$('kPer').value+'.json',true);}catch(e){err(e);return;}
- if(!ESTP){$('tCob').innerHTML='<div class="cargando">Aún no hay estado publicado para este periodo.</div>';$('kCob').innerHTML='';return;}pintarCob();}
-function pintarCob(){if(!ESTP)return;const cats=ESTP.cats,fc=$('kCed').value,q=$('kQ').value.trim().toLowerCase();
+ if(!ESTP){const cats=['MED','MQ','LAB'];ESTP={p:$('kPer').value,cats,generado:null,F:CAT.U.map(u=>[u.n,u.ced,u.cod].concat(...cats.map(()=>['SIN_REPORTE',''])))};}
+ if(!ME.nacional)return pintarCobUE();
+ pintarCob();}
+/* Vista de la Unidad Ejecutora: el estado de sus propios reportes, mes a mes */
+async function pintarCobUE(){
+ $('kNac').style.display='none';$('pCobCh').style.display='none';$('kTit').textContent='Sus reportes mes a mes';
+ const P=PERS.find(p=>p.p===ESTP.p)||{},cats=misCats(),ues=ME.ues.length?ME.ues:[];
+ const J=await Promise.all(ues.map(u=>getJ('ue/'+slug(u)+'.json',true).catch(()=>null)));
+ const ovr=u=>{const o={};cats.forEach(c=>{const l=ls.get('cons_env|'+u+'|'+c+'|'+ESTP.p);if(l)try{o[c]=JSON.parse(l);}catch(e){}});return o;};
+ const est=(j,u,c,p)=>{const x=((j&&j.env[c])||{})[p];const l=p===ESTP.p?ovr(u)[c]:null;return l&&(!x||l.ver>=x.ver)?l:x;};
+ const mes=[];ues.forEach((u,i)=>cats.forEach(c=>mes.push(est(J[i],u,c,ESTP.p))));
+ const n=s=>mes.filter(x=>x&&s.includes(x.e)).length;let dias='—';if(P.lim){const d=Math.ceil((new Date(P.lim+'T23:59:59-05:00')-new Date())/864e5);dias=d>=0?String(d):'vencido';}
+ $('kCob').innerHTML=kpi('Reportes de '+ESTP.p,mes.length,'gr',cats.join(' · '))+kpi('Pendientes de enviar',mes.filter(x=>!x).length,'ro')+kpi('Enviados o en revisión',n(['ENVIADO','OBSERVADO','VALIDADO','DEVUELTO']),'')+kpi('Aprobados',n(['APROBADO','PUBLICADO']),'ve')+kpi('Días para el vencimiento',dias,'gr',P.lim?'vence '+P.lim:'');
+ const pers=PERS.filter(p=>estadoPer(p)!=='PROGRAMADO').map(p=>p.p).reverse(),rows=[];
+ ues.forEach((u,i)=>pers.forEach(p=>{const Pp=PERS.find(x=>x.p===p)||{},o={ue:u,per:p,fin:Pp.fin||''};cats.forEach(c=>{const x=est(J[i],u,c,p);o[c]=x?x.e:(Pp.t==='MENSUAL'?'SIN_REPORTE':'—');o[c+'_f']=x?x.f:'';o[c+'_t']=x&&Pp.lim&&x.f&&x.f.slice(0,10)>Pp.lim;});rows.push(o);}));
+ table($('tCob'),(ues.length>1?[{k:'ue',l:'Unidad Ejecutora'}]:[]).concat([{k:'per',l:'Periodo'},{k:'fin',l:'Cierra'}]).concat(cats.map(c=>({k:c,l:CATN[c],f:(v,r)=>(v==='—'?'<span class="note">sin dato</span>':st(v))+(r[c+'_f']?' <span class="note">'+esc(r[c+'_f'])+'</span>':'')+(r[c+'_t']?' <span class="st s-DEVUELTO">fuera de plazo</span>':'')}))),rows,{sort:'fin',dir:-1,reset:true,vacio:'Aún no hay reportes.'});}
+function pintarCob(){if(!ESTP)return;if(!ME.nacional)return pintarCobUE();$('kNac').style.display='';$('pCobCh').style.display='';$('kTit').textContent='Cobertura por UE y categoría';const cats=ESTP.cats,fc=$('kCed').value,q=$('kQ').value.trim().toLowerCase();
  let m=ESTP.F.map(f=>{const o={ue:f[0],ced:f[1],cod:f[2]};cats.forEach((c,i)=>{o[c]=f[3+i*2];o[c+'_f']=f[4+i*2];});return o;});
  if(!ME.nacional)m=m.filter(o=>ME.ues.includes(o.ue));
  m=m.filter(o=>(!fc||o.ced===fc)&&(!q||o.ue.toLowerCase().includes(q)));
  const all=[];m.forEach(o=>cats.forEach(c=>all.push(o[c])));const cnt=s=>all.filter(x=>x===s).length;
  const P=PERS.find(p=>p.p===ESTP.p)||{};let dias='—';if(P.lim){const d=Math.ceil((new Date(P.lim+'T23:59:59-05:00')-new Date())/864e5);dias=d>=0?String(d):'vencido';}
  $('kCob').innerHTML=kpi('Envíos esperados',all.length,'gr')+kpi('Sin reporte',cnt('SIN_REPORTE'),'ro')+kpi('Enviados',cnt('ENVIADO'),'')+kpi('Observados o devueltos',cnt('OBSERVADO')+cnt('DEVUELTO'),'am')+kpi('Validados',cnt('VALIDADO'),'li')+kpi('Aprobados',cnt('APROBADO'),'ve')+kpi('Publicados al Motor',cnt('PUBLICADO'),'ve')+kpi('Días para el vencimiento',dias,'gr',P.lim?'vence '+P.lim:'');
- $('kSub').textContent='periodo '+ESTP.p+' · actualizado '+new Date(ESTP.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16)+' (hora de Panamá)';
+ $('kSub').textContent='periodo '+ESTP.p+(ESTP.generado?' · actualizado '+new Date(ESTP.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16)+' (hora de Panamá)':' · aún sin envíos');
  const E=['SIN_REPORTE','ENVIADO','OBSERVADO','DEVUELTO','VALIDADO','APROBADO','PUBLICADO'],col={SIN_REPORTE:'#d9d9d9',ENVIADO:'#9fb6d3',OBSERVADO:'#e0c068',DEVUELTO:'#e6a39e',VALIDADO:'#b9a3d9',APROBADO:'#8fca9c',PUBLICADO:'#2e7d32'};
  const ceds=[...new Set(m.map(o=>o.ced))].sort();
  chart('chCob',{type:'bar',data:{labels:ceds,datasets:E.map(s=>({label:s.replace('_',' '),backgroundColor:col[s],data:ceds.map(c=>m.filter(o=>o.ced===c).reduce((t,o)=>t+cats.filter(k=>o[k]===s).length,0))}))},options:{maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true,title:{display:true,text:'envíos (UE × categoría)'}}}}});
