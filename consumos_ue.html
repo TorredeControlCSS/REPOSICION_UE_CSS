@@ -114,7 +114,10 @@ input.n{width:110px;text-align:right}input.just{width:100%;min-width:200px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
 .cbox{position:relative;height:300px}.cbox.t{height:380px}
 .login{max-width:430px;margin:40px auto;background:#fff;border:1px solid var(--bd)}
-.login .pb{display:grid;gap:8px}.login label{font-size:12px;color:#444}.login input{width:100%}
+.login .pb{display:grid;gap:8px}
+.login-alt{margin-top:-28px;background:#f4f7fb}.login-alt .pb{font-size:13px;line-height:1.5}
+.lgmsg{padding:8px 10px;font-size:13px;line-height:1.45;border:1px solid}.lgmsg.w{background:#fdecea;border-color:#e6a39e;color:#8c1d16}.lgmsg.i{background:#eef3f9;border-color:#c3d2e4;color:#0C447C}
+.hint{font-size:11.5px;color:#666;margin-top:-4px}.login label{font-size:12px;color:#444}.login input{width:100%}
 .lnk{color:var(--az);cursor:pointer;text-decoration:underline;font-size:12px}
 .foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:8px;background:#f6f6f6;border:1px solid var(--bd)}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center}
@@ -146,11 +149,15 @@ td input:disabled{background:#f3f3f3;color:#333}
 
 <div id="scrLogin">
  <div class="login"><div class="ph">Ingreso</div><div class="pb">
-  <label for="lgCed">Cédula</label><input id="lgCed" placeholder="8-000-0000" autocomplete="username">
+  <label for="lgCed">Cédula <span class="note">(con guiones, como en su documento)</span></label><input id="lgCed" placeholder="8-123-4567" autocomplete="username">
   <label for="lgPin">PIN</label><input id="lgPin" type="password" maxlength="6" inputmode="numeric" placeholder="4 a 6 dígitos" autocomplete="current-password">
   <button class="pri" id="lgBtn">Ingresar</button>
-  <div style="display:flex;justify-content:space-between"><span class="lnk" id="lnkSol">Solicitar acceso</span><span class="lnk" id="lnkOlv">Olvidé mi PIN</span></div>
-  <div class="note">La primera vez, entre con los <b>últimos 4 dígitos de su cédula</b> como PIN. El sistema le pedirá cambiarlo por uno propio.</div>
+  <div id="lgMsg"></div>
+  <div style="text-align:right"><span class="lnk" id="lnkOlv">Olvidé mi PIN</span></div>
+ </div></div>
+ <div class="login login-alt"><div class="pb">
+  <div><b>¿Es su primera vez?</b> Solicite su acceso. Cuando Planificación lo apruebe, entre con su cédula y los <b>últimos 4 dígitos de su cédula</b> como PIN; el sistema le pedirá cambiarlo.</div>
+  <button class="b-cl" id="lnkSol">Solicitar acceso</button>
  </div></div>
 </div>
 
@@ -422,9 +429,19 @@ async function ueJson(ue,fresco){
  *  INGRESO
  * ==================================================================== */
 $('lgPin').addEventListener('keydown',e=>{if(e.key==='Enter')$('lgBtn').click();});
-$('lgBtn').onclick=async()=>{const b=$('lgBtn');const fin=espera(b,'Verificando…');
- try{const r=await jsonp({accion:'login',cedula:$('lgCed').value.trim(),pin:$('lgPin').value.trim()},{reintentos:0});TOKEN=r.token;ss.set('cons_tok',TOKEN);$('lgPin').value='';
-  if(r.sesion.cambiarPin)pedirCambioPin();else{b.textContent='Cargando…';await entrar(r.sesion);}}catch(e){err(e);}finally{fin();}};
+$('lgCed').addEventListener('keydown',e=>{if(e.key==='Enter')$('lgPin').focus();});
+const CED_RE=/^[0-9A-Z]{1,3}(-[0-9A-Z]{1,6}){2,3}$/;
+const cedTxt=v=>String(v||'').toUpperCase().replace(/\s+/g,'');
+function lgMsg(t,tipo,conSolicitud){$('lgMsg').innerHTML=t?'<div class="lgmsg '+(tipo||'w')+'">'+esc(t)+(conSolicitud?' <div style="margin-top:6px"><button class="b-cl" id="lgSol">Solicitar acceso</button></div>':'')+'</div>':'';if($('lgSol'))$('lgSol').onclick=()=>$('lnkSol').click();}
+$('lgBtn').onclick=async()=>{const b=$('lgBtn');lgMsg('');const ced=cedTxt($('lgCed').value);$('lgCed').value=ced;
+ if(!CED_RE.test(ced)){lgMsg('Escriba su cédula con guiones, como aparece en su documento. Ejemplo: 8-123-4567.');$('lgCed').focus();return;}
+ if(!$('lgPin').value.trim()){lgMsg('Escriba su PIN. Si es su primer ingreso, son los últimos 4 dígitos de su cédula.','i');$('lgPin').focus();return;}
+ const fin=espera(b,'Verificando…');
+ try{const r=await jsonp({accion:'login',cedula:ced,pin:$('lgPin').value.trim()},{reintentos:0});TOKEN=r.token;ss.set('cons_tok',TOKEN);$('lgPin').value='';
+  if(r.sesion.cambiarPin)pedirCambioPin();else{b.textContent='Cargando…';await entrar(r.sesion);}}
+ catch(e){const m=String(e.message||e),k=m.indexOf('|')>0?m.split('|')[0]:'',t=k?m.slice(k.length+1):m;
+  lgMsg(t,k==='PENDIENTE'?'i':'w',k==='NO_REGISTRADO'||k==='RECHAZADA');if(k==='PIN'){$('lgPin').value='';$('lgPin').focus();}}
+ finally{fin();}};
 function pedirCambioPin(){
  modal('Cambio de PIN obligatorio','<div class="note">Está usando un PIN temporal. Defina un PIN nuevo de 4 a 6 dígitos. Se guarda cifrado; nadie, ni el administrador, puede verlo.</div><label>PIN nuevo</label><input id="p1" type="password" maxlength="6" inputmode="numeric"><label>Repetir PIN</label><input id="p2" type="password" maxlength="6" inputmode="numeric"><button class="pri" id="pinOk">Guardar e ingresar</button>',
  ()=>{$('mX').style.display='none';$('pinOk').onclick=async()=>{const p1=$('p1').value.trim(),p2=$('p2').value.trim();if(!/^\d{4,6}$/.test(p1)){toast('El PIN debe tener de 4 a 6 dígitos');return;}if(p1!==p2){toast('Los dos PIN no coinciden');return;}
@@ -432,15 +449,20 @@ function pedirCambioPin(){
 $('lnkOlv').onclick=()=>modal('Olvidé mi PIN','<div class="note" style="font-size:13px">Pida a Planificación o a un administrador que restablezca su PIN. Después ingrese con su cédula y los <b>últimos 4 dígitos de su cédula</b> como PIN temporal; el sistema le pedirá definir uno nuevo.</div>');
 $('lnkSol').onclick=async()=>{
  let U=[];try{const c=await getJ('catalogo.json');U=c?c.U.map(u=>u[0]):(await jsonp({accion:'ues_publico'})).ues;}catch(e){err(e);return;}
- modal('Solicitar acceso','<div class="note">Solicite acceso como CARGA (reporta el consumo de su UE) o LECTURA (consulta). Los roles de validación, aprobación y administración los asigna un administrador.</div>'+
- '<label>Cédula</label><input id="sCed"><label>Nombre completo</label><input id="sNom"><label>Cargo</label><input id="sCar"><label>Correo institucional (opcional)</label><input id="sCor" type="email"><label>Teléfono</label><input id="sTel">'+
+ modal('Solicitar acceso','<div class="note" style="font-size:13px">Llene sus datos. Planificación revisará la solicitud y le avisará al teléfono que indique.</div>'+
+ '<label>Cédula</label><input id="sCed" placeholder="8-123-4567" value="'+esc(cedTxt($('lgCed').value))+'"><div class="hint">Con guiones, como aparece en su documento.</div>'+
+ '<label>Nombre completo</label><input id="sNom"><label>Cargo</label><input id="sCar"><label>Teléfono de contacto</label><input id="sTel" inputmode="tel" placeholder="6000-0000">'+
  '<label>Unidad Ejecutora</label><select id="sUe"><option value=""></option>'+U.map(u=>'<option>'+esc(u)+'</option>').join('')+'</select>'+
- '<label>Categorías</label><div class="chk">'+['MED','MQ','LAB'].map(c=>'<label><input type="checkbox" value="'+c+'"> '+c+' · '+CATN[c]+'</label>').join('')+'</div>'+
- '<label>Rol solicitado</label><select id="sRol"><option>CARGA</option><option>LECTURA</option></select><label>Justificación</label><textarea id="sJus" rows="2"></textarea>'+
- '<div class="note">Cuando Planificación apruebe su solicitud, ingrese con su cédula y los <b>últimos 4 dígitos de su cédula</b> como PIN. La primera vez el sistema le pedirá definir uno propio.</div><button class="pri" id="solOk">Enviar solicitud</button>',
- b=>$('solOk').onclick=async()=>{const cats=[...b.querySelectorAll('.chk input:checked')].map(x=>x.value).join(',');
-  try{await jsonp({accion:'solicitar_acceso',cedula:$('sCed').value,nombre:$('sNom').value,cargo:$('sCar').value,correo:$('sCor').value,telefono:$('sTel').value,ue:$('sUe').value,cats,rol:$('sRol').value,justificacion:$('sJus').value},{reintentos:0});
-   cerrarModal();modal('Solicitud enviada','<div class="note" style="font-size:13px">Su solicitud fue registrada. Cuando Planificación la apruebe, ingrese con su cédula y los <b>últimos 4 dígitos de su cédula</b> como PIN.</div>');}catch(e){err(e);}});};
+ '<label>Categorías que reporta</label><div class="chk">'+['MED','MQ','LAB'].map(c=>'<label><input type="checkbox" value="'+c+'"> '+CATN[c]+'</label>').join('')+'</div>'+
+ '<label>Tipo de acceso</label><select id="sRol"><option value="CARGA">Reportar el consumo de mi unidad</option><option value="LECTURA">Solo consultar</option></select>'+
+ '<button class="pri" id="solOk">Enviar solicitud</button>',
+ b=>$('solOk').onclick=async()=>{const ced=cedTxt($('sCed').value);$('sCed').value=ced;
+  if(!CED_RE.test(ced)){toast('Escriba la cédula con guiones. Ejemplo: 8-123-4567');$('sCed').focus();return;}
+  const cats=[...b.querySelectorAll('.chk input:checked')].map(x=>x.value).join(',');const fin=espera($('solOk'),'Enviando…');
+  try{const r=await jsonp({accion:'solicitar_acceso',cedula:ced,nombre:$('sNom').value,cargo:$('sCar').value,telefono:$('sTel').value,ue:$('sUe').value,cats,rol:$('sRol').value},{reintentos:0});
+   $('lgCed').value=ced;lgMsg('');
+   modal('Solicitud enviada','<div class="note" style="font-size:13.5px;line-height:1.6">Su solicitud <b>'+esc(r.id)+'</b> quedó registrada.<br><br>Cuando Planificación la apruebe, entre con su cédula <b>'+esc(ced)+'</b> y, como PIN, los <b>últimos 4 dígitos de su cédula</b>. El sistema le pedirá cambiarlo por uno propio.</div><button class="pri" id="solFin">Entendido</button>',()=>$('solFin').onclick=cerrarModal);}
+  catch(e){fin();err(e);}});};
 
 async function entrar(s){
  ME=s;$('scrLogin').style.display='none';$('scrApp').style.display='';
