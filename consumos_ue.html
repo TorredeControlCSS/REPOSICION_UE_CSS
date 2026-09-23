@@ -45,6 +45,7 @@ button.ok:hover{background:#1b5e20}
 .rev-acc{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 12px;margin-bottom:10px}
 .rev-acc button{font-size:14px;padding:8px 18px;font-weight:700}
 button.espera{cursor:progress;opacity:.75}
+.okbox{background:#e3f2e4;border:1px solid #9fcfa6;color:#1b5e20;padding:7px 10px;margin-bottom:6px;font-size:13.5px}
 .rep-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;font-size:14px}
 .stepper{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:10px}@media(max-width:1000px){.stepper{grid-template-columns:1fr}}
 .step{background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 11px}
@@ -526,16 +527,26 @@ async function rRep(fresco){
  C.env=e;const est=e?e.e:'SIN_REPORTE';
  const abierto=reportable(P),bloq=['VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
  C.soloLectura=!abierto||bloq;
- const MSG={SIN_REPORTE:'pendiente, su unidad aún no lo ha enviado',ENVIADO:'enviado, en revisión de Planificación (puede corregirlo y reenviarlo mientras tanto)',OBSERVADO:'Planificación le hizo una observación: corrija y envíe de nuevo',VALIDADO:'validado por Planificación, espera la aprobación de la jefatura',DEVUELTO:'en revisión interna de Planificación',APROBADO:'aprobado, ya es el consumo oficial de su unidad',PUBLICADO:'aprobado y publicado al Motor de Asignación',EN_CORRECCION:'Planificación lo reabrió para corrección: corrija lo indicado y envíe de nuevo. Mientras tanto sigue vigente el valor aprobado'};
+ const MSG={SIN_REPORTE:'pendiente, su unidad aún no lo ha enviado',ENVIADO:'en revisión de Planificación. Si necesita corregir algo antes de que lo validen, cambie los valores y pulse Reenviar corrección: se guarda como una versión nueva',OBSERVADO:'Planificación le hizo una observación: corrija y envíe de nuevo',VALIDADO:'validado por Planificación, espera la aprobación de la jefatura',DEVUELTO:'en revisión interna de Planificación',APROBADO:'aprobado, ya es el consumo oficial de su unidad',PUBLICADO:'aprobado y publicado al Motor de Asignación',EN_CORRECCION:'Planificación lo reabrió para corrección: corrija lo indicado y envíe de nuevo. Mientras tanto sigue vigente el valor aprobado'};
  const por=!abierto?(estadoPer(P)==='CERRADO'?'La Dirección cerró este periodo. Si necesita corregir algo, comuníquese con Planificación.':'Este mes todavía no comienza; se podrá reportar desde el '+P.ini+'.'):'Como ya está en revisión o aprobado, no se puede modificar. Si hay un error, pida a Planificación que lo observe.';
  const MES=(()=>{const m=/^(\d{4})-(\d{2})$/.exec(C.per);return m?['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][+m[2]-1]+' '+m[1]:C.per;})();
- $('cEstado').innerHTML='<b>Reporte de '+CATN[C.cat].toLowerCase()+' de '+MES+':</b> '+(MSG[est]||est)+(e?' <span class="note">('+esc(e.id)+', versión '+e.ver+')</span>':'')+
+ const enviado=['ENVIADO','VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
+ $('cEstado').innerHTML=(enviado&&e?'<div class="okbox">✓ <b>Reporte recibido</b> el '+esc(e.f||'')+' · '+esc(e.id)+' · versión '+e.ver+(e.n?' · '+e.n+' renglones':'')+'</div>':'')+
+  '<b>Reporte de '+CATN[C.cat].toLowerCase()+' de '+MES+':</b> '+(MSG[est]||est)+(e&&!enviado?' <span class="note">('+esc(e.id)+', versión '+e.ver+')</span>':'')+
+  (e?' <span class="lnk" id="cRefE" title="Consultar si ya fue validado o aprobado">Actualizar estado</span>':'')+
   (e&&e.obs?'<div class="warn" style="margin:6px 0 0"><b>Observación de Planificación:</b> '+esc(e.obs)+'</div>':'')+(C.soloLectura?'<div class="note" style="margin-top:4px">'+por+'</div>':'');
+ if($('cRefE'))$('cRefE').onclick=()=>{C.J=null;rRep(true);};
  $('cSteps').style.display=C.soloLectura?'none':'';$('cClr').style.display=C.soloLectura?'none':'';$('cTit').textContent=C.ue+' · '+CATN[C.cat]+' · '+C.per;
  let d=draft();
  if(e&&e.id&&!d._t&&(est==='OBSERVADO'||est==='ENVIADO'||est==='EN_CORRECCION'||C.soloLectura)){
-  try{const x=await getJ('envio/'+e.id+'.json',true);if(!x)throw new Error('El detalle del envío aún no está publicado; intente en un minuto.');const dd={};x.filas.forEach(f=>dd[f[0]]={v:f[1],j:f[4]});if(C.soloLectura)d=dd;else{d=dd;saveDraft(d);}}catch(z){err(z);}
+  let dd=null;const sn=(()=>{try{return JSON.parse(ls.get('cons_sent|'+C.ue+'|'+C.cat+'|'+C.per)||'null');}catch(z){return null;}})();
+  if(sn&&sn.id===e.id)dd=sn.d;
+  if(!dd){try{const x=await getJ('envio/'+e.id+'.json',true);if(x){dd={};x.filas.forEach(f=>dd[f[0]]={v:f[1],j:f[4]});}}catch(z){}}
+  if(!dd&&sn)dd=sn.d;
+  if(dd){d=dd;C.base=JSON.stringify(dd);}
+  try{}catch(z){err(z);}
  }
+ if(!(e&&e.id))C.base=null;
  C.d=d;$('cDraft').textContent=!C.soloLectura&&d._t?'lo escrito se guarda en este equipo mientras no envíe':'';
  ['cCopy','cUp','cClr'].forEach(id=>$(id).disabled=C.soloLectura);
  renderCarga();rHist();
@@ -566,9 +577,13 @@ function renderCarga(){
    el.querySelectorAll('input[data-j]').forEach(i=>i.onchange=()=>{const d=C.d;d[i.dataset.j]=Object.assign(d[i.dataset.j]||{},{j:i.value});saveDraft(d);resumen();});}});
  resumen();}
 function resumen(){const rows=cRows();const con=rows.filter(r=>r.v!=='').length,sin=rows.filter(r=>r.v===''&&r.prev>0).length,fl=rows.filter(r=>r.fl&&!String(r.j).trim()).length;
- $('cSend').textContent='Enviar a validación';
+ const reenvio=C.env&&['ENVIADO','OBSERVADO','EN_CORRECCION'].includes(C.env.e);
+ const limpio=o=>{const x={};Object.keys(o||{}).forEach(k=>{if(k!=='_t'&&o[k]&&(o[k].v!=null||o[k].j))x[k]={v:o[k].v==null?null:+o[k].v,j:o[k].j||''};});return JSON.stringify(x);};
+ const cambios=!reenvio||!C.base||limpio(C.d)!==limpio(JSON.parse(C.base));
+ $('cSend').textContent=reenvio?'Reenviar corrección':'Enviar a validación';
  $('cRes').innerHTML=C.soloLectura?'':(fl?'<span style="color:#b3261e">Antes de enviar, justifique <b>'+fl+'</b> '+(fl===1?'fila':'filas')+'.</span>':con?'<b>'+con+'</b> renglones con dato.'+(sin?' Los '+sin+' vacíos conservan su último consumo aprobado.':''):'Cuando haya llenado la tabla, envíe su reporte. Queda registrado a su nombre.');
- $('cSend').disabled=C.soloLectura||!con||fl>0;}
+ if(reenvio&&!cambios&&!fl)$('cRes').innerHTML=C.env.e==='ENVIADO'?'Su reporte ya fue enviado. Si corrige algún valor, podrá reenviarlo.':'Corrija lo indicado por Planificación y reenvíe.';
+ $('cSend').disabled=C.soloLectura||!con||fl>0||!cambios;}
 $('cQ').oninput=()=>renderCarga();$('cVisSel').onchange=()=>{VIS=$('cVisSel').value;renderCarga();};$('cInstr').onclick=()=>{const a=AYUDA.reportar;modal(a[0],'<div class="note" style="font-size:13px">'+a[1]+'</div>');};
 $('cCopy').onclick=()=>{const vac=cRows().filter(r=>r.v===''&&r.prev>0);if(!vac.length){toast('No hay renglones vacíos con consumo aprobado.');return;}
  modal('Rellenar con el último consumo aprobado','<div class="note" style="font-size:13px">Se escribirá el último consumo aprobado en los <b>'+vac.length+'</b> renglones que están vacíos. Así solo tiene que cambiar los que variaron este mes. Lo que ya escribió no se modifica.</div><button class="pri" id="cpOk">Rellenar '+vac.length+' renglones</button>',
@@ -611,9 +626,12 @@ $('cSend').onclick=()=>{const rows=cRows().filter(r=>r.v!=='');
  ()=>$('sOk').onclick=async()=>{const b=$('sOk');b.disabled=true;b.textContent='Enviando…';
   try{const r=await postJson({accion:'enviar',ue:C.ue,cat:C.cat,periodo:C.per,canal:C.archivo?'EXCEL':'FORMULARIO',archivo:C.archivo,filas:rows.map(x=>[x.cod,+x.v,String(x.j||'')])});
    if(!r.ok)throw new Error(r.error);ls.del(dkey());
+   const env={};rows.forEach(x=>env[x.cod]={v:+x.v,j:String(x.j||'')});ls.set('cons_sent|'+C.ue+'|'+C.cat+'|'+C.per,JSON.stringify({id:r.id,d:env}));
    const hp=new Date().toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16);
    ls.set('cons_env|'+C.ue+'|'+C.cat+'|'+C.per,JSON.stringify({id:r.id,ver:r.version,e:'ENVIADO',f:hp,n:r.renglones,t:Date.now()}));
-   cerrarModal();toast('Envío '+r.id+' recibido (versión '+r.version+').',6000);C.J=null;rRep(true);}
+   C.J=null;
+   modal('Reporte enviado','<div class="okbox" style="font-size:14px">✓ <b>Su reporte fue recibido.</b></div><div class="note" style="font-size:13.5px;line-height:1.6">'+esc(CATN[C.cat])+' · '+esc(C.per)+' · '+esc(C.ue)+'<br>Envío <b>'+esc(r.id)+'</b>, versión '+r.version+', '+r.renglones+' renglones, '+esc(hp)+'.<br><br>Planificación lo revisará. Mientras no lo validen, puede corregir valores y pulsar <b>Reenviar corrección</b>; se guardará como versión '+(r.version+1)+'. Si le hacen una observación, la verá en esta misma pantalla.</div><button class="pri" id="envOk">Entendido</button>',
+    ()=>$('envOk').onclick=()=>{cerrarModal();rRep(true);});}
   catch(e){b.disabled=false;b.textContent='Enviar';err(e);}});};
 function rHist(){
  const env=C.J&&C.J.env||{},rows=[];
