@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Registro de Consumos por Unidad Ejecutora · DINALOg</title>
+<title>Registro de Consumos por Unidad Ejecutora · DINALOG</title>
 <link rel="icon" href="icons/icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -430,7 +430,9 @@ $('lnkSol').onclick=async()=>{
 
 async function entrar(s){
  ME=s;$('scrLogin').style.display='none';$('scrApp').style.display='';
- $('who').innerHTML='<b>'+esc(s.nombre)+'</b><br>'+esc(s.roles.join(' · '))+(s.cats.length?' · '+esc(s.cats.join(',')):'')+'<br><span class="lnk" style="color:#d6e2f0" id="out">Salir</span>';
+ const unidad=s.ues.length?s.ues[0]+(s.ues.length>1?' y '+(s.ues.length-1)+' más':''):(s.nacional?'Dirección Nacional de Logística':'');
+ $('who').innerHTML='<b>'+esc(s.nombre)+'</b>'+(unidad?'<br><span style="color:#fff">'+esc(unidad)+'</span>':'')+'<br>'+esc(s.roles.join(' · '))+(s.cats.length?' · '+esc(s.cats.join(',')):'')+' · <span class="lnk" style="color:#d6e2f0" id="out">Salir</span>';
+ if(s.ues.length>1)$('who').title=s.ues.join('\n');
  $('out').onclick=()=>{const t=TOKEN;jsonp({accion:'salir',token:t},{reintentos:0,timeout:15000}).catch(()=>{});sesionVencida('Sesión cerrada.');};
  try{await cargarBase();}catch(e){err(e);return;}
  const T=[];
