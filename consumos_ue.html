@@ -286,7 +286,7 @@ const AYUDA={
  analisis:['Cómo leer este análisis','<b>Compare</b> dos periodos y, si quiere, acote por categoría, UE o renglón. Todos los valores son consumo mensual.<br><br><b>Brecha a partir de</b>: cuándo un cambio cuenta. Con 2 veces, un par UE–renglón está <b>en alza</b> si su consumo se duplicó o más y <b>en baja</b> si cayó a la mitad o menos. <b>Nuevos</b>: no tenían consumo y ahora sí. <b>Cesan</b>: tenían y ahora reportan cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.<br><br><b>Las tarjetas son filtros</b>: haga clic en <i>En alza</i> y los gráficos y las tablas muestran solo esos pares; clic de nuevo o en <i>Pares UE–renglón</i> para ver todo. Con <i>Nuevos</i>, <i>Cesan</i> o <i>Sin reporte</i> uno de los dos periodos vale cero, así que la dispersión se reemplaza por los 20 pares de mayor consumo afectado.<br><br>Con una UE elegida, los gráficos cambian a la vista de esa unidad: su evolución y sus renglones con mayor brecha.'],
  brecha:['Brecha a partir de','Define cuándo un cambio entre los dos periodos se considera una brecha. Con <b>2 veces</b>: está en <b>alza</b> si el consumo se duplicó o más, y en <b>baja</b> si cayó a la mitad o menos. Con 1,5 veces se marcan cambios más pequeños; con 3 veces, solo los muy grandes. <b>Nuevo</b>: no tenía consumo y ahora sí. <b>Cesa</b>: tenía consumo y ahora reporta cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.'],
  kpis:['Las tarjetas','<b>UE que reportan</b>: cuántas unidades enviaron datos en cada periodo. <b>Pares UE–renglón</b>: cada combinación de una unidad y un renglón con consumo. <b>En alza / En baja</b>: pares que cambiaron más que la brecha elegida. <b>Nuevos / Cesan</b>: aparecen o desaparecen. <b>Sin reporte</b>: pares con dato en el primer periodo de unidades que no reportaron el segundo.'],
- evo:['Evolución','Con una UE elegida, muestra el consumo mensual de esa unidad para el renglón en cada periodo. Sin UE, la línea es la suma del consumo mensual de todas las Unidades Ejecutoras en cada periodo; las barras, cuántas lo reportaron. Si la línea baja al mismo tiempo que las barras, faltaron unidades, no bajó el consumo. Los CEDIS no se suman aquí porque lo que distribuyen es reabastecimiento, no consumo de pacientes.'],
+ evo:['Evolución','Un punto blanco con línea punteada es un periodo <b>parcial</b>: lo reportaron menos de la mitad de las unidades, así que su total no es comparable todavía. Con una UE elegida, muestra el consumo mensual de esa unidad para el renglón en cada periodo. Sin UE, la línea es la suma del consumo mensual de todas las Unidades Ejecutoras en cada periodo; las barras, cuántas lo reportaron. Si la línea baja al mismo tiempo que las barras, faltaron unidades, no bajó el consumo. Los CEDIS no se suman aquí porque lo que distribuyen es reabastecimiento, no consumo de pacientes.'],
  dis:['Dispersión','Responde a los filtros: si elige un renglón, muestra ese renglón en cada unidad; si elige una UE, todos los renglones de esa unidad; si no elige nada, todos los pares. Cada punto es una unidad con un renglón: a la izquierda su consumo en el primer periodo elegido, arriba el del segundo. Sobre la diagonal no hubo cambio; mientras más lejos, mayor la brecha. Compara siempre los dos periodos que elija arriba: hoy los dos semestres; cuando haya meses, un mes contra otro o contra un semestre. Haga clic en un punto para analizar ese renglón.'],
  ues:['UE por UE','El consumo mensual del renglón elegido en cada unidad, en los dos periodos. Muestra las 30 unidades con mayor consumo.'],
  heat:['Mapa de calor','Cada fila es una unidad (o un renglón, si eligió una UE) y cada columna un periodo. Cada celda se compara con el último periodo en que hubo dato: rojo si sube, azul si baja; más intenso, mayor cambio. Gris: la unidad no reportó ese periodo. Clic en un encabezado para ordenar.']};
@@ -752,15 +752,21 @@ $('aRen').onkeydown=e=>{const it=[...$('aRenAC').querySelectorAll('.ac-item')];i
  if(e.key==='ArrowDown'){ACI=Math.min(it.length-1,ACI+1);e.preventDefault();}else if(e.key==='ArrowUp'){ACI=Math.max(0,ACI-1);e.preventDefault();}else if(e.key==='Enter'){acElegir(ACI<0?0:ACI);e.preventDefault();return;}else return;
  it.forEach((x,k)=>x.classList.toggle('sel',k===ACI));if(it[ACI])it[ACI].scrollIntoView({block:'nearest'});};
 $('aRef').onclick=()=>{Object.keys(JC).forEach(k=>{if(!/^catalogo|^periodos/.test(k)){delete JC[k];delete JT[k];}});rAna.fresco=true;$('aRef').textContent='Actualizando…';rAna().then(()=>{$('aRef').textContent='Actualizar datos';if(aS==='cob')rCob();});};
-$('aClr').onclick=()=>{$('aRen').value='';SELR='';SELM=false;CF='';$('aCat').value='';if(ME.nacional)$('aUe').value='';pintarAna();};
+$('aClr').onclick=()=>{ANA_AUTO=true;$('aRen').value='';SELR='';SELM=false;CF='';$('aCat').value='';if(ME.nacional)$('aUe').value='';rAna();};
 $('aSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{aS=d.dataset.s;$('aSub').querySelectorAll('div').forEach(x=>x.classList.toggle('active',x===d));$('tAna')._s=null;vistaAna();});
 function clase(a,b,f){if(a===0&&b===0)return 'ESTABLE';if(a===0)return 'NUEVO';if(b===0)return 'CESA';const r=b/a;return r>=f?'ALZA':r<=1/f?'BAJA':'ESTABLE';}
+/* Por defecto se compara el periodo más reciente con consumos oficiales contra el anterior:
+   así lo que se aprueba entra solo al análisis. Si el usuario elige otros periodos, se respetan. */
+let ANA_AUTO=true;
+['aA','aB'].forEach(id=>$(id).addEventListener('change',()=>{ANA_AUTO=false;}));
 async function rAna(){
- const a=$('aA').value,b=$('aB').value;
  $('aK').innerHTML='<div class="cargando">Cargando datos…</div>';
  const fr=rAna.fresco;rAna.fresco=false;
+ if(ANA_AUTO){try{const N=await getJ('nacional.json',fr);if(N){const con=N.P.filter(p=>(N.reportan||{})[p]>0);
+   if(con.length>=2){$('aA').value=con[con.length-2];$('aB').value=con[con.length-1];}else if(con.length===1){$('aB').value=con[0];}}}catch(e){}}
+ const a=$('aA').value,b=$('aB').value;
  try{[NAC,PA,PB]=await Promise.all([getJ('nacional.json',fr),getJ('periodo_'+a+'.json',fr),getJ('periodo_'+b+'.json',fr)]);}catch(e){err(e);return;}
- if(NAC)$('aHora').textContent='datos publicados '+new Date(NAC.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(5,16);
+ if(NAC)$('aHora').innerHTML='datos publicados '+new Date(NAC.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(5,16)+(ANA_AUTO?' · <b>comparando el periodo más reciente con consumos aprobados ('+esc(b)+') contra el anterior ('+esc(a)+')</b>':'');
  if(!NAC||!PA||!PB){$('aK').innerHTML='<div class="warn">Aún no hay datos publicados para el análisis. Un administrador debe pulsar Regenerar JSON en Administración.</div>';return;}
  pintarAna();}
 function paresFiltrados(){
@@ -786,7 +792,7 @@ function vistaAna(){
 const etiquetas={id:'etiquetas',afterDatasetsDraw(ch,args,op){if(!op||!op.on)return;const ctx=ch.ctx;ctx.save();ctx.textAlign='center';
  const mixto=ch.data.datasets.some(d=>d.type==='line')&&ch.data.datasets.some(d=>d.type==='bar');
  ch.data.datasets.forEach((ds,i)=>{const m=ch.getDatasetMeta(i);if(m.hidden||m.data.length>30)return;const esLinea=(ds.type||ch.config.type)==='line';
-  m.data.forEach((el,j)=>{const v=ds.data[j];if(v==null||!isFinite(v)||(v===0&&!esLinea))return;const t=(ds.pref||'')+fmU(v);
+  m.data.forEach((el,j)=>{const v=ds.data[j];if(v==null||!isFinite(v)||(v===0&&!esLinea))return;const t=(ds.pref||'')+fmU(v)+(esLinea&&ch.canvas.id==='chEvo'&&window.__parcial&&window.__parcial[j]?' (parcial)':'');
    if(esLinea){ctx.font='bold 11px Consolas, monospace';const w=ctx.measureText(t).width+8,y=el.y-16;ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(el.x-w/2,y-9,w,15);ctx.strokeStyle='#0C447C';ctx.lineWidth=1;ctx.strokeRect(el.x-w/2,y-9,w,15);ctx.fillStyle='#0C447C';ctx.fillText(t,el.x,y+2);}
    else if(mixto){ctx.font='11px Consolas, monospace';ctx.fillStyle='#34495e';ctx.fillText(t,el.x,el.base-7);}
    else{ctx.font='11px Consolas, monospace';ctx.fillStyle='#333';ctx.fillText(t,el.x,el.y-5);}});});ctx.restore();}};
@@ -805,12 +811,14 @@ function graficos(){
  $('aGLeg').innerHTML='<b>'+esc(cod)+' · '+esc(desc(cod))+'</b>'+(fu?' · <b>'+esc(fu)+'</b>':'')+(CF?' · solo pares <b>'+CFN[CF]+'</b>':'')+' <span class="note">· consumo mensual</span>';
  /* 1. evolución: de la UE si hay una elegida; si no, nacional */
  $('sEvo').textContent=fu?'consumo mensual de la unidad por periodo':'consumo mensual nacional · UE que reportan';
- if(fu){$('tEvo').textContent='Evolución en la UE · '+cod;
+ if(fu){window.__parcial=null;$('tEvo').textContent='Evolución en la UE · '+cod;
   getJ('ue/'+slug(fu)+'.json').then(J=>{if(!J)return;const s=(J.R[cod]||[]);const Ps=J.P;
    chart('chEvo',{type:'line',data:{labels:Ps,datasets:[{label:'Consumo mensual de '+fu,data:s,borderColor:CB,backgroundColor:CB,tension:.2,pointRadius:5,spanGaps:true}]},options:{maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{etiquetas:{on:true}},scales:{y:{beginAtZero:true,grace:'18%',title:{display:true,text:'unidades por mes'}}}}});}).catch(()=>{});}
  else{const n=NAC&&NAC.R[cod];$('tEvo').textContent='Evolución nacional · '+cod;
-  const lbl=NAC.P.map(p=>{const P=PERS.find(x=>x.p===p);return P&&estadoPer(P)==='ABIERTO'?p+' (en curso)':p;}),lin=n?n[0].map((v,i)=>n[1][i]?v:null):[],uec=n?n[1].map(x=>x||null):[];
-  if(n)chart('chEvo',{data:{labels:lbl,datasets:[{type:'line',label:'Consumo mensual nacional',data:lin,spanGaps:false,borderColor:CB,backgroundColor:CB,yAxisID:'y',tension:.2,pointRadius:5},{type:'bar',label:'UE que lo reportan',data:uec,pref:'UE ',backgroundColor:'#c8d9ec',yAxisID:'y2'}]},options:{maintainAspectRatio:false,layout:{padding:{top:26}},plugins:{etiquetas:{on:true}},scales:{y:{beginAtZero:true,grace:'18%',title:{display:true,text:'unidades por mes'}},y2:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'UE que reportan'}}}}});}
+  const maxUe=n?Math.max(...n[1]):0,parcial=n?n[1].map(x=>x>0&&x<maxUe/2):[];window.__parcial=parcial;
+  const lbl=NAC.P.map((p,i)=>{const P=PERS.find(x=>x.p===p);return (P&&estadoPer(P)==='ABIERTO'?p+' (en curso)':p)+(parcial[i]?' · parcial':'');}),lin=n?n[0].map((v,i)=>n[1][i]?v:null):[],uec=n?n[1].map(x=>x||null):[];
+  if(n)chart('chEvo',{data:{labels:lbl,datasets:[{type:'line',label:'Consumo mensual nacional',data:lin,spanGaps:false,
+   segment:{borderDash:c=>parcial[c.p1DataIndex]?[6,5]:undefined},pointStyle:lin.map((v,i)=>parcial[i]?'circle':'circle'),pointBackgroundColor:lin.map((v,i)=>parcial[i]?'#fff':CB),pointBorderColor:CB,pointBorderWidth:2,borderColor:CB,backgroundColor:CB,yAxisID:'y',tension:.2,pointRadius:5},{type:'bar',label:'UE que lo reportan',data:uec,pref:'UE ',backgroundColor:'#c8d9ec',yAxisID:'y2'}]},options:{maintainAspectRatio:false,layout:{padding:{top:26}},plugins:{etiquetas:{on:true}},scales:{y:{beginAtZero:true,grace:'18%',title:{display:true,text:'unidades por mes'}},y2:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'UE que reportan'}}}}});}
  /* 2. dispersión; con Nuevos, Cesan o Sin reporte uno de los dos lados es cero y no cabe en escala logarítmica */
  if(['NUEVO','CESA','SIN_REPORTE'].includes(CF)){topCero(a,b,cod,fu);}else{
  $('sDis').textContent='cada punto es una UE y un renglón · escala logarítmica';
