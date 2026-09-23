@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Registro de Consumos por Unidad Ejecutora · DINALOg</title>
+<title>Registro de Consumos por Unidad Ejecutora · DINALOG</title>
 <link rel="icon" href="icons/icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -203,7 +203,7 @@ td input:disabled{background:#f3f3f3;color:#333}
    <div class="note" id="aGLeg" style="margin:0 0 8px"></div>
    <div class="grid2">
     <div class="panel" id="pEvo"><div class="ph"><span id="tEvo">Evolución nacional del renglón</span><small><span id="sEvo">consumo mensual · UE que reportan</span> <button class="ayuda" data-ayuda="evo">?</button></small></div><div class="pb"><div class="cbox"><canvas id="chEvo"></canvas></div></div></div>
-    <div class="panel" id="pDis"><div class="ph"><span id="tDis">Dispersión</span><small>cada punto es una UE y un renglón · escala logarítmica <button class="ayuda" data-ayuda="dis">?</button></small></div><div class="pb"><div class="cbox"><canvas id="chDis"></canvas></div><div class="note">Sobre la diagonal: sin cambio. Lejos de ella: brecha. Haga clic en un punto para analizar ese renglón.</div></div></div>
+    <div class="panel" id="pDis"><div class="ph"><span id="tDis">Dispersión</span><small><span id="sDis">cada punto es una UE y un renglón · escala logarítmica</span> <button class="ayuda" data-ayuda="dis">?</button></small></div><div class="pb"><div class="cbox"><canvas id="chDis"></canvas></div><div class="note" id="nDis">Sobre la diagonal: sin cambio. Lejos de ella: brecha. Haga clic en un punto para analizar ese renglón.</div></div></div>
    </div>
    <div class="panel" id="pHeat"><div class="ph"><span id="tHeat">Mapa de calor por periodo</span><small>consumo mensual · clic en un encabezado para ordenar <button class="ayuda" data-ayuda="heat">?</button></small></div><div class="pb"><div id="heat"></div></div></div>
    <div class="panel" id="pUes"><div class="ph"><span id="tUes">El renglón UE por UE</span><small>consumo mensual en los dos periodos</small></div><div class="pb"><div class="cbox t"><canvas id="chUes"></canvas></div></div></div>
@@ -262,7 +262,7 @@ const AYUDA={
  reportar:['Cómo reportar','<b>1.</b> Llene la columna <i>Consumo del mes</i> con el consumo mensual de cada renglón, en unidades. Puede escribir en la pantalla, o usar <i>Descargar plantilla</i>, llenarla en su computadora y <i>Subir plantilla llena</i>. <b>2.</b> Si una fila se pone en rojo es porque cambió 3 veces o más frente al último consumo aprobado: escriba el motivo en la última columna. En el paso 2, el botón <i>Ver solo esas filas</i> las reúne. <b>3.</b> Pulse <i>Enviar a validación</i>.<br><br>Deje vacío un renglón para conservar su último valor aprobado; escriba 0 si no hubo consumo. <i>Rellenar con el último consumo aprobado</i> copia los valores anteriores en los vacíos, para que solo cambie lo que varió. La tabla muestra los renglones que su unidad ha consumido; en <i>Mostrar</i> elija <i>Todo el catálogo</i> para reportar uno nuevo. <i>Descartar lo escrito</i>, en la barra de la tabla, borra lo que no ha enviado. Lo que escribe se guarda en su equipo hasta que lo envíe.'],
  plazo:['Plazo de entrega','El P-240 (Rev. 7.0, Medidas de Control VI.B.11, pág. 10) establece que los consumos del mes se remiten en los cinco primeros días del mes siguiente. Pasada esa fecha el sistema sigue recibiendo el reporte, pero queda registrado fuera de plazo en la cobertura.'],
  mostrar:['Qué renglones ver','<b>Los que su unidad consume</b>: los que tienen un consumo aprobado mayor que cero o que ya llenó; es la vista normal para reportar. <b>Todos los de la categoría</b>: el catálogo completo, para reportar un renglón que su unidad empezó a consumir. <b>Ya llenados este mes</b>: para revisar lo que escribió antes de enviar. <b>Por justificar</b>: los que cambiaron mucho y necesitan una explicación. Cambiar la vista no borra nada de lo escrito.'],
- analisis:['Cómo leer este análisis','<b>Compare</b> dos periodos y, si quiere, acote por categoría, UE o renglón. Todos los valores son consumo mensual.<br><br><b>Brecha a partir de</b>: cuándo un cambio cuenta. Con 2 veces, un par UE–renglón está <b>en alza</b> si su consumo se duplicó o más y <b>en baja</b> si cayó a la mitad o menos. <b>Nuevos</b>: no tenían consumo y ahora sí. <b>Cesan</b>: tenían y ahora reportan cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.<br><br><b>Las tarjetas son filtros</b>: haga clic en <i>En alza</i> y los gráficos y las tablas muestran solo esos pares; clic de nuevo o en <i>Pares UE–renglón</i> para ver todo.<br><br>Con una UE elegida, los gráficos cambian a la vista de esa unidad: su evolución y sus renglones con mayor brecha.'],
+ analisis:['Cómo leer este análisis','<b>Compare</b> dos periodos y, si quiere, acote por categoría, UE o renglón. Todos los valores son consumo mensual.<br><br><b>Brecha a partir de</b>: cuándo un cambio cuenta. Con 2 veces, un par UE–renglón está <b>en alza</b> si su consumo se duplicó o más y <b>en baja</b> si cayó a la mitad o menos. <b>Nuevos</b>: no tenían consumo y ahora sí. <b>Cesan</b>: tenían y ahora reportan cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.<br><br><b>Las tarjetas son filtros</b>: haga clic en <i>En alza</i> y los gráficos y las tablas muestran solo esos pares; clic de nuevo o en <i>Pares UE–renglón</i> para ver todo. Con <i>Nuevos</i>, <i>Cesan</i> o <i>Sin reporte</i> uno de los dos periodos vale cero, así que la dispersión se reemplaza por los 20 pares de mayor consumo afectado.<br><br>Con una UE elegida, los gráficos cambian a la vista de esa unidad: su evolución y sus renglones con mayor brecha.'],
  brecha:['Brecha a partir de','Define cuándo un cambio entre los dos periodos se considera una brecha. Con <b>2 veces</b>: está en <b>alza</b> si el consumo se duplicó o más, y en <b>baja</b> si cayó a la mitad o menos. Con 1,5 veces se marcan cambios más pequeños; con 3 veces, solo los muy grandes. <b>Nuevo</b>: no tenía consumo y ahora sí. <b>Cesa</b>: tenía consumo y ahora reporta cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.'],
  kpis:['Las tarjetas','<b>UE que reportan</b>: cuántas unidades enviaron datos en cada periodo. <b>Pares UE–renglón</b>: cada combinación de una unidad y un renglón con consumo. <b>En alza / En baja</b>: pares que cambiaron más que la brecha elegida. <b>Nuevos / Cesan</b>: aparecen o desaparecen. <b>Sin reporte</b>: pares con dato en el primer periodo de unidades que no reportaron el segundo.'],
  evo:['Evolución','Con una UE elegida, muestra el consumo mensual de esa unidad para el renglón en cada periodo. Sin UE, la línea es la suma del consumo mensual de todas las Unidades Ejecutoras en cada periodo; las barras, cuántas lo reportaron. Si la línea baja al mismo tiempo que las barras, faltaron unidades, no bajó el consumo. Los CEDIS no se suman aquí porque lo que distribuyen es reabastecimiento, no consumo de pacientes.'],
@@ -711,10 +711,23 @@ function vistaAna(){
  ['gra','cob'].forEach(s=>$('a-'+s).style.display=aS===s?'':'none');$('a-tab').style.display=['ren','ue','bre'].includes(aS)?'':'none';
  if(aS==='gra')graficos();else if(aS==='cob')rCob();else tablasAna();}
 /* etiquetas de valor sobre las barras cuando hay pocas */
-const etiquetas={id:'etiquetas',afterDatasetsDraw(ch,args,op){if(!op||!op.on)return;const ctx=ch.ctx;ctx.save();ctx.font='11px Consolas, monospace';ctx.fillStyle='#333';ctx.textAlign='center';
- ch.data.datasets.forEach((ds,i)=>{const m=ch.getDatasetMeta(i);if(m.hidden||(ds.type&&ds.type!=='bar'&&ch.config.type!=='bar'&&ds.type!=='line'))return;if(m.data.length>30)return;
-  m.data.forEach((el,j)=>{const v=ds.data[j];if(v==null||!isFinite(v)||v===0)return;ctx.fillText(fmU(v),el.x,el.y-5);});});ctx.restore();}};
+const etiquetas={id:'etiquetas',afterDatasetsDraw(ch,args,op){if(!op||!op.on)return;const ctx=ch.ctx;ctx.save();ctx.textAlign='center';
+ const mixto=ch.data.datasets.some(d=>d.type==='line')&&ch.data.datasets.some(d=>d.type==='bar');
+ ch.data.datasets.forEach((ds,i)=>{const m=ch.getDatasetMeta(i);if(m.hidden||m.data.length>30)return;const esLinea=(ds.type||ch.config.type)==='line';
+  m.data.forEach((el,j)=>{const v=ds.data[j];if(v==null||!isFinite(v)||(v===0&&!esLinea))return;const t=(ds.pref||'')+fmU(v);
+   if(esLinea){ctx.font='bold 11px Consolas, monospace';const w=ctx.measureText(t).width+8,y=el.y-16;ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(el.x-w/2,y-9,w,15);ctx.strokeStyle='#0C447C';ctx.lineWidth=1;ctx.strokeRect(el.x-w/2,y-9,w,15);ctx.fillStyle='#0C447C';ctx.fillText(t,el.x,y+2);}
+   else if(mixto){ctx.font='11px Consolas, monospace';ctx.fillStyle='#34495e';ctx.fillText(t,el.x,el.base-7);}
+   else{ctx.font='11px Consolas, monospace';ctx.fillStyle='#333';ctx.fillText(t,el.x,el.y-5);}});});ctx.restore();}};
 if(window.Chart)Chart.register(etiquetas);
+function topCero(a,b,cod,fu){
+ const nuevo=CF==='NUEVO',v=x=>nuevo?x.b:x.a;
+ const rows=(SELM?PAR.filter(x=>x.cod===cod):PAR).slice().sort((x,y)=>v(y)-v(x)).slice(0,20);
+ $('sDis').textContent='los 20 pares más grandes · clic para analizar';
+ $('tDis').textContent=({NUEVO:'Nuevos: mayor consumo que aparece en '+b,CESA:'Cesan: mayor consumo que pasa a cero en '+b,SIN_REPORTE:'Sin reporte: mayor consumo sin dato en '+b})[CF]+(fu?' · '+fu:'');
+ $('nDis').textContent=({NUEVO:'Pares UE–renglón que no tenían consumo en '+a+' y ahora sí. Lo que importa es el tamaño: un renglón nuevo grande puede requerir asignación que antes no tenía.',CESA:'Pares que tenían consumo en '+a+' y la UE reportó cero en '+b+'. Confirme si el renglón dejó de usarse o si fue un error de reporte: al publicar, la UE deja de recibir asignación de ese renglón.',SIN_REPORTE:'Pares con consumo en '+a+' de unidades que no enviaron '+b+'. El Motor sigue usando su último valor aprobado hasta que reporten.'})[CF]+' Clic en una barra para analizar ese renglón.';
+ chart('chDis',{type:'bar',data:{labels:rows.map(x=>(fu?'':x.ue.slice(0,22)+' · ')+x.cod),datasets:[{label:'Consumo mensual '+(nuevo?b:a),data:rows.map(v),backgroundColor:({NUEVO:'#2e7d32',CESA:'#6d4c41',SIN_REPORTE:'#e0a800'})[CF]}]},
+  options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:c=>{const r=rows[c[0].dataIndex];return r.ue;},label:c=>{const r=rows[c[0].dataIndex];return [r.cod+' '+r.des.slice(0,50),fmU(r.a)+' → '+(CF==='SIN_REPORTE'?'sin reporte':fmU(r.b))];}}}},scales:{x:{title:{display:true,text:'unidades por mes'}},y:{ticks:{autoSkip:false,font:{size:10}}}},
+   onClick:(e,el)=>{if(!el.length)return;const r=rows[el[0].index];SELR=r.cod;SELM=true;$('aRen').value=r.cod+' · '+r.des;graficos();}}});}
 function graficos(){
  const a=PA.p,b=PB.p,cod=SELR,fu=$('aUe').value;
  $('aGLeg').innerHTML='<b>'+esc(cod)+' · '+esc(desc(cod))+'</b>'+(fu?' · <b>'+esc(fu)+'</b>':'')+(CF?' · solo pares <b>'+CFN[CF]+'</b>':'')+' <span class="note">· consumo mensual</span>';
@@ -722,10 +735,14 @@ function graficos(){
  $('sEvo').textContent=fu?'consumo mensual de la unidad por periodo':'consumo mensual nacional · UE que reportan';
  if(fu){$('tEvo').textContent='Evolución en la UE · '+cod;
   getJ('ue/'+slug(fu)+'.json').then(J=>{if(!J)return;const s=(J.R[cod]||[]);const Ps=J.P;
-   chart('chEvo',{type:'line',data:{labels:Ps,datasets:[{label:'Consumo mensual de '+fu,data:s,borderColor:CB,backgroundColor:CB,tension:.2,pointRadius:5,spanGaps:true}]},options:{maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{etiquetas:{on:true}},scales:{y:{beginAtZero:true,title:{display:true,text:'unidades por mes'}}}}});}).catch(()=>{});}
+   chart('chEvo',{type:'line',data:{labels:Ps,datasets:[{label:'Consumo mensual de '+fu,data:s,borderColor:CB,backgroundColor:CB,tension:.2,pointRadius:5,spanGaps:true}]},options:{maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{etiquetas:{on:true}},scales:{y:{beginAtZero:true,grace:'18%',title:{display:true,text:'unidades por mes'}}}}});}).catch(()=>{});}
  else{const n=NAC&&NAC.R[cod];$('tEvo').textContent='Evolución nacional · '+cod;
-  if(n)chart('chEvo',{data:{labels:NAC.P,datasets:[{type:'line',label:'Consumo mensual nacional',data:n[0],borderColor:CB,backgroundColor:CB,yAxisID:'y',tension:.2,pointRadius:5},{type:'bar',label:'UE que lo reportan',data:n[1],backgroundColor:'#c8d9ec',yAxisID:'y2'}]},options:{maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{etiquetas:{on:true}},scales:{y:{beginAtZero:true,title:{display:true,text:'unidades por mes'}},y2:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'UE que reportan'}}}}});}
- /* 2. dispersión */
+  const lbl=NAC.P.map(p=>{const P=PERS.find(x=>x.p===p);return P&&estadoPer(P)==='ABIERTO'?p+' (en curso)':p;}),lin=n?n[0].map((v,i)=>n[1][i]?v:null):[],uec=n?n[1].map(x=>x||null):[];
+  if(n)chart('chEvo',{data:{labels:lbl,datasets:[{type:'line',label:'Consumo mensual nacional',data:lin,spanGaps:false,borderColor:CB,backgroundColor:CB,yAxisID:'y',tension:.2,pointRadius:5},{type:'bar',label:'UE que lo reportan',data:uec,pref:'UE ',backgroundColor:'#c8d9ec',yAxisID:'y2'}]},options:{maintainAspectRatio:false,layout:{padding:{top:26}},plugins:{etiquetas:{on:true}},scales:{y:{beginAtZero:true,grace:'18%',title:{display:true,text:'unidades por mes'}},y2:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'UE que reportan'}}}}});}
+ /* 2. dispersión; con Nuevos, Cesan o Sin reporte uno de los dos lados es cero y no cabe en escala logarítmica */
+ if(['NUEVO','CESA','SIN_REPORTE'].includes(CF)){topCero(a,b,cod,fu);}else{
+ $('sDis').textContent='cada punto es una UE y un renglón · escala logarítmica';
+ $('nDis').textContent='Sobre la diagonal: sin cambio. Lejos de ella: brecha. Haga clic en un punto para analizar ese renglón.';
  const col={ALZA:'#b3261e',BAJA:'#1E5A9E',NUEVO:'#2e7d32',CESA:'#6d4c41',ESTABLE:'#9a9a9a',SIN_REPORTE:'#e0a800'};
  const pts=(SELM?PAR.filter(x=>x.cod===cod):PAR).filter(x=>x.a>0&&x.b>0).slice(0,6000),poco=pts.length<=40;
  $('tDis').textContent='Dispersión: '+a+' contra '+b+(SELM?' · '+cod:'')+(fu?' · '+fu:'')+(CF?' · '+CFN[CF]:'');
@@ -734,6 +751,7 @@ function graficos(){
  chart('chDis',{type:'scatter',data:{datasets:Object.keys(grupos).map(k=>({label:k.replace('_',' '),data:grupos[k],backgroundColor:col[k],pointRadius:poco?7:(k==='ESTABLE'?2:3),pointHoverRadius:9})).concat([{type:'line',label:'Sin cambio',data:[{x:0.1,y:0.1},{x:mx*1.2,y:mx*1.2}],borderColor:'#888',borderDash:[4,4],pointRadius:0}])},
   options:{maintainAspectRatio:false,scales:{x:{type:'logarithmic',title:{display:true,text:'Consumo mensual '+a}},y:{type:'logarithmic',title:{display:true,text:'Consumo mensual '+b}}},plugins:{tooltip:{callbacks:{label:c=>{const r=c.raw.r;return r?[r.ue,r.cod+' '+r.des.slice(0,40),fmU(r.a)+' → '+fmU(r.b)+' ('+pct(r.dp)+')']:'';}}}},
    onClick:(e,el)=>{if(!el.length)return;const r=CH.chDis.data.datasets[el[0].datasetIndex].data[el[0].index].r;if(!r)return;SELR=r.cod;SELM=true;$('aRen').value=r.cod+' · '+r.des;graficos();}}});
+ }
  /* 3. con UE: sus renglones con mayor brecha; sin UE: el renglón UE por UE */
  let rows,lab,tip;
  if(fu){rows=PAR.slice().sort((x,y)=>{const f=r=>r.a>0&&r.b>0?Math.abs(Math.log(r.b/r.a)):99+Math.max(r.a,r.b)/1e9;return f(y)-f(x);}).slice(0,25);
@@ -769,7 +787,7 @@ async function heatmap(){
   if(!reporto(f,p))return '<td class="h" style="background:#f3f3f3;color:#888" title="La UE no reportó en '+esc(p)+'">sin reporte</td>';
   const v=f.v[p];if(v==null)return '<td class="h" style="color:#888" title="No incluido en el envío: conserva su último valor">·</td>';
   const q=ps.slice(0,i).reverse().find(x=>reporto(f,x)&&f.v[x]!=null);const prev=q?f.v[q]:null;
-  return '<td class="h" style="background:'+(prev!=null?color(prev,v):'#fff')+'" title="'+esc(p)+(prev!=null?' · Δ '+pct(prev?(v-prev)/prev:null)+' contra '+q:'')+'">'+fmU(v)+'</td>';}).join('')+'<td class="h">'+(f.s?'×'+fmt(f.s+1,1):'—')+'</td></tr>';});
+  return '<td class="h" style="background:'+(prev!=null?color(prev,v):'#fff')+'" title="'+esc(p)+(prev!=null?' · Δ '+pct(prev?(v-prev)/prev:null)+' contra '+q:'')+'">'+fmU(v)+'</td>';}).join('')+'<td class="h">'+(f.s>1?'×'+fmt(f.s,1):'—')+'</td></tr>';});
  h+='</tbody></table></div><div class="note" style="margin-top:6px">Cada celda se compara con el último periodo en que hubo dato. Rojo: sube. Azul: baja. Más intenso, mayor variación. Verde: aparece por primera vez. Gris: la UE no reportó ese periodo. Se muestran las 40 filas con mayor variación.</div>';
  $('heat').innerHTML=filas.length?h:'<div class="cargando">Sin datos para esta selección.</div>';
  $('heat').querySelectorAll('th[data-h]').forEach(th=>th.onclick=()=>{const k=th.dataset.h;if(HS.k===k)HS.d*=-1;else{HS.k=k;HS.d=k==='_l'?1:-1;}heatmap();});}
