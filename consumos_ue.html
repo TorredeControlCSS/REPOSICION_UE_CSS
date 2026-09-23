@@ -43,7 +43,7 @@ button.ok:hover{background:#1b5e20}
 .kpis.sm .kpi{padding:5px 9px}.kpis.sm .kpi .v{font-size:17px;margin-top:0}.kpis.sm .kpi .l{font-size:11.5px}.kpis.sm .kpi .d{font-size:10.5px;margin-top:0}
 .kpi.clk{cursor:pointer}.kpi.clk:hover{filter:brightness(.97)}.kpi.act{outline:2px solid #0C447C;outline-offset:-2px}
 .rep-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;font-size:14px}
-.stepper{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px}@media(max-width:1000px){.stepper{grid-template-columns:1fr}}
+.stepper{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:10px}@media(max-width:1000px){.stepper{grid-template-columns:1fr}}
 .step{background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 11px}
 .st-t{font-weight:700;color:#0C447C;font-size:13.5px;margin-bottom:4px}
 .st-t b{display:inline-block;width:21px;height:21px;border-radius:50%;background:#0C447C;color:#fff;text-align:center;line-height:21px;font-size:11.5px;margin-right:7px}
@@ -57,6 +57,8 @@ button.ok:hover{background:#1b5e20}
 button.flagbtn{background:#fdecea;border-color:#e6a39e;color:#8c1d16;font-weight:700}
 button.big{font-size:15px;padding:10px 24px;font-weight:700}
 button.b-up{background:#c25e00;color:#fff;border-color:#c25e00;font-weight:700;padding:8px 18px;font-size:14px}button.b-up:hover{background:#9c4b00}
+.filebtn{display:flex;align-items:center;gap:10px;cursor:pointer;border:1px dashed #c3d2e4;padding:10px;background:#f4f7fb}
+.fb{display:inline-block;background:#c25e00;color:#fff;font-weight:700;padding:7px 16px}
 .sep{width:1px;height:28px;background:#c3d2e4;margin:0 6px}
 .pasos{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0 4px;font-size:12.5px;color:#34495e}
 .pasos b{display:inline-block;width:20px;height:20px;border-radius:50%;background:#0C447C;color:#fff;text-align:center;line-height:20px;font-size:11px;margin-right:5px}
@@ -162,8 +164,7 @@ td input:disabled{background:#f3f3f3;color:#333}
    <div class="stepper" id="cSteps">
     <div class="step"><div class="st-t"><b>1</b>Llene el consumo del mes</div>
      <div class="st-d">Escriba en la tabla de abajo o, si prefiere trabajar en Excel, descargue la plantilla, llénela y súbala.</div>
-     <div class="st-a"><button class="b-cl" id="cTpl">Descargar plantilla</button><button class="b-up" id="cUp">Subir plantilla llena</button></div>
-     <div class="st-a"><button class="b-cl" id="cCopy" title="Copia el último consumo aprobado en los renglones vacíos">Rellenar con el último consumo aprobado</button></div></div>
+     <div class="st-a"><button class="b-up" id="cUp">Subir plantilla llena</button><button class="b-cl" id="cTpl">Descargar plantilla</button><button class="b-cl" id="cCopy" title="Copia el último consumo aprobado en los renglones vacíos">Rellenar con el último consumo aprobado</button></div></div>
     <div class="step"><div class="st-t"><b>2</b>Justifique los cambios grandes</div><div class="st-d" id="cJus"></div></div>
     <div class="step"><div class="st-t"><b>3</b>Envíe a Planificación</div><div class="st-d" id="cRes"></div><div class="st-a"><button class="ok big" id="cSend" disabled>Enviar a validación</button></div></div>
    </div>
@@ -311,7 +312,7 @@ async function postJson(body){
  throw new Error('El servidor no confirmó el envío. Revise el historial antes de reintentar.');
 }
 function err(e){toast(e.message||String(e),6000);}
-function sesionVencida(){TOKEN='';ss.del('cons_tok');ME=null;$('scrApp').style.display='none';$('scrLogin').style.display='';$('who').innerHTML='';toast('Su sesión venció. Ingrese de nuevo.');}
+function sesionVencida(msg){TOKEN='';ss.del('cons_tok');ME=null;cerrarModal();$('scrApp').style.display='none';$('scrLogin').style.display='';$('who').innerHTML='';toast(msg||'Su sesión venció. Ingrese de nuevo.');}
 
 /* ---------- tabla ordenable ---------- */
 function table(el,cols,rows,opt={}){
@@ -412,7 +413,7 @@ $('lgBtn').onclick=async()=>{const b=$('lgBtn');b.disabled=true;
 function pedirCambioPin(){
  modal('Cambio de PIN obligatorio','<div class="note">Está usando un PIN temporal. Defina un PIN nuevo de 4 a 6 dígitos. Se guarda cifrado; nadie, ni el administrador, puede verlo.</div><label>PIN nuevo</label><input id="p1" type="password" maxlength="6" inputmode="numeric"><label>Repetir PIN</label><input id="p2" type="password" maxlength="6" inputmode="numeric"><button class="pri" id="pinOk">Guardar e ingresar</button>',
  ()=>{$('mX').style.display='none';$('pinOk').onclick=async()=>{try{const r=await jsonp({accion:'cambiar_pin',pin:$('p1').value.trim(),pin2:$('p2').value.trim()});cerrarModal();toast('PIN actualizado');await entrar(r.sesion);}catch(e){err(e);}};});}
-$('lnkOlv').onclick=()=>modal('Olvidé mi PIN','<div class="note">Comuníquese con la Dirección Nacional de Logística. Un administrador restablecerá su PIN y le entregará uno temporal; el sistema le pedirá cambiarlo al ingresar. El restablecimiento queda en la bitácora.</div>');
+$('lnkOlv').onclick=()=>modal('Olvidé mi PIN','<div class="note" style="font-size:13px">Comuníquese con la Dirección Nacional de Logística. Un administrador restablece su PIN desde esta misma pantalla (Administración › Usuarios › Restablecer PIN) y le entrega un PIN temporal; al ingresar, el sistema le pedirá cambiarlo. El restablecimiento queda en la bitácora.</div>');
 $('lnkSol').onclick=async()=>{
  let U=[];try{const c=await getJ('catalogo.json');U=c?c.U.map(u=>u[0]):(await jsonp({accion:'ues_publico'})).ues;}catch(e){err(e);return;}
  modal('Solicitar acceso','<div class="note">Solicite acceso como CARGA (reporta el consumo de su UE) o LECTURA (consulta). Los roles de validación, aprobación y administración los asigna un administrador.</div>'+
@@ -428,7 +429,7 @@ $('lnkSol').onclick=async()=>{
 async function entrar(s){
  ME=s;$('scrLogin').style.display='none';$('scrApp').style.display='';
  $('who').innerHTML='<b>'+esc(s.nombre)+'</b><br>'+esc(s.roles.join(' · '))+(s.cats.length?' · '+esc(s.cats.join(',')):'')+'<br><span class="lnk" style="color:#d6e2f0" id="out">Salir</span>';
- $('out').onclick=async()=>{try{await jsonp({accion:'salir'},{reintentos:0});}catch(e){}sesionVencida();};
+ $('out').onclick=()=>{const t=TOKEN;jsonp({accion:'salir',token:t},{reintentos:0,timeout:15000}).catch(()=>{});sesionVencida('Sesión cerrada.');};
  try{await cargarBase();}catch(e){err(e);return;}
  const T=[];
  if(tiene('CARGA'))T.push(['rep','1 · Reportar']);
@@ -540,13 +541,13 @@ $('cTpl').onclick=()=>{
  XLSX.utils.book_append_sheet(wb,ws,'CONSUMO');
  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['UNIDAD_EJECUTORA',C.ue],['PERIODO',C.per],['CATEGORIA',C.cat],['INSTRUCCIONES','Llene solo CONSUMO_DEL_MES (consumo mensual en unidades del renglón) y JUSTIFICACION cuando la variación sea de '+UMBRAL+' veces o más. Vacío = conserva el último valor aprobado. 0 = no hubo consumo. No cambie los códigos ni esta hoja: el sistema la usa para comprobar que la plantilla es de esta unidad, este periodo y esta categoría. Los renglones que su unidad consume están primero.']]),'DATOS');
  XLSX.writeFile(wb,'PLANTILLA_CONSUMO_'+C.per+'_'+C.cat+'_'+slug(C.ue).slice(0,30)+'.xlsx');};
-$('cUp').onclick=()=>modal('Subir plantilla llena','<div class="note" style="font-size:13px">Suba la plantilla que descargó de este sistema para <b>'+esc(C.ue)+'</b> · <b>'+C.cat+'</b> · <b>'+C.per+'</b>, ya llena. Antes de aplicar verá qué renglones se reconocieron. Si aún no la tiene, ciérrela y use <i>Descargar plantilla Excel</i>.</div><input type="file" id="upF" accept=".xlsx"><div id="upR"></div>',()=>$('upF').onchange=()=>leerExcel($('upF').files[0]));
+$('cUp').onclick=()=>modal('Subir plantilla llena','<div class="note" style="font-size:13px">Suba la plantilla que descargó de este sistema para <b>'+esc(C.ue)+'</b> · <b>'+C.cat+'</b> · <b>'+C.per+'</b>, ya llena. Antes de aplicar verá qué renglones se reconocieron. Si aún no la tiene, ciérrela y use <i>Descargar plantilla</i>.</div><label class="filebtn"><input type="file" id="upF" accept=".xlsx" style="display:none"><span class="b-up fb">Elegir archivo</span> <span id="upN" class="note">Ningún archivo elegido</span></label><div id="upR"></div>',()=>$('upF').onchange=()=>{const x=$('upF').files[0];$('upN').textContent=x?x.name:'Ningún archivo elegido';leerExcel(x);});
 function leerExcel(f){
  if(!f)return;if(!window.XLSX){toast('No se pudo cargar el componente de Excel.');return;}if(f.size>5*1024*1024){toast('El archivo supera 5 MB.');return;}
  const rd=new FileReader();rd.onload=()=>{
   let wb;try{wb=XLSX.read(new Uint8Array(rd.result),{type:'array'});}catch(e){toast('No se pudo leer el archivo.');return;}
   const mal=m=>{$('upR').innerHTML='<div class="warn">'+m+'</div>';};
-  if(!wb.Sheets.CONSUMO||!wb.Sheets.DATOS)return mal('Este archivo no es la plantilla del sistema. Descargue la plantilla con el botón <i>Descargar plantilla Excel</i>, llénela y súbala.');
+  if(!wb.Sheets.CONSUMO||!wb.Sheets.DATOS)return mal('Este archivo no es la plantilla del sistema. Descargue la plantilla con el botón <i>Descargar plantilla</i>, llénela y súbala.');
   const dat={};XLSX.utils.sheet_to_json(wb.Sheets.DATOS,{header:1,defval:''}).forEach(r=>dat[String(r[0]).trim()]=String(r[1]).trim());
   if(dat.UNIDAD_EJECUTORA!==C.ue||dat.PERIODO!==C.per||dat.CATEGORIA!==C.cat)return mal('Esta plantilla es de <b>'+esc(dat.UNIDAD_EJECUTORA||'?')+' · '+esc(dat.CATEGORIA||'?')+' · '+esc(dat.PERIODO||'?')+'</b>, no de '+esc(C.ue)+' · '+C.cat+' · '+C.per+'. Elija esa unidad, categoría y periodo arriba, o descargue la plantilla correcta.');
   const aoa=XLSX.utils.sheet_to_json(wb.Sheets.CONSUMO,{header:1,defval:''});const h=(aoa[0]||[]).map(x=>String(x).trim().toUpperCase());
