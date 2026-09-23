@@ -42,6 +42,8 @@ button.ok:hover{background:#1b5e20}
 .kpis.sm{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-bottom:8px}
 .kpis.sm .kpi{padding:5px 9px}.kpis.sm .kpi .v{font-size:17px;margin-top:0}.kpis.sm .kpi .l{font-size:11.5px}.kpis.sm .kpi .d{font-size:10.5px;margin-top:0}
 .kpi.clk{cursor:pointer}.kpi.clk:hover{filter:brightness(.97)}.kpi.act{outline:2px solid #0C447C;outline-offset:-2px}
+.rev-acc{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 12px;margin-bottom:10px}
+.rev-acc button{font-size:14px;padding:8px 18px;font-weight:700}
 .rep-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;font-size:14px}
 .stepper{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:10px}@media(max-width:1000px){.stepper{grid-template-columns:1fr}}
 .step{background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 11px}
@@ -183,10 +185,10 @@ td input:disabled{background:#f3f3f3;color:#333}
   <div class="ctrl"><label>Periodo</label><select id="rPer"></select><label>Categoría</label><select id="rCat"></select><label>UE</label><select id="rUe" style="max-width:360px"><option value="">Todas</option></select><button id="rRef">Actualizar</button></div>
   <div class="panel"><div class="ph"><span id="rTit"></span><small id="rCnt"></small></div><div class="pb"><div id="tRev"></div></div></div>
   <div class="panel" id="rDet" style="display:none"><div class="ph"><span id="rDetT"></span><small id="rDetS"></small></div><div class="pb">
+   <div class="rev-acc"><div><b>Su decisión sobre este envío</b><div class="note" id="rSeg"></div></div><span id="rAcc"></span></div>
    <div id="rInfo"></div>
    <div class="ctrl"><input id="rQ" placeholder="Filtrar renglón" style="width:240px"><label><input type="checkbox" id="rOnly"> Solo variaciones marcadas</label></div>
-   <div id="tRDet"></div>
-   <div class="foot"><span class="note" id="rSeg"></span><span id="rAcc"></span></div></div></div>
+   <div id="tRDet"></div></div></div>
  </div>
 
  <!-- 3 · ANÁLISIS -->
@@ -605,7 +607,7 @@ function descargarEnvio(r){const e=r.envio;
  xls(e.id+'_'+slug(e.ue).slice(0,30),cols,rows,e.cat+' '+e.per,{titulo:'Envío '+e.id+' · '+e.ue,meta:[['Unidad Ejecutora',e.ue],['Categoría y periodo',CATN[e.cat]+' · '+e.per],['Estado',e.e+' · versión '+e.ver],['Cargado por',e.cpor+' · '+e.fc],['Validado por',(e.vpor||'—')+(e.fv?' · '+e.fv:'')],['Aprobado por',(e.apor||'—')+(e.fa?' · '+e.fa:'')]].concat(e.obs&&e.e!=='HISTORICO'?[['Observación',e.obs]]:[]),color:r=>r.dp!==''&&r.prev!=null&&marcado(r.prev,r.v)?XFILL.FLAG:null});}
 function colsDet(e){return e.e==='HISTORICO'
  ?[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'v',l:'Consumo mensual',t:'n',f:fmU}]
- :[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'prev',l:'Último aprobado al enviar',t:'n',f:(v,r)=>fmU(v)+(r.pp?' <span class="note">'+esc(r.pp)+'</span>':'')},{k:'v',l:'Reportado '+e.per,t:'n',f:fmU},{k:'dp',l:'Δ %',t:'n',f:v=>pct(v)},{k:'j',l:'Justificación de la UE'}];}
+ :[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'prev',l:'Último consumo aprobado',t:'n',f:fmU},{k:'pp',l:'Periodo del dato'},{k:'v',l:'Reportado '+e.per,t:'n',f:fmU},{k:'dp',l:'Δ %',t:'n',f:v=>pct(v)},{k:'j',l:'Justificación de la UE'}];}
 function infoEnv(r){const e=r.envio;
  return '<table style="margin-bottom:8px"><tbody>'+
  '<tr><td style="width:18%;font-weight:700">Cargado por</td><td>'+esc(e.cpor)+' · '+esc(e.fc)+'</td><td style="width:18%;font-weight:700">Canal</td><td>'+
@@ -649,7 +651,7 @@ function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.tri
  if(canV)acc+='<button class="bad" id="aObs">Observar</button> <button class="ok" id="aVal"'+(segV?' disabled':'')+'>Validar</button> ';
  if(canA)acc+='<button class="bad" id="aDev">Devolver</button> <button class="ok" id="aApr"'+(segA?' disabled':'')+'>Aprobar</button>';
  $('rAcc').innerHTML=acc||'<span class="note">Sin acciones para su rol en este estado.</span>';
- $('rSeg').innerHTML=segA?'<span style="color:#b3261e">Usted validó o cargó este envío; otra persona debe aprobarlo (segregación de funciones).</span>':segV?'<span style="color:#b3261e">Usted cargó este envío; otra persona debe validarlo.</span>':(e.vpor?'Validado por '+esc(e.vpor)+'.':'');
+ $('rSeg').innerHTML=segA?'<span style="color:#b3261e">Usted validó o cargó este envío; otra persona debe aprobarlo (segregación de funciones).</span>':segV?'<span style="color:#b3261e">Usted cargó este envío; otra persona debe validarlo.</span>':(e.vpor?'Validado por '+esc(e.vpor)+'. ':'')+(acc?'Revise el detalle de abajo y firme aquí.':'');
  const act=(op,titulo,req)=>modal(titulo+' '+e.id,'<label>'+(req?'Comentario (obligatorio, lo verá '+(op==='OBSERVAR'?'la UE':'el validador')+')':'Comentario (opcional)')+'</label><textarea rows="3" id="cm" style="width:100%" maxlength="500"></textarea><button class="pri" id="cmOk">'+titulo+'</button>',
   ()=>$('cmOk').onclick=async()=>{const c=$('cm').value.trim();if(req&&!c){toast('El comentario es obligatorio');return;}
    $('cmOk').disabled=true;$('cmOk').textContent='Guardando…';
