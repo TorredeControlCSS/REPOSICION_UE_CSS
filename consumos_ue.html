@@ -42,6 +42,13 @@ button.ok:hover{background:#1b5e20}
 .kpis.sm{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-bottom:8px}
 .kpis.sm .kpi{padding:5px 9px}.kpis.sm .kpi .v{font-size:17px;margin-top:0}.kpis.sm .kpi .l{font-size:11.5px}.kpis.sm .kpi .d{font-size:10.5px;margin-top:0}
 .kpi.clk{cursor:pointer}.kpi.clk:hover{filter:brightness(.97)}.kpi.act{outline:2px solid #0C447C;outline-offset:-2px}
+.rep-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;font-size:14px}
+.stepper{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px}@media(max-width:1000px){.stepper{grid-template-columns:1fr}}
+.step{background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 11px}
+.st-t{font-weight:700;color:#0C447C;font-size:13.5px;margin-bottom:4px}
+.st-t b{display:inline-block;width:21px;height:21px;border-radius:50%;background:#0C447C;color:#fff;text-align:center;line-height:21px;font-size:11.5px;margin-right:7px}
+.st-d{font-size:12.5px;color:#34495e;line-height:1.45;margin-bottom:6px}
+.st-a{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
 .rep-bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:8px 10px}
 .rep-est{flex:1 1 280px;font-size:13px;line-height:1.5}
 .rep-tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -150,20 +157,20 @@ td input:disabled{background:#f3f3f3;color:#333}
   <div class="ctrl"><label>Periodo</label><select id="cPer"></select><span id="cPerInfo" class="note"></span>
    <span id="cUeBox"><label>Unidad Ejecutora</label> <select id="cUe" style="max-width:420px"></select></span>
    <span class="chips" id="cCat" style="margin-left:6px"></span></div>
-  <div class="panel" id="cCab"><div class="pb rep-bar">
-   <div class="rep-est" id="cEstado"></div>
-   <div class="rep-tools" id="cTools">
-    <button class="b-up" id="cUp">Subir plantilla llena</button>
-    <button class="b-cl" id="cTpl">Descargar plantilla</button>
-    <button class="b-cl" id="cCopy">Rellenar con el último consumo aprobado</button>
-    <button class="bad" id="cClr">Descartar lo escrito</button>
+  <div class="panel" id="cCab"><div class="pb">
+   <div class="rep-head"><div id="cEstado"></div><span class="lnk" id="cInstr">Ver instrucciones completas</span></div>
+   <div class="stepper" id="cSteps">
+    <div class="step"><div class="st-t"><b>1</b>Llene el consumo del mes</div>
+     <div class="st-d">Escriba en la tabla de abajo o, si prefiere trabajar en Excel, descargue la plantilla, llénela y súbala.</div>
+     <div class="st-a"><button class="b-cl" id="cTpl">Descargar plantilla</button><button class="b-up" id="cUp">Subir plantilla llena</button></div>
+     <div class="st-a"><button class="b-cl" id="cCopy" title="Copia el último consumo aprobado en los renglones vacíos">Rellenar con el último consumo aprobado</button></div></div>
+    <div class="step"><div class="st-t"><b>2</b>Justifique los cambios grandes</div><div class="st-d" id="cJus"></div></div>
+    <div class="step"><div class="st-t"><b>3</b>Envíe a Planificación</div><div class="st-d" id="cRes"></div><div class="st-a"><button class="ok big" id="cSend" disabled>Enviar a validación</button></div></div>
    </div>
-   <div class="rep-send"><button class="ok big" id="cSend" disabled>Enviar a validación</button><div class="note" id="cRes"></div></div>
   </div></div>
   <div class="ctrl" id="cVisBox"><input id="cQ" placeholder="Buscar código o descripción" style="width:280px">
-   <label class="note" style="cursor:pointer"><input type="checkbox" id="cTodo"> Ver todo el catálogo de la categoría <span id="cTodoN"></span></label>
-   <span id="cFlag"></span><span style="flex:1"></span><button class="ayuda" data-ayuda="reportar" title="Cómo reportar">?</button></div>
-  <div class="panel" id="cPanel"><div class="ph"><span id="cTit"></span><small>consumo mensual en unidades del renglón · <span id="cDraft"></span></small></div><div class="pb"><div id="tCarga"><div class="cargando">Cargando…</div></div></div></div>
+   <label>Mostrar</label><select id="cVisSel"><option value="prev">Renglones que su unidad ha consumido</option><option value="all">Todo el catálogo de la categoría</option><option value="flag">Solo los que necesitan justificación</option></select></div>
+  <div class="panel" id="cPanel"><div class="ph"><span id="cTit"></span><small>consumo mensual en unidades del renglón · <span id="cDraft"></span> <button class="bad" id="cClr" style="padding:2px 8px;margin-left:8px">Descartar lo escrito</button></small></div><div class="pb"><div id="tCarga"><div class="cargando">Cargando…</div></div></div></div>
   <div class="panel" id="hPanel"><div class="ph">Historial de envíos de la unidad <small>clic en un envío para ver lo que se cargó</small></div><div class="pb"><div id="tHist"></div></div></div>
   <div class="panel" id="hDet" style="display:none"><div class="ph"><span id="hT"></span><small>consumo mensual</small></div><div class="pb"><div id="hInfo"></div><div id="tHDet"></div></div></div>
  </div>
@@ -250,7 +257,7 @@ function cerrarModal(){$('mb').classList.remove('show');$('mX').style.display=''
 $('mX').onclick=cerrarModal;
 const CATN={MED:'Medicamentos',MQ:'Material quirúrgico',LAB:'Laboratorio y radiología'};
 const AYUDA={
- reportar:['Cómo reportar','<b>1.</b> Llene la columna <i>Consumo del mes</i> con el consumo mensual de cada renglón, en unidades. Puede escribir en la pantalla, o usar <i>Descargar plantilla</i>, llenarla en su computadora y <i>Subir plantilla llena</i>. <b>2.</b> Si una fila se pone en rojo es porque cambió 3 veces o más frente al último consumo aprobado: escriba el motivo en la última columna. El botón rojo sobre la tabla le muestra solo esas filas. <b>3.</b> Pulse <i>Enviar a validación</i>.<br><br>Deje vacío un renglón para conservar su último valor aprobado; escriba 0 si no hubo consumo. <i>Rellenar con el último consumo aprobado</i> copia los valores anteriores en los vacíos, para que solo cambie lo que varió. La tabla muestra los renglones que su unidad consume; marque <i>Ver todo el catálogo</i> para reportar uno nuevo. Lo que escribe se guarda en su equipo hasta que lo envíe.'],
+ reportar:['Cómo reportar','<b>1.</b> Llene la columna <i>Consumo del mes</i> con el consumo mensual de cada renglón, en unidades. Puede escribir en la pantalla, o usar <i>Descargar plantilla</i>, llenarla en su computadora y <i>Subir plantilla llena</i>. <b>2.</b> Si una fila se pone en rojo es porque cambió 3 veces o más frente al último consumo aprobado: escriba el motivo en la última columna. En el paso 2, el botón <i>Ver solo esas filas</i> las reúne. <b>3.</b> Pulse <i>Enviar a validación</i>.<br><br>Deje vacío un renglón para conservar su último valor aprobado; escriba 0 si no hubo consumo. <i>Rellenar con el último consumo aprobado</i> copia los valores anteriores en los vacíos, para que solo cambie lo que varió. La tabla muestra los renglones que su unidad ha consumido; en <i>Mostrar</i> elija <i>Todo el catálogo</i> para reportar uno nuevo. <i>Descartar lo escrito</i>, en la barra de la tabla, borra lo que no ha enviado. Lo que escribe se guarda en su equipo hasta que lo envíe.'],
  plazo:['Plazo de entrega','El P-240 (Rev. 7.0, Medidas de Control VI.B.11, pág. 10) establece que los consumos del mes se remiten en los cinco primeros días del mes siguiente. Pasada esa fecha el sistema sigue recibiendo el reporte, pero queda registrado fuera de plazo en la cobertura.'],
  mostrar:['Qué renglones ver','<b>Los que su unidad consume</b>: los que tienen un consumo aprobado mayor que cero o que ya llenó; es la vista normal para reportar. <b>Todos los de la categoría</b>: el catálogo completo, para reportar un renglón que su unidad empezó a consumir. <b>Ya llenados este mes</b>: para revisar lo que escribió antes de enviar. <b>Por justificar</b>: los que cambiaron mucho y necesitan una explicación. Cambiar la vista no borra nada de lo escrito.'],
  analisis:['Cómo leer este análisis','<b>Compare</b> dos periodos y, si quiere, acote por categoría, UE o renglón. Todos los valores son consumo mensual.<br><br><b>Brecha a partir de</b>: cuándo un cambio cuenta. Con 2 veces, un par UE–renglón está <b>en alza</b> si su consumo se duplicó o más y <b>en baja</b> si cayó a la mitad o menos. <b>Nuevos</b>: no tenían consumo y ahora sí. <b>Cesan</b>: tenían y ahora reportan cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.<br><br><b>Las tarjetas son filtros</b>: haga clic en <i>En alza</i> y los gráficos y las tablas muestran solo esos pares; clic de nuevo o en <i>Pares UE–renglón</i> para ver todo.<br><br>Con una UE elegida, los gráficos cambian a la vista de esa unidad: su evolución y sus renglones con mayor brecha.'],
@@ -477,11 +484,12 @@ async function rRep(fresco){
  C.env=e;const est=e?e.e:'SIN_REPORTE';
  const abierto=reportable(P),bloq=['VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
  C.soloLectura=!abierto||bloq;
- const MSG={SIN_REPORTE:'Su unidad todavía no ha enviado este reporte.',ENVIADO:'Enviado. Está esperando la revisión de Planificación; mientras tanto puede corregirlo y volver a enviarlo.',OBSERVADO:'Planificación le hizo una observación. Corrija lo indicado y envíe de nuevo.',VALIDADO:'Validado por Planificación. Espera la aprobación de la jefatura.',DEVUELTO:'La jefatura lo devolvió a Planificación para revisión.',APROBADO:'Aprobado. Ya es el consumo oficial de su unidad.',PUBLICADO:'Aprobado y publicado al Motor de Asignación.'};
+ const MSG={SIN_REPORTE:'pendiente, su unidad aún no lo ha enviado',ENVIADO:'enviado, en revisión de Planificación (puede corregirlo y reenviarlo mientras tanto)',OBSERVADO:'Planificación le hizo una observación: corrija y envíe de nuevo',VALIDADO:'validado por Planificación, espera la aprobación de la jefatura',DEVUELTO:'en revisión interna de Planificación',APROBADO:'aprobado, ya es el consumo oficial de su unidad',PUBLICADO:'aprobado y publicado al Motor de Asignación'};
  const por=!abierto?(estadoPer(P)==='CERRADO'?'La Dirección cerró este periodo. Si necesita corregir algo, comuníquese con Planificación.':'Este mes todavía no comienza; se podrá reportar desde el '+P.ini+'.'):'Como ya está en revisión o aprobado, no se puede modificar. Si hay un error, pida a Planificación que lo observe.';
- $('cEstado').innerHTML=st(est)+' '+(MSG[est]||'')+(e?' <span class="note">'+esc(e.id)+' · v'+e.ver+'</span>':'')+
-  (e&&e.obs?'<br><b>Observación de Planificación:</b> '+esc(e.obs):'')+(C.soloLectura?'<br>'+por:'');
- $('cTools').style.display=C.soloLectura?'none':'';$('cTit').textContent=C.ue+' · '+CATN[C.cat]+' · '+C.per;
+ const MES=(()=>{const m=/^(\d{4})-(\d{2})$/.exec(C.per);return m?['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][+m[2]-1]+' '+m[1]:C.per;})();
+ $('cEstado').innerHTML='<b>Reporte de '+CATN[C.cat].toLowerCase()+' de '+MES+':</b> '+(MSG[est]||est)+(e?' <span class="note">('+esc(e.id)+', versión '+e.ver+')</span>':'')+
+  (e&&e.obs?'<div class="warn" style="margin:6px 0 0"><b>Observación de Planificación:</b> '+esc(e.obs)+'</div>':'')+(C.soloLectura?'<div class="note" style="margin-top:4px">'+por+'</div>':'');
+ $('cSteps').style.display=C.soloLectura?'none':'';$('cClr').style.display=C.soloLectura?'none':'';$('cTit').textContent=C.ue+' · '+CATN[C.cat]+' · '+C.per;
  let d=draft();
  if(e&&e.id&&!d._t&&(est==='OBSERVADO'||est==='ENVIADO'||C.soloLectura)){
   try{const x=await getJ('envio/'+e.id+'.json',true);if(!x)throw new Error('El detalle del envío aún no está publicado; intente en un minuto.');const dd={};x.filas.forEach(f=>dd[f[0]]={v:f[1],j:f[4]});if(C.soloLectura)d=dd;else{d=dd;saveDraft(d);}}catch(z){err(z);}
@@ -498,8 +506,10 @@ function renderCarga(){
  const q=$('cQ').value.trim().toLowerCase();let rows=cRows();
  const nP=rows.filter(r=>r.prev>0||r.v!=='').length,pend=rows.filter(r=>r.fl&&!String(r.j).trim()).length;
  if(VIS==='prev'&&!nP)VIS='all';if(VIS==='flag'&&!rows.some(r=>r.fl))VIS='prev';
- $('cTodo').checked=VIS==='all';$('cTodoN').textContent='('+rows.length+')';
- $('cFlag').innerHTML=VIS==='flag'?'<button class="b-cl" id="cFlagB">Ver todos los renglones</button>':pend?'<button class="flagbtn" id="cFlagB">'+pend+' '+(pend===1?'fila cambió':'filas cambiaron')+' mucho y necesita'+(pend===1?'':'n')+' justificación: ver</button>':'';
+ $('cVisSel').value=VIS;$('cVisSel').options[1].text='Todo el catálogo de '+CATN[C.cat].toLowerCase()+' ('+rows.length+')';$('cVisSel').options[0].text='Renglones que su unidad ha consumido ('+nP+')';
+ const nfl=rows.filter(r=>r.fl).length;
+ $('cJus').innerHTML=pend?'<span style="color:#8c1d16"><b>'+pend+(pend===1?' fila cambió':' filas cambiaron')+' 3 veces o más</b> frente al último consumo aprobado. Se marcan en rojo: escriba el motivo en la última columna.</span><div class="st-a"><button class="flagbtn" id="cFlagB">'+(VIS==='flag'?'Ver todos los renglones':'Ver solo esas filas')+'</button></div>':
+  (nfl?'Todas las filas marcadas ya tienen su motivo.':'Si un valor cambia 3 veces o más frente al último consumo aprobado, la fila se pone en rojo y pide un motivo. Por ahora no hay ninguna.');
  if($('cFlagB'))$('cFlagB').onclick=()=>{VIS=VIS==='flag'?'prev':'flag';renderCarga();};
  const ff=VIS;
  rows=rows.filter(r=>(!q||r.cod.includes(q)||r.des.toLowerCase().includes(q))&&(ff==='all'||(ff==='prev'&&(r.prev>0||r.v!==''))||(ff==='mod'&&r.v!=='')||(ff==='flag'&&r.fl)));
@@ -514,10 +524,10 @@ function renderCarga(){
    el.querySelectorAll('input[data-j]').forEach(i=>i.onchange=()=>{const d=C.d;d[i.dataset.j]=Object.assign(d[i.dataset.j]||{},{j:i.value});saveDraft(d);resumen();});}});
  resumen();}
 function resumen(){const rows=cRows();const con=rows.filter(r=>r.v!=='').length,sin=rows.filter(r=>r.v===''&&r.prev>0).length,fl=rows.filter(r=>r.fl&&!String(r.j).trim()).length;
- $('cSend').textContent='Enviar a validación'+(con?' ('+con+')':'');
- $('cRes').innerHTML=C.soloLectura?'':(fl?'<span style="color:#b3261e"><b>'+fl+'</b> filas por justificar antes de enviar</span>':con?'<b>'+con+'</b> renglones con dato'+(sin?' · '+sin+' vacíos conservarán su último valor':''):'Aún no hay renglones con dato');
+ $('cSend').textContent='Enviar a validación';
+ $('cRes').innerHTML=C.soloLectura?'':(fl?'<span style="color:#b3261e">Antes de enviar, justifique <b>'+fl+'</b> '+(fl===1?'fila':'filas')+'.</span>':con?'<b>'+con+'</b> renglones con dato.'+(sin?' Los '+sin+' vacíos conservan su último consumo aprobado.':''):'Cuando haya llenado la tabla, envíe su reporte. Queda registrado a su nombre.');
  $('cSend').disabled=C.soloLectura||!con||fl>0;}
-$('cQ').oninput=()=>renderCarga();$('cTodo').onchange=()=>{VIS=$('cTodo').checked?'all':'prev';renderCarga();};
+$('cQ').oninput=()=>renderCarga();$('cVisSel').onchange=()=>{VIS=$('cVisSel').value;renderCarga();};$('cInstr').onclick=()=>{const a=AYUDA.reportar;modal(a[0],'<div class="note" style="font-size:13px">'+a[1]+'</div>');};
 $('cCopy').onclick=()=>{const vac=cRows().filter(r=>r.v===''&&r.prev>0);if(!vac.length){toast('No hay renglones vacíos con consumo aprobado.');return;}
  modal('Rellenar con el último consumo aprobado','<div class="note" style="font-size:13px">Se escribirá el último consumo aprobado en los <b>'+vac.length+'</b> renglones que están vacíos. Así solo tiene que cambiar los que variaron este mes. Lo que ya escribió no se modifica.</div><button class="pri" id="cpOk">Rellenar '+vac.length+' renglones</button>',
  ()=>$('cpOk').onclick=()=>{const d=C.d;vac.forEach(r=>{d[r.cod]=Object.assign(d[r.cod]||{},{v:r.prev});});saveDraft(d);cerrarModal();renderCarga();toast(vac.length+' renglones rellenados. Cambie los que variaron y envíe.');});};
@@ -585,7 +595,7 @@ async function verEnvio(id,dest){
  $(box).scrollIntoView({behavior:'smooth'});}
 function descargarEnvio(r){const e=r.envio;
  const rows=r.filas.map(f=>({cod:f[0],des:desc(f[0]),grp:grupo(f[0]),v:f[1],prev:f[2],pp:f[3],dp:f[2]?(f[1]-f[2])/f[2]:'',j:f[4],o:f[5]}));
- const cols=[{k:'cod',l:'CODIGO'},{k:'des',l:'DESCRIPCION'},{k:'grp',l:'GRUPO'},{k:'v',l:'CONSUMO_MENSUAL_'+e.per,t:'n'}].concat(e.e==='HISTORICO'?[{k:'o',l:'HOJA_Y_CELDA_DEL_LIBRO_ORIGEN'}]:[{k:'prev',l:'ULTIMO_APROBADO_AL_ENVIAR',t:'n'},{k:'pp',l:'PERIODO_DEL_DATO'},{k:'dp',l:'VARIACION',t:'n'},{k:'j',l:'JUSTIFICACION'}]);
+ const cols=[{k:'cod',l:'CODIGO'},{k:'des',l:'DESCRIPCION'},{k:'grp',l:'GRUPO'},{k:'v',l:'CONSUMO_MENSUAL_'+e.per,t:'n'}].concat(e.e==='HISTORICO'?[]:[{k:'prev',l:'ULTIMO_APROBADO_AL_ENVIAR',t:'n'},{k:'pp',l:'PERIODO_DEL_DATO'},{k:'dp',l:'VARIACION',t:'n'},{k:'j',l:'JUSTIFICACION'}]);
  xls(e.id+'_'+slug(e.ue).slice(0,30),cols,rows,e.cat+' '+e.per,{titulo:'Envío '+e.id+' · '+e.ue,meta:[['Unidad Ejecutora',e.ue],['Categoría y periodo',CATN[e.cat]+' · '+e.per],['Estado',e.e+' · versión '+e.ver],['Cargado por',e.cpor+' · '+e.fc],['Validado por',(e.vpor||'—')+(e.fv?' · '+e.fv:'')],['Aprobado por',(e.apor||'—')+(e.fa?' · '+e.fa:'')]].concat(e.obs&&e.e!=='HISTORICO'?[['Observación',e.obs]]:[]),color:r=>r.dp!==''&&r.prev!=null&&marcado(r.prev,r.v)?XFILL.FLAG:null});}
 function colsDet(e){return e.e==='HISTORICO'
  ?[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'v',l:'Consumo mensual',t:'n',f:fmU}]
@@ -593,7 +603,7 @@ function colsDet(e){return e.e==='HISTORICO'
 function infoEnv(r){const e=r.envio;
  return '<table style="margin-bottom:8px"><tbody>'+
  '<tr><td style="width:18%;font-weight:700">Cargado por</td><td>'+esc(e.cpor)+' · '+esc(e.fc)+'</td><td style="width:18%;font-weight:700">Canal</td><td>'+
-  (e.e==='HISTORICO'?'Carga histórica del libro consolidado del semestre (la hoja y la celda de cada valor van en la descarga a Excel)':e.canal==='EXCEL'?'Excel subido: <b>'+esc(e.norig)+'</b>'+(r.archivoUrl?' <a href="'+esc(r.archivoUrl)+'" target="_blank" rel="noopener">Abrir original</a>':''):'Formulario en pantalla')+'</td></tr>'+
+  (e.e==='HISTORICO'?'Carga histórica del libro consolidado del semestre':e.canal==='EXCEL'?'Excel subido: <b>'+esc(e.norig)+'</b>'+(r.archivoUrl?' <a href="'+esc(r.archivoUrl)+'" target="_blank" rel="noopener">Abrir original</a>':''):'Formulario en pantalla')+'</td></tr>'+
  '<tr><td style="font-weight:700">Validado por</td><td>'+esc(e.vpor||'—')+(e.fv?' · '+esc(e.fv):'')+'</td><td style="font-weight:700">Aprobado por</td><td>'+esc(e.apor||'—')+(e.fa?' · '+esc(e.fa):'')+'</td></tr>'+
  '<tr><td style="font-weight:700">Versiones</td><td colspan="3">'+r.versiones.sort((a,b)=>a.ver-b.ver).map(v=>'v'+v.ver+' '+st(v.e)+(v.obs&&v.e!=='HISTORICO'?' <span class="note">'+esc(v.obs)+'</span>':'')).join(' · ')+(e.pub?' · publicado en '+esc(e.pub)+' ('+esc(e.fp)+')':'')+'</td></tr>'+
  (e.obs&&e.e!=='HISTORICO'?'<tr><td style="font-weight:700">Observación vigente</td><td colspan="3">'+esc(e.obs)+'</td></tr>':'')+'</tbody></table>';}
@@ -873,8 +883,8 @@ function pasosTour(){
   {tab:'rep',sel:'#cPer',tit:'1 · Reportar: el periodo',txt:'Elija el mes que va a reportar. Solo se puede cargar el periodo abierto. La fecha límite es el día 5 del mes siguiente, según el P-240.'},
   {tab:'rep',sel:'#cCat',tit:'Su categoría',txt:'Medicamentos, material quirúrgico y laboratorio se reportan por separado. Usted ve solo las categorías que tiene asignadas.'},
   {tab:'rep',sel:'#cEstado',tit:'El estado de su envío',txt:'Aquí ve si ya envió, si Planificación le hizo una observación y en qué etapa está. Si le observaron algo, el comentario aparece aquí.'},
-  {tab:'rep',sel:'#cTools',tit:'Plantilla y herramientas',txt:'Subir plantilla llena (naranja) es la forma más rápida: descargue la plantilla, llénela en su computadora y súbala. Rellenar con el último consumo aprobado escribe los valores anteriores para que solo cambie lo que varió. Descartar lo escrito borra lo que no ha enviado.'},
-  {tab:'rep',sel:'#cVisBox',tit:'Qué renglones ver',txt:'Por defecto ve los renglones que su unidad consume. Puede ver todos los de la categoría, solo los que ya llenó o los que faltan por justificar.'},
+  {tab:'rep',sel:'#cSteps',tit:'Tres pasos',txt:'1. Llene el consumo del mes en la tabla, o descargue la plantilla, llénela y súbala. Rellenar con el último consumo aprobado copia los valores anteriores para que solo cambie lo que varió. 2. Si una fila cambia mucho se pone en rojo y pide un motivo. 3. Envíe a Planificación.'},
+  {tab:'rep',sel:'#cVisBox',tit:'Buscar y filtrar',txt:'Busque un renglón por código o nombre. En Mostrar elija entre los renglones que su unidad ha consumido, todo el catálogo (para reportar uno nuevo) o solo los que necesitan justificación.'},
   {tab:'rep',sel:'#cPanel',tit:'La tabla del mes',txt:'Escriba el consumo mensual de cada renglón. Vacío conserva el último valor aprobado; 0 significa que no hubo consumo. Las filas en rojo cambiaron 3 veces o más y piden una justificación.'},
   {tab:'rep',sel:'#cSend',tit:'Enviar a validación',txt:'Cuando termine, pulse Enviar. Queda registrado a su nombre con fecha y hora. Mientras escribe, el borrador se guarda en su equipo aunque se caiga la conexión.'},
   {tab:'rep',sel:'#hPanel',tit:'Su historial',txt:'Todos los envíos de su unidad, con su estado. Haga clic en uno para ver exactamente lo que se cargó, quién lo validó y quién lo aprobó.'});
