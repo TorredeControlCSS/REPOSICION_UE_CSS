@@ -527,14 +527,14 @@ async function rRep(fresco){
  C.env=e;const est=e?e.e:'SIN_REPORTE';
  const abierto=reportable(P),bloq=['VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
  C.soloLectura=!abierto||bloq;
- const MSG={SIN_REPORTE:'pendiente, su unidad aún no lo ha enviado',ENVIADO:'en revisión de Planificación. Si necesita corregir algo antes de que lo validen, cambie los valores y pulse Reenviar corrección: se guarda como una versión nueva',OBSERVADO:'Planificación le hizo una observación: corrija y envíe de nuevo',VALIDADO:'validado por Planificación, espera la aprobación de la jefatura',DEVUELTO:'en revisión interna de Planificación',APROBADO:'aprobado, ya es el consumo oficial de su unidad',PUBLICADO:'aprobado y publicado al Motor de Asignación',EN_CORRECCION:'Planificación lo reabrió para corrección: corrija lo indicado y envíe de nuevo. Mientras tanto sigue vigente el valor aprobado'};
+ const MSG={SIN_REPORTE:'pendiente, su unidad aún no lo ha enviado',ENVIADO:'en revisión de Planificación. Si necesita corregir algo antes de que lo validen, cambie los valores y pulse Reenviar corrección: se guarda como una versión nueva',OBSERVADO:'Planificación le devolvió el reporte para corregir: revise el comentario, corrija y pulse Reenviar corrección',VALIDADO:'validado por Planificación, espera la aprobación de la jefatura',DEVUELTO:'en revisión interna de Planificación',APROBADO:'aprobado, ya es el consumo oficial de su unidad',PUBLICADO:'aprobado y publicado al Motor de Asignación',EN_CORRECCION:'Planificación lo reabrió para corrección: corrija lo indicado y envíe de nuevo. Mientras tanto sigue vigente el valor aprobado'};
  const por=!abierto?(estadoPer(P)==='CERRADO'?'La Dirección cerró este periodo. Si necesita corregir algo, comuníquese con Planificación.':'Este mes todavía no comienza; se podrá reportar desde el '+P.ini+'.'):'Como ya está en revisión o aprobado, no se puede modificar. Si hay un error, pida a Planificación que lo observe.';
  const MES=(()=>{const m=/^(\d{4})-(\d{2})$/.exec(C.per);return m?['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][+m[2]-1]+' '+m[1]:C.per;})();
  const enviado=['ENVIADO','VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
  $('cEstado').innerHTML=(enviado&&e?'<div class="okbox">✓ <b>Reporte recibido</b> el '+esc(e.f||'')+' · '+esc(e.id)+' · versión '+e.ver+(e.n?' · '+e.n+' renglones':'')+'</div>':'')+
   '<b>Reporte de '+CATN[C.cat].toLowerCase()+' de '+MES+':</b> '+(MSG[est]||est)+(e&&!enviado?' <span class="note">('+esc(e.id)+', versión '+e.ver+')</span>':'')+
   (e?' <span class="lnk" id="cRefE" title="Consultar si ya fue validado o aprobado">Actualizar estado</span>':'')+
-  (e&&e.obs?'<div class="warn" style="margin:6px 0 0"><b>Observación de Planificación:</b> '+esc(e.obs)+'</div>':'')+(C.soloLectura?'<div class="note" style="margin-top:4px">'+por+'</div>':'');
+  (e&&e.obs?'<div class="warn" style="margin:6px 0 0"><b>Qué debe corregir (Planificación):</b> '+esc(e.obs)+'</div>':'')+(C.soloLectura?'<div class="note" style="margin-top:4px">'+por+'</div>':'');
  if($('cRefE'))$('cRefE').onclick=()=>{C.J=null;rRep(true);};
  $('cSteps').style.display=C.soloLectura?'none':'';$('cClr').style.display=C.soloLectura?'none':'';$('cTit').textContent=C.ue+' · '+CATN[C.cat]+' · '+C.per;
  let d=draft();
@@ -673,12 +673,12 @@ function infoEnv(r){const e=r.envio;
  *  2 · REVISAR
  * ==================================================================== */
 let BJ=[],SEL=null,rS='';
-const RSUB={val:{l:'Por validar',est:['ENVIADO','DEVUELTO'],r:'VALIDA',hot:1},apr:{l:'Por aprobar',est:['VALIDADO'],r:'APRUEBA',hot:1},obs:{l:'Observados y en corrección',est:['OBSERVADO','EN_CORRECCION'],r:'VALIDA'},fin:{l:'Aprobados y publicados',est:['APROBADO','PUBLICADO'],r:''},his:{l:'Carga histórica',est:['HISTORICO'],r:''}};
+const RSUB={val:{l:'Por validar',est:['ENVIADO','DEVUELTO'],r:'VALIDA',hot:1},apr:{l:'Por aprobar',est:['VALIDADO'],r:'APRUEBA',hot:1},obs:{l:'Devueltos a la UE y en corrección',est:['OBSERVADO','EN_CORRECCION'],r:'VALIDA'},fin:{l:'Aprobados y publicados',est:['APROBADO','PUBLICADO'],r:''},his:{l:'Carga histórica',est:['HISTORICO'],r:''}};
 ['rCat','rUe'].forEach(id=>$(id).onchange=()=>pintarRev());$('rPer').onchange=()=>rRev();$('rRef').onclick=()=>rRev();
 function subsRev(){return Object.keys(RSUB).filter(k=>!RSUB[k].r||tiene(RSUB[k].r));}
 async function rRev(){
  const subs=subsRev();if(!subs.includes(rS))rS=subs[0];
- $('rLeg').innerHTML='Aquí llegan los envíos de las UE que esperan una firma. <b>Carga histórica</b>: los semestres que ya estaban consolidados, solo para consulta. <b>Por validar</b>: Planificación revisa lo recibido y lo valida o lo observa (vuelve a la UE con un comentario). <b>Por aprobar</b>: la jefatura aprueba lo validado o lo devuelve al validador. Solo lo aprobado puede publicarse al Motor. Haga clic en un envío para ver, debajo, exactamente lo que cargó la UE.';
+ $('rLeg').innerHTML='Aquí llegan los envíos de las UE que esperan una firma. <b>Carga histórica</b>: los semestres que ya estaban consolidados, solo para consulta. <b>Por validar</b>: Planificación revisa lo recibido y lo valida o lo devuelve a la UE con un comentario. <b>Por aprobar</b>: la jefatura aprueba lo validado o lo devuelve al validador. Solo lo aprobado puede publicarse al Motor. Haga clic en un envío para ver, debajo, exactamente lo que cargó la UE.';
  $('tRev').innerHTML='<div class="cargando">Cargando…</div>';$('rDet').style.display='none';SEL=null;
  let J=null;try{J=await getJ('envios_'+$('rPer').value+'.json',true);}catch(e){err(e);}
  const cats=misCats();
@@ -701,16 +701,16 @@ function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.tri
  const canV=tiene('VALIDA')&&['ENVIADO','DEVUELTO'].includes(e.e),canA=tiene('APRUEBA')&&e.e==='VALIDADO',canR=tiene('VALIDA')&&['APROBADO','PUBLICADO'].includes(e.e);
  const segV=canV&&e.cpor===ME.nombre,segA=canA&&(e.vpor===ME.nombre||e.cpor===ME.nombre);
  let acc=canR?'<button class="bad" id="aReab">Reabrir para corrección</button> ':'';
- if(canV)acc+='<button class="bad" id="aObs">Observar</button> <button class="ok" id="aVal"'+(segV?' disabled':'')+'>Validar</button> ';
- if(canA)acc+='<button class="bad" id="aDev">Devolver</button> <button class="ok" id="aApr"'+(segA?' disabled':'')+'>Aprobar</button>';
+ if(canV)acc+='<button class="bad" id="aObs" title="El reporte no cumple: vuelve a la UE con su comentario para que lo corrija">Devolver a la UE</button> <button class="ok" id="aVal"'+(segV?' disabled':'')+'>Validar</button> ';
+ if(canA)acc+='<button class="bad" id="aDev" title="Vuelve al validador con su motivo">Devolver al validador</button> <button class="ok" id="aApr"'+(segA?' disabled':'')+'>Aprobar</button>';
  $('rAcc').innerHTML=acc||'<span class="note">Sin acciones para su rol en este estado.</span>';
  $('rSeg').innerHTML=segA?'<span style="color:#b3261e">Usted validó o cargó este envío; otra persona debe aprobarlo (segregación de funciones).</span>':segV?'<span style="color:#b3261e">Usted cargó este envío; otra persona debe validarlo.</span>':(e.vpor?'Validado por '+esc(e.vpor)+'. ':'')+(acc?'Revise el detalle de abajo y firme aquí.':'');
- const QUE={VALIDAR:'Va a <b>validar</b> este envío. Pasará a <i>Por aprobar</i> y la jefatura lo revisará.',OBSERVAR:'Va a <b>observar</b> este envío. Vuelve a la UE con su comentario para que lo corrija y lo envíe de nuevo.',APROBAR:'Va a <b>aprobar</b> este envío. Pasa a ser el consumo oficial de la UE y queda listo para publicarse al Motor.',DEVOLVER:'Va a <b>devolver</b> este envío al validador con su comentario.',REABRIR:'Va a <b>reabrir</b> este envío para corrección. Vuelve a la UE con su motivo; la UE envía una versión corregida que pasa otra vez por validación y aprobación. <b>Mientras tanto, este valor sigue siendo el oficial</b> y el Motor no se queda sin dato.'};
+ const QUE={VALIDAR:'Va a <b>validar</b> este envío. Pasará a <i>Por aprobar</i> y la jefatura lo revisará.',OBSERVAR:'Va a <b>devolver este reporte a la UE</b> porque no cumple. La UE verá su comentario en rojo, lo corregirá y lo enviará de nuevo como una versión nueva.',APROBAR:'Va a <b>aprobar</b> este envío. Pasa a ser el consumo oficial de la UE y queda listo para publicarse al Motor.',DEVOLVER:'Va a <b>devolver este reporte al validador</b> con su motivo. El validador podrá revisarlo de nuevo o devolverlo a la UE.',REABRIR:'Va a <b>reabrir</b> este envío para corrección. Vuelve a la UE con su motivo; la UE envía una versión corregida que pasa otra vez por validación y aprobación. <b>Mientras tanto, este valor sigue siendo el oficial</b> y el Motor no se queda sin dato.'};
  const nFl=(($('tRDet')._all)||[]).filter(x=>x.fl).length;
  const act=(op,titulo,req)=>modal('Confirmar: '+titulo.toLowerCase()+' '+e.id,'<div class="note" style="font-size:13px">'+QUE[op]+'</div>'+
   tablaMini([['Unidad Ejecutora',e.ue],['Categoría y periodo',CATN[e.cat]+' · '+e.per],['Renglones',String(e.n)+(nFl?' · '+nFl+' con variación marcada':'')],['Cargado por',e.cpor+' · '+e.fc]].concat(e.vpor?[['Validado por',e.vpor]]:[]))+
   '<div class="note">Quedará registrado a su nombre con fecha y hora de Panamá.</div>'+
-  '<label>'+(req?(op==='REABRIR'?'Motivo de la corrección (obligatorio, lo verá la UE)':'Comentario (obligatorio, lo verá '+(op==='OBSERVAR'?'la UE':'el validador')+')'):'Comentario (opcional)')+'</label><textarea rows="3" id="cm" style="width:100%" maxlength="500"></textarea>'+
+  '<label>'+(req?(op==='REABRIR'?'Motivo de la corrección (obligatorio, lo verá la UE)':op==='OBSERVAR'?'Qué debe corregir la UE (obligatorio, lo verá en su pantalla)':'Motivo (obligatorio, lo verá el validador)'):'Comentario (opcional)')+'</label><textarea rows="3" id="cm" style="width:100%" maxlength="500"></textarea>'+
   '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-cancel="1" id="cmNo">Cancelar</button><button class="'+(req?'bad':'ok')+'" id="cmOk">Sí, '+titulo.toLowerCase()+'</button></div><div class="note" style="text-align:right">Enter confirma'+(req?' (Ctrl+Enter desde el comentario)':'')+' · Esc cancela</div>',
   ()=>{$('cmNo').onclick=cerrarModal;if(!req)setTimeout(()=>$('cmOk').focus(),80);$('cmOk').onclick=async()=>{const c=$('cm').value.trim();if(req&&!c){toast('El comentario es obligatorio');$('cm').focus();return;}
    $('cmOk').disabled=true;$('cmOk').textContent='Guardando…';
@@ -720,8 +720,8 @@ function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.tri
     invalidar(e.per,e.ue);
     $('rDet').style.display='none';SEL=null;pintarRev();toast(titulo+': '+e.id+(x.json&&!x.json.ok?' · aviso: los tableros se actualizarán al regenerar JSON':'. Análisis y cobertura lo mostrarán en 1 a 2 minutos.'),6000);}
    catch(z){$('cmOk').disabled=false;$('cmOk').textContent='Sí, '+titulo.toLowerCase();err(z);}};});
- if($('aVal'))$('aVal').onclick=()=>act('VALIDAR','Validar',false);if($('aObs'))$('aObs').onclick=()=>act('OBSERVAR','Observar',true);
- if($('aApr'))$('aApr').onclick=()=>act('APROBAR','Aprobar',false);if($('aDev'))$('aDev').onclick=()=>act('DEVOLVER','Devolver',true);if($('aReab'))$('aReab').onclick=()=>act('REABRIR','Reabrir',true);}
+ if($('aVal'))$('aVal').onclick=()=>act('VALIDAR','Validar',false);if($('aObs'))$('aObs').onclick=()=>act('OBSERVAR','Devolver a la UE',true);
+ if($('aApr'))$('aApr').onclick=()=>act('APROBAR','Aprobar',false);if($('aDev'))$('aDev').onclick=()=>act('DEVOLVER','Devolver al validador',true);if($('aReab'))$('aReab').onclick=()=>act('REABRIR','Reabrir',true);}
 
 /* ======================================================================
  *  3 · ANÁLISIS (todo desde JSON)
