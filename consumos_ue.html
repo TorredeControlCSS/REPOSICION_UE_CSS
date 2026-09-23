@@ -44,6 +44,7 @@ button.ok:hover{background:#1b5e20}
 .kpi.clk{cursor:pointer}.kpi.clk:hover{filter:brightness(.97)}.kpi.act{outline:2px solid #0C447C;outline-offset:-2px}
 .rev-acc{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 12px;margin-bottom:10px}
 .rev-acc button{font-size:14px;padding:8px 18px;font-weight:700}
+button.espera{cursor:progress;opacity:.75}
 .rep-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;font-size:14px}
 .stepper{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:10px}@media(max-width:1000px){.stepper{grid-template-columns:1fr}}
 .step{background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 11px}
@@ -198,7 +199,7 @@ td input:disabled{background:#f3f3f3;color:#333}
    <label>UE</label><select id="aUe" style="max-width:300px"><option value="">Todas</option></select>
    <span class="acw"><input id="aRen" placeholder="Renglón: código o nombre" autocomplete="off" style="width:260px"><div class="ac-panel" id="aRenAC"></div></span>
    <label>Brecha a partir de</label><select id="aThr"><option value="1.5">1,5 veces</option><option value="2" selected>2 veces</option><option value="3">3 veces</option></select>
-   <button id="aClr">Limpiar</button><button class="ayuda" data-ayuda="analisis" title="Cómo leer este análisis">?</button></div>
+   <button id="aClr">Limpiar</button><button class="b-cl" id="aRef" title="Vuelve a leer los datos publicados">Actualizar datos</button><span class="note" id="aHora"></span><button class="ayuda" data-ayuda="analisis" title="Cómo leer este análisis">?</button></div>
   <div class="kpis sm" id="aK"></div>
   <div class="sub" id="aSub"><div data-s="gra" class="active">Gráficos</div><div data-s="ren">Por renglón</div><div data-s="ue">Por Unidad Ejecutora</div><div data-s="bre">Brechas UE–renglón</div><div data-s="cob">Cobertura del mes</div></div>
   <div id="a-gra">
@@ -256,7 +257,18 @@ const pct=x=>x==null||!isFinite(x)?'—':(x>0?'+':'')+fmt(x*100,1)+' %';
 const st=s=>'<span class="st s-'+esc(s)+'">'+esc(String(s).replace('_',' '))+'</span>';
 const kpi=(l,v,c,d)=>'<div class="kpi '+(c||'')+'"><div class="l">'+l+'</div><div class="v">'+v+'</div>'+(d?'<div class="d">'+d+'</div>':'')+'</div>';
 function toast(m,ms){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',ms||3500);}
-function modal(t,html,after){$('mT').textContent=t;$('mB').innerHTML=html;$('mb').classList.add('show');if(after)after($('mB'));}
+function modal(t,html,after){$('mT').textContent=t;$('mB').innerHTML=html;$('mb').classList.add('show');if(after)after($('mB'));
+ setTimeout(()=>{const x=$('mB').querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=file]),textarea,select');if(x)x.focus();else{const b=botonPrincipal();if(b)b.focus();}},60);}
+function botonPrincipal(){return [...$('mB').querySelectorAll('button')].find(b=>!b.disabled&&b.offsetParent!==null&&/\b(ok|pri|bad)\b/.test(b.className)&&!b.dataset.cancel);}
+document.addEventListener('keydown',e=>{
+ if(!$('mb').classList.contains('show'))return;
+ if(e.key==='Escape'&&$('mX').style.display!=='none'){cerrarModal();return;}
+ if(e.key!=='Enter')return;const tg=e.target;
+ if(tg.tagName==='TEXTAREA'&&!(e.ctrlKey||e.metaKey))return;   /* en un comentario, Enter es salto de línea; Ctrl+Enter confirma */
+ if(tg.tagName==='BUTTON'&&tg.closest('#mB'))return;           /* el botón con foco ya responde a Enter */
+ const b=botonPrincipal();if(b){e.preventDefault();b.click();}});
+/* botón en espera mientras responde el servidor */
+function espera(b,txt){if(!b)return ()=>{};const t=b.textContent;b.disabled=true;b.textContent=txt||'Procesando…';b.classList.add('espera');return ()=>{b.disabled=false;b.textContent=t;b.classList.remove('espera');};}
 function cerrarModal(){$('mb').classList.remove('show');$('mX').style.display='';}
 $('mX').onclick=cerrarModal;
 const CATN={MED:'Medicamentos',MQ:'Material quirúrgico',LAB:'Laboratorio y radiología'};
@@ -279,14 +291,15 @@ const ls={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},se
 const slug=n=>String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 
 /* ---------- lectura de JSON publicados (sin el script) ---------- */
-const JC={};
+const JC={},JT={};
 async function getJ(f,fresco){
- if(!fresco&&JC[f])return JC[f];
+ if(!fresco&&JC[f]&&Date.now()-JT[f]<60000)return JC[f];
  for(let i=0;i<3;i++){
-  try{const r=await fetch(BASE+f+'?ts='+Date.now(),{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error(r.status);const j=await r.json();JC[f]=j;return j;}
+  try{const r=await fetch(BASE+f+'?ts='+Date.now(),{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error(r.status);const j=await r.json();JC[f]=j;JT[f]=Date.now();return j;}
   catch(e){if(i===2)throw new Error('No se pudo leer '+f+'. Revise la conexión.');await new Promise(z=>setTimeout(z,1200*(i+1)));}
  }}
 
+function invalidar(per,ue){['nacional.json','periodo_'+per+'.json','estado_'+per+'.json','envios_'+per+'.json'].concat(ue?['ue/'+slug(ue)+'.json']:[]).forEach(k=>{delete JC[k];delete JT[k];});}
 /* ---------- cambios propios aún no reflejados en el JSON publicado (tarda 1-2 min) ---------- */
 function ovrLeer(){try{return JSON.parse(ls.get('cons_ovr')||'{}');}catch(e){return {};}}
 function ovrPoner(id,campos){const o=ovrLeer();o[id]=Object.assign(o[id]||{},campos,{t:Date.now()});Object.keys(o).forEach(k=>{if(Date.now()-o[k].t>15*60000)delete o[k];});ls.set('cons_ovr',JSON.stringify(o));}
@@ -410,12 +423,13 @@ async function ueJson(ue,fresco){
  *  INGRESO
  * ==================================================================== */
 $('lgPin').addEventListener('keydown',e=>{if(e.key==='Enter')$('lgBtn').click();});
-$('lgBtn').onclick=async()=>{const b=$('lgBtn');b.disabled=true;
+$('lgBtn').onclick=async()=>{const b=$('lgBtn');const fin=espera(b,'Verificando…');
  try{const r=await jsonp({accion:'login',cedula:$('lgCed').value.trim(),pin:$('lgPin').value.trim()},{reintentos:0});TOKEN=r.token;ss.set('cons_tok',TOKEN);$('lgPin').value='';
-  if(r.sesion.cambiarPin)pedirCambioPin();else await entrar(r.sesion);}catch(e){err(e);}finally{b.disabled=false;}};
+  if(r.sesion.cambiarPin)pedirCambioPin();else{b.textContent='Cargando…';await entrar(r.sesion);}}catch(e){err(e);}finally{fin();}};
 function pedirCambioPin(){
  modal('Cambio de PIN obligatorio','<div class="note">Está usando un PIN temporal. Defina un PIN nuevo de 4 a 6 dígitos. Se guarda cifrado; nadie, ni el administrador, puede verlo.</div><label>PIN nuevo</label><input id="p1" type="password" maxlength="6" inputmode="numeric"><label>Repetir PIN</label><input id="p2" type="password" maxlength="6" inputmode="numeric"><button class="pri" id="pinOk">Guardar e ingresar</button>',
- ()=>{$('mX').style.display='none';$('pinOk').onclick=async()=>{try{const r=await jsonp({accion:'cambiar_pin',pin:$('p1').value.trim(),pin2:$('p2').value.trim()});cerrarModal();toast('PIN actualizado');await entrar(r.sesion);}catch(e){err(e);}};});}
+ ()=>{$('mX').style.display='none';$('pinOk').onclick=async()=>{const p1=$('p1').value.trim(),p2=$('p2').value.trim();if(!/^\d{4,6}$/.test(p1)){toast('El PIN debe tener de 4 a 6 dígitos');return;}if(p1!==p2){toast('Los dos PIN no coinciden');return;}
+  const fin=espera($('pinOk'),'Guardando su PIN…');try{const r=await jsonp({accion:'cambiar_pin',pin:p1,pin2:p2},{reintentos:0,timeout:60000});$('pinOk').textContent='Entrando…';cerrarModal();toast('PIN actualizado');await entrar(r.sesion);}catch(e){fin();err(e);}};});}
 $('lnkOlv').onclick=()=>modal('Recuperar mi PIN','<div class="note" style="font-size:13px">Escriba su cédula. Le enviaremos un PIN temporal al correo institucional registrado en su usuario; vale 60 minutos. Al ingresar con él, el sistema le pedirá definir un PIN nuevo. Si no lo pidió usted, su PIN actual sigue funcionando.</div><label>Cédula</label><input id="rcCed" placeholder="8-000-0000" value="'+esc($('lgCed').value)+'"><button class="pri" id="rcOk">Enviar PIN temporal a mi correo</button><div id="rcR"></div><div class="note">¿No tiene correo registrado? Un administrador puede restablecer su PIN desde Administración › Usuarios.</div>',
  ()=>$('rcOk').onclick=async()=>{const b=$('rcOk');if(!$('rcCed').value.trim()){toast('Escriba su cédula');return;}b.disabled=true;
   try{const r=await jsonp({accion:'recuperar_pin',cedula:$('rcCed').value.trim()},{reintentos:0,timeout:40000});$('rcR').innerHTML='<div class="legend">'+esc(r.mensaje)+'</div>';b.textContent='Enviado';}catch(e){b.disabled=false;err(e);}});
@@ -601,6 +615,7 @@ async function verEnvio(id,dest){
  tt._all=rows;
  if(dest==='h')table(tt,colsDet(e),rows,{sort:'cod',reset:true,cls:x=>x.fl?'flag':''});else rDetalle();
  $(box).scrollIntoView({behavior:'smooth'});}
+function tablaMini(F){return '<table style="margin:4px 0"><tbody>'+F.map(f=>'<tr><td style="width:38%;font-weight:700">'+esc(f[0])+'</td><td>'+esc(f[1])+'</td></tr>').join('')+'</tbody></table>';}
 function descargarEnvio(r){const e=r.envio;
  const rows=r.filas.map(f=>({cod:f[0],des:desc(f[0]),grp:grupo(f[0]),v:f[1],prev:f[2],pp:f[3],dp:f[2]?(f[1]-f[2])/f[2]:'',j:f[4],o:f[5]}));
  const cols=[{k:'cod',l:'CODIGO'},{k:'des',l:'DESCRIPCION'},{k:'grp',l:'GRUPO'},{k:'v',l:'CONSUMO_MENSUAL_'+e.per,t:'n'}].concat(e.e==='HISTORICO'?[]:[{k:'prev',l:'ULTIMO_APROBADO_AL_ENVIAR',t:'n'},{k:'pp',l:'PERIODO_DEL_DATO'},{k:'dp',l:'VARIACION',t:'n'},{k:'j',l:'JUSTIFICACION'}]);
@@ -652,14 +667,21 @@ function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.tri
  if(canA)acc+='<button class="bad" id="aDev">Devolver</button> <button class="ok" id="aApr"'+(segA?' disabled':'')+'>Aprobar</button>';
  $('rAcc').innerHTML=acc||'<span class="note">Sin acciones para su rol en este estado.</span>';
  $('rSeg').innerHTML=segA?'<span style="color:#b3261e">Usted validó o cargó este envío; otra persona debe aprobarlo (segregación de funciones).</span>':segV?'<span style="color:#b3261e">Usted cargó este envío; otra persona debe validarlo.</span>':(e.vpor?'Validado por '+esc(e.vpor)+'. ':'')+(acc?'Revise el detalle de abajo y firme aquí.':'');
- const act=(op,titulo,req)=>modal(titulo+' '+e.id,'<label>'+(req?'Comentario (obligatorio, lo verá '+(op==='OBSERVAR'?'la UE':'el validador')+')':'Comentario (opcional)')+'</label><textarea rows="3" id="cm" style="width:100%" maxlength="500"></textarea><button class="pri" id="cmOk">'+titulo+'</button>',
-  ()=>$('cmOk').onclick=async()=>{const c=$('cm').value.trim();if(req&&!c){toast('El comentario es obligatorio');return;}
+ const QUE={VALIDAR:'Va a <b>validar</b> este envío. Pasará a <i>Por aprobar</i> y la jefatura lo revisará.',OBSERVAR:'Va a <b>observar</b> este envío. Vuelve a la UE con su comentario para que lo corrija y lo envíe de nuevo.',APROBAR:'Va a <b>aprobar</b> este envío. Pasa a ser el consumo oficial de la UE y queda listo para publicarse al Motor.',DEVOLVER:'Va a <b>devolver</b> este envío al validador con su comentario.'};
+ const nFl=(($('tRDet')._all)||[]).filter(x=>x.fl).length;
+ const act=(op,titulo,req)=>modal('Confirmar: '+titulo.toLowerCase()+' '+e.id,'<div class="note" style="font-size:13px">'+QUE[op]+'</div>'+
+  tablaMini([['Unidad Ejecutora',e.ue],['Categoría y periodo',CATN[e.cat]+' · '+e.per],['Renglones',String(e.n)+(nFl?' · '+nFl+' con variación marcada':'')],['Cargado por',e.cpor+' · '+e.fc]].concat(e.vpor?[['Validado por',e.vpor]]:[]))+
+  '<div class="note">Quedará registrado a su nombre con fecha y hora de Panamá.</div>'+
+  '<label>'+(req?'Comentario (obligatorio, lo verá '+(op==='OBSERVAR'?'la UE':'el validador')+')':'Comentario (opcional)')+'</label><textarea rows="3" id="cm" style="width:100%" maxlength="500"></textarea>'+
+  '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-cancel="1" id="cmNo">Cancelar</button><button class="'+(req?'bad':'ok')+'" id="cmOk">Sí, '+titulo.toLowerCase()+'</button></div><div class="note" style="text-align:right">Enter confirma'+(req?' (Ctrl+Enter desde el comentario)':'')+' · Esc cancela</div>',
+  ()=>{$('cmNo').onclick=cerrarModal;if(!req)setTimeout(()=>$('cmOk').focus(),80);$('cmOk').onclick=async()=>{const c=$('cm').value.trim();if(req&&!c){toast('El comentario es obligatorio');$('cm').focus();return;}
    $('cmOk').disabled=true;$('cmOk').textContent='Guardando…';
    try{const x=await jsonp({accion:'accion_envio',id:e.id,op,comentario:c},{reintentos:0,timeout:90000});cerrarModal();
     const ch={e:x.estado};if(x.estado==='VALIDADO')ch.vpor=ME.nombre;if(x.estado==='APROBADO')ch.apor=ME.nombre;if(c&&(op==='OBSERVAR'||op==='DEVOLVER'))ch.obs=c;ovrPoner(e.id,ch);
     const it=BJ.find(z=>z.id===e.id);if(it)Object.assign(it,ch);
-    $('rDet').style.display='none';SEL=null;pintarRev();toast(titulo+': '+e.id+(x.json&&!x.json.ok?' · aviso: los tableros se actualizarán al regenerar JSON':''),5000);}
-   catch(z){$('cmOk').disabled=false;$('cmOk').textContent=titulo;err(z);}});
+    invalidar(e.per,e.ue);
+    $('rDet').style.display='none';SEL=null;pintarRev();toast(titulo+': '+e.id+(x.json&&!x.json.ok?' · aviso: los tableros se actualizarán al regenerar JSON':'. Análisis y cobertura lo mostrarán en 1 a 2 minutos.'),6000);}
+   catch(z){$('cmOk').disabled=false;$('cmOk').textContent='Sí, '+titulo.toLowerCase();err(z);}};});
  if($('aVal'))$('aVal').onclick=()=>act('VALIDAR','Validar',false);if($('aObs'))$('aObs').onclick=()=>act('OBSERVAR','Observar',true);
  if($('aApr'))$('aApr').onclick=()=>act('APROBAR','Aprobar',false);if($('aDev'))$('aDev').onclick=()=>act('DEVOLVER','Devolver',true);}
 
@@ -684,13 +706,16 @@ $('aRen').oninput=acBuscar;$('aRen').onfocus=acBuscar;$('aRen').onblur=()=>setTi
 $('aRen').onkeydown=e=>{const it=[...$('aRenAC').querySelectorAll('.ac-item')];if(!it.length)return;
  if(e.key==='ArrowDown'){ACI=Math.min(it.length-1,ACI+1);e.preventDefault();}else if(e.key==='ArrowUp'){ACI=Math.max(0,ACI-1);e.preventDefault();}else if(e.key==='Enter'){acElegir(ACI<0?0:ACI);e.preventDefault();return;}else return;
  it.forEach((x,k)=>x.classList.toggle('sel',k===ACI));if(it[ACI])it[ACI].scrollIntoView({block:'nearest'});};
+$('aRef').onclick=()=>{Object.keys(JC).forEach(k=>{if(!/^catalogo|^periodos/.test(k)){delete JC[k];delete JT[k];}});rAna.fresco=true;$('aRef').textContent='Actualizando…';rAna().then(()=>{$('aRef').textContent='Actualizar datos';if(aS==='cob')rCob();});};
 $('aClr').onclick=()=>{$('aRen').value='';SELR='';SELM=false;CF='';$('aCat').value='';if(ME.nacional)$('aUe').value='';pintarAna();};
 $('aSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{aS=d.dataset.s;$('aSub').querySelectorAll('div').forEach(x=>x.classList.toggle('active',x===d));$('tAna')._s=null;vistaAna();});
 function clase(a,b,f){if(a===0&&b===0)return 'ESTABLE';if(a===0)return 'NUEVO';if(b===0)return 'CESA';const r=b/a;return r>=f?'ALZA':r<=1/f?'BAJA':'ESTABLE';}
 async function rAna(){
  const a=$('aA').value,b=$('aB').value;
  $('aK').innerHTML='<div class="cargando">Cargando datos…</div>';
- try{[NAC,PA,PB]=await Promise.all([getJ('nacional.json'),getJ('periodo_'+a+'.json'),getJ('periodo_'+b+'.json')]);}catch(e){err(e);return;}
+ const fr=rAna.fresco;rAna.fresco=false;
+ try{[NAC,PA,PB]=await Promise.all([getJ('nacional.json',fr),getJ('periodo_'+a+'.json',fr),getJ('periodo_'+b+'.json',fr)]);}catch(e){err(e);return;}
+ if(NAC)$('aHora').textContent='datos publicados '+new Date(NAC.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(5,16);
  if(!NAC||!PA||!PB){$('aK').innerHTML='<div class="warn">Aún no hay datos publicados para el análisis. Un administrador debe pulsar Regenerar JSON en Administración.</div>';return;}
  pintarAna();}
 function paresFiltrados(){
