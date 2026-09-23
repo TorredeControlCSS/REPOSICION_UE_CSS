@@ -2,102 +2,101 @@
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Registro de Consumos por Unidad Ejecutora · DINALOG</title>
-<link rel="icon" href="https://raw.githubusercontent.com/TorredeControlCSS/REPOSICION_UE_CSS/main/icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--az:#0C447C;--az2:#1E5A9E;--bg:#ececec;--bd:#a8a8a8;--sub:#d9d9d9;--up:#b3261e;--ok:#2e7d32;--wa:#8a6d00}
+:root{--az:#0C447C;--az2:#1E5A9E;--bg:#ececec;--bd:#a8a8a8;--sub:#d9d9d9;--up:#b3261e;--ok:#2e7d32;--txt2:#555}
 body{background:var(--bg);font-family:Calibri,"Segoe UI",Tahoma,sans-serif;font-size:13px;color:#1a1a1a}
 .num,td.n,input.n{font-family:Consolas,"Courier New",monospace}
-.demo{background:#fff3cd;border-bottom:1px solid #d9b44a;padding:6px 16px;font-size:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.demo b{color:#7a5a00}
 .top{background:var(--az);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;border-bottom:3px solid var(--az2)}
-.top img{width:44px;height:44px;background:#fff;padding:2px}
+.top img{width:48px;height:48px}
 .top .t1{font-family:Cambria,Georgia,serif;font-size:19px;font-weight:700}
 .top .t2{font-size:12px;color:#d6e2f0;margin-top:2px}
 .top .sp{flex:1}
-.top .who{font-size:12px;text-align:right;line-height:1.5;color:#d6e2f0}
-.top .who b{color:#fff}
+.top .who{font-size:12px;text-align:right;line-height:1.5;color:#d6e2f0}.top .who b{color:#fff}
 input,select,button,textarea{font-family:Calibri,"Segoe UI",sans-serif;font-size:13px;padding:4px 6px;border:1px solid var(--bd);background:#fff}
-button{cursor:pointer;background:#f3f3f3}
-button:hover{background:#e3eaf3}
-button.pri{background:var(--az);color:#fff;border-color:var(--az)}
-button.pri:hover{background:var(--az2)}
+button{cursor:pointer;background:#f3f3f3}button:hover{background:#e3eaf3}
+button.pri{background:var(--az);color:#fff;border-color:var(--az)}button.pri:hover{background:var(--az2)}
 button.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
 button.bad{background:#fff;color:var(--up);border-color:var(--up)}
 button:disabled{opacity:.45;cursor:not-allowed}
 .wrap{padding:12px 16px}
-.tabs{display:flex;border:1px solid var(--bd);border-bottom:none;background:var(--sub);flex-wrap:wrap}
-.tab{padding:8px 15px;cursor:pointer;border-right:1px solid var(--bd);user-select:none}
+.tabs{display:flex;border:1px solid var(--bd);border-bottom:none;background:var(--sub);flex-wrap:wrap;align-items:stretch}
+.tab{padding:9px 18px;cursor:pointer;border-right:1px solid var(--bd);user-select:none;font-size:14px}
 .tab.active{background:var(--az);color:#fff;font-weight:700}
 .tab:hover:not(.active){background:#e8e8e8}
-.view{border:1px solid var(--bd);padding:10px;display:none}
+.tabs .sp{flex:1}.tabs .tbtn{border:none;border-left:1px solid var(--bd);background:#f3f3f3;padding:0 14px;font-weight:700;color:var(--az)}
+.view{border:1px solid var(--bd);padding:10px;display:none;background:var(--bg)}
 .view.active{display:block}
 .panel{background:#fff;border:1px solid var(--bd);margin-bottom:10px}
 .ph{background:var(--az);color:#fff;padding:6px 10px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .ph small{font-weight:400;color:#d6e2f0}
 .pb{padding:10px}
 .ctrl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:10px}
-.kpi{border:1px solid var(--bd);background:#fff;padding:8px 10px;border-left:4px solid var(--az)}
-.kpi .l{font-size:12px;color:#555}.kpi .v{font-family:Consolas,monospace;font-size:20px;font-weight:700;color:var(--az);margin-top:2px}
-.kpi.w{border-left-color:var(--up)}.kpi.w .v{color:var(--up)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.kpi{border:1px solid #c3d2e4;background:#e8f0fa;padding:9px 11px}
+.kpi .l{font-size:12px;color:#34495e}.kpi .v{font-family:Consolas,monospace;font-size:21px;font-weight:700;color:var(--az);margin-top:2px}
+.kpi .d{font-size:11px;color:#555;margin-top:2px}
+.kpi.ro{background:#fdecea;border-color:#efc2bd}.kpi.ro .v{color:#8c1d16}
+.kpi.ve{background:#e6f4ea;border-color:#b9dcc2}.kpi.ve .v{color:#1b5e20}
+.kpi.am{background:#fff4dc;border-color:#ecd49a}.kpi.am .v{color:#7a5a00}
+.kpi.li{background:#efe9f7;border-color:#d3c6e8}.kpi.li .v{color:#4a2f7a}
+.kpi.gr{background:#f1f1f1;border-color:#d0d0d0}.kpi.gr .v{color:#444}
 .tw{max-height:520px;overflow:auto;border:1px solid var(--bd)}
 table{border-collapse:collapse;width:100%;font-size:12px}
 th,td{border:1px solid var(--bd);padding:4px 6px;text-align:left;vertical-align:middle}
 th{background:var(--sub);position:sticky;top:0;cursor:pointer;white-space:nowrap;z-index:2;user-select:none}
-th:hover{background:#c8d4e4}
-th .ar{color:var(--az);font-size:10px;margin-left:3px}
+th:hover{background:#c8d4e4}th .ar{color:var(--az);font-size:10px;margin-left:3px}
 td.n{text-align:right;white-space:nowrap}
 tbody tr:nth-child(even) td{background:#f6f6f6}
 tbody tr.clk{cursor:pointer}tbody tr.clk:hover td{background:#e3eaf3}
-tbody tr.sel td{background:#d6e2f0!important}
-tr.flag td{background:#fdecea!important}
-tr.mod td{background:#eef6ee!important}
-input.n{width:110px;text-align:right}
-input.just{width:100%;min-width:200px}
-.st{display:inline-block;padding:1px 7px;font-size:11px;border:1px solid var(--bd);white-space:nowrap}
-.s-SIN_REPORTE{background:#f3f3f3;color:#555}.s-BORRADOR{background:#fff;color:#555;border-style:dashed}
-.s-ENVIADO{background:#e1ebf7;color:#0C447C}.s-OBSERVADO{background:#fff3cd;color:#7a5a00}
-.s-VALIDADO{background:#e8e0f3;color:#4a2f7a}.s-APROBADO{background:#e3f2e4;color:#1b5e20}
-.s-DEVUELTO{background:#fbe3e1;color:#8c1d16}.s-PUBLICADO{background:#1b5e20;color:#fff}
+tr.flag td{background:#fdecea!important}tr.mod td{background:#eef6ee!important}
+input.n{width:110px;text-align:right}input.just{width:100%;min-width:200px}
+.st{display:inline-block;padding:1px 7px;font-size:11px;border:1px solid var(--bd);white-space:nowrap;background:#f3f3f3;color:#444}
+.s-SIN_REPORTE{background:#f3f3f3;color:#555}.s-ENVIADO{background:#e1ebf7;color:#0C447C}.s-OBSERVADO{background:#fff3cd;color:#7a5a00}
+.s-VALIDADO{background:#e8e0f3;color:#4a2f7a}.s-APROBADO{background:#e3f2e4;color:#1b5e20}.s-DEVUELTO{background:#fbe3e1;color:#8c1d16}
+.s-PUBLICADO{background:#1b5e20;color:#fff}.s-HISTORICO{background:#eef3f9;color:#0C447C}.s-REEMPLAZADO{background:#f3f3f3;color:#888}
 .s-PENDIENTE{background:#fff3cd;color:#7a5a00}.s-RECHAZADA{background:#fbe3e1;color:#8c1d16}.s-APROBADA{background:#e3f2e4;color:#1b5e20}
 .s-ABIERTO{background:#e3f2e4;color:#1b5e20}.s-PROGRAMADO{background:#f3f3f3;color:#555}.s-CERRADO{background:#e1ebf7;color:#0C447C}
-.note{font-size:12px;color:#444;line-height:1.55}
-.legend{font-size:12px;background:#eef3f9;border:1px solid #c3d2e4;padding:6px 10px;margin-bottom:8px;line-height:1.6}
-.warn{background:#fdecea;border:1px solid #e6a39e;padding:6px 10px;font-size:12px;margin-bottom:8px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:900px){.grid2{grid-template-columns:1fr}}
-.login{max-width:430px;margin:40px auto;background:#fff;border:1px solid var(--bd)}
-.login .pb{display:grid;gap:8px}
-.login label{font-size:12px;color:#444}
-.login input,.login select,.login textarea{width:100%}
-.lnk{color:var(--az);cursor:pointer;text-decoration:underline;font-size:12px}
-.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:8px;background:#f6f6f6;border:1px solid var(--bd)}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center}
-.modal-bg.show{display:flex}
-.modal{background:#fff;border:1px solid var(--az);width:min(640px,94vw);max-height:86vh;overflow:auto}
-.modal .pb{display:grid;gap:8px}
-.toast{position:fixed;bottom:18px;right:18px;background:var(--az);color:#fff;padding:9px 14px;display:none;z-index:99}
-.sub{display:flex;gap:0;border-bottom:1px solid var(--bd);margin-bottom:8px;flex-wrap:wrap}
-.sub div{padding:6px 12px;cursor:pointer;border:1px solid transparent}
-.sub div.active{border:1px solid var(--bd);border-bottom:2px solid var(--az);background:#fff;font-weight:700}
-.mx td{text-align:center}
-.chk label{margin-right:10px;font-size:12px}
-</style></head><body>
-
-<style>
-.cargando{padding:14px;color:#555;font-style:italic}
-td input:disabled{background:#f3f3f3;color:#333}
-.pill{display:inline-block;padding:1px 6px;border:1px solid var(--bd);font-size:11px;margin-right:4px;background:#fff}
-.s-REEMPLAZADO{background:#f3f3f3;color:#888;text-decoration:line-through}.s-HISTORICO{background:#eef3f9;color:#0C447C}
 .s-NUEVO{background:#e3f2e4;color:#1b5e20}.s-CAMBIO{background:#e1ebf7;color:#0C447C}.s-A_CERO{background:#fbe3e1;color:#8c1d16}
 .s-PUBLICADA{background:#e3f2e4;color:#1b5e20}.s-REVERTIDA{background:#f3f3f3;color:#555}
 .s-ALZA{background:#fbe3e1;color:#8c1d16}.s-BAJA{background:#e1ebf7;color:#0C447C}.s-CESA{background:#efe7e3;color:#4e342e}.s-ESTABLE{background:#f3f3f3;color:#444}
 .s-ACTIVO{background:#e3f2e4;color:#1b5e20}.s-INACTIVO{background:#f3f3f3;color:#888}
-</style>
-</head><body>
-<div class="top"><img src="https://raw.githubusercontent.com/TorredeControlCSS/REPOSICION_UE_CSS/main/icons/icon-192.png" alt="CSS">
+.note{font-size:12px;color:#444;line-height:1.55}
+.legend{font-size:12.5px;background:#eef3f9;border:1px solid #c3d2e4;padding:7px 10px;margin-bottom:8px;line-height:1.6}
+.warn{background:#fdecea;border:1px solid #e6a39e;padding:6px 10px;font-size:12px;margin-bottom:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.cbox{position:relative;height:300px}.cbox.t{height:380px}
+.login{max-width:430px;margin:40px auto;background:#fff;border:1px solid var(--bd)}
+.login .pb{display:grid;gap:8px}.login label{font-size:12px;color:#444}.login input{width:100%}
+.lnk{color:var(--az);cursor:pointer;text-decoration:underline;font-size:12px}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:8px;background:#f6f6f6;border:1px solid var(--bd)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border:1px solid var(--az);width:min(660px,94vw);max-height:86vh;overflow:auto}
+.modal .pb{display:grid;gap:8px}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--az);color:#fff;padding:9px 14px;display:none;z-index:1100;max-width:460px}
+.sub{display:flex;gap:0;border-bottom:1px solid var(--bd);margin-bottom:8px;flex-wrap:wrap}
+.sub div{padding:6px 13px;cursor:pointer;border:1px solid transparent}
+.sub div.active{border:1px solid var(--bd);border-bottom:2px solid var(--az);background:#fff;font-weight:700}
+.sub .cnt{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;background:#e1ebf7;color:#0C447C;font-size:11px;text-align:center}
+.sub .cnt.hot{background:#fdecea;color:#8c1d16}
+.chk label{margin-right:10px;font-size:12px}
+.cargando{padding:14px;color:#555;font-style:italic}
+td input:disabled{background:#f3f3f3;color:#333}
+.heat td.h{text-align:right;font-family:Consolas,monospace;min-width:74px}
+.heat th.rot{white-space:nowrap}
+#tourOverlay{position:fixed;inset:0;z-index:1000;display:none}
+.tour-spot{position:absolute;border:3px solid var(--az);box-shadow:0 0 0 9999px rgba(15,25,40,.55);z-index:1001;pointer-events:none;transition:all .25s ease}
+#tourBox{position:absolute;z-index:1002;background:#fff;border:1px solid var(--bd);max-width:360px;width:calc(100% - 32px);padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+#tourTitulo{font-size:14px;font-weight:700;color:var(--az2);margin-bottom:6px}#tourTexto{font-size:12.5px;line-height:1.5;color:#333}
+#tourNav{display:flex;align-items:center;gap:8px;margin-top:12px}#tourPaso{font-size:11px;color:var(--txt2)}
+.btn-plano{background:transparent;border:none;color:var(--txt2);text-decoration:underline;padding:6px 4px}
+#tourNext{background:var(--az);color:#fff;font-weight:700;border-color:var(--az);padding:7px 14px}
+</style></head><body>
+<div class="top"><img src="icons/icon-192.png" alt="CSS">
  <div><div class="t1">Registro de Consumos por Unidad Ejecutora</div><div class="t2">Dirección Nacional de Logística · Caja de Seguro Social</div></div>
  <div class="sp"></div><div class="who" id="who"></div></div>
 
@@ -107,93 +106,99 @@ td input:disabled{background:#f3f3f3;color:#333}
   <label for="lgPin">PIN</label><input id="lgPin" type="password" maxlength="6" inputmode="numeric" placeholder="4 a 6 dígitos" autocomplete="current-password">
   <button class="pri" id="lgBtn">Ingresar</button>
   <div style="display:flex;justify-content:space-between"><span class="lnk" id="lnkSol">Solicitar acceso</span><span class="lnk" id="lnkOlv">Olvidé mi PIN</span></div>
-  <div class="note">La primera vez entre con el PIN temporal que le entregó la Dirección. El sistema le pedirá cambiarlo.</div>
+  <div class="note">La primera vez entre con el PIN temporal que le entregó la Dirección: los últimos cuatro dígitos de su cédula. El sistema le pedirá cambiarlo.</div>
  </div></div>
 </div>
 
-<div id="scrApp" style="display:none">
-<div class="wrap">
+<div id="scrApp" style="display:none"><div class="wrap">
  <div class="tabs" id="tabs"></div>
 
- <div class="view" id="v-carga">
-  <div class="ctrl"><label>Periodo</label><select id="cPer"></select><span id="cPerInfo" class="note"></span></div>
-  <div class="ctrl" id="cUeBox"><label>Unidad Ejecutora</label><select id="cUe" style="max-width:420px"></select></div>
+ <!-- 1 · REPORTAR -->
+ <div class="view" id="v-rep">
+  <div class="ctrl"><label>Periodo</label><select id="cPer"></select><span id="cPerInfo" class="note"></span>
+   <span id="cUeBox"><label>Unidad Ejecutora</label> <select id="cUe" style="max-width:420px"></select></span></div>
   <div class="sub" id="cCat"></div>
   <div class="legend" style="background:#fff;border-color:var(--bd)"><b>Cómo reportar:</b> 1. Escriba el consumo del mes en la tabla, o use <b>Subir Excel</b> (puede partir de <b>Descargar plantilla Excel</b>). 2. Revise las filas marcadas en rojo y justifique. 3. Pulse <b>Enviar a validación</b>, al pie de la tabla.</div>
   <div id="cEstado"></div>
-  <div class="ctrl">
+  <div class="ctrl" id="cTools">
    <input id="cQ" placeholder="Buscar código o descripción" style="width:260px">
    <select id="cF"><option value="prev">Con consumo previo</option><option value="all">Todos los renglones de la categoría</option><option value="mod">Solo con dato este mes</option><option value="flag">Requieren justificación</option></select>
-   <button id="cCopy">Copiar el último valor a los vacíos</button>
-   <button id="cTpl">Descargar plantilla Excel</button>
-   <button id="cUp">Subir Excel</button>
-   <button id="cClr">Borrar borrador</button>
+   <button id="cCopy">Copiar el último valor a los vacíos</button><button id="cTpl">Descargar plantilla Excel</button><button id="cUp">Subir Excel</button><button id="cClr">Borrar borrador</button>
   </div>
-  <div class="panel"><div class="ph"><span id="cTit"></span><small>consumo mensual en unidades del renglón</small></div><div class="pb"><div id="tCarga"><div class="cargando">Cargando…</div></div>
-   <div class="foot"><span id="cRes" class="note"></span><span><span class="note" id="cDraft"></span> <button class="pri" id="cSend" disabled>Enviar a validación</button></span></div></div></div>
+  <div class="panel" id="cPanel"><div class="ph"><span id="cTit"></span><small>consumo mensual en unidades del renglón</small></div><div class="pb"><div id="tCarga"><div class="cargando">Cargando…</div></div>
+   <div class="foot" id="cFoot"><span id="cRes" class="note"></span><span><span class="note" id="cDraft"></span> <button class="pri" id="cSend" disabled>Enviar a validación</button></span></div></div></div>
+  <div class="panel" id="hPanel"><div class="ph">Historial de envíos de la unidad <small>clic en un envío para ver lo que se cargó</small></div><div class="pb"><div id="tHist"></div></div></div>
+  <div class="panel" id="hDet" style="display:none"><div class="ph"><span id="hT"></span><small>consumo mensual</small></div><div class="pb"><div id="hInfo"></div><div id="tHDet"></div></div></div>
  </div>
 
- <div class="view" id="v-envios">
-  <div class="ctrl" id="meUeBox"><label>Unidad Ejecutora</label><select id="meUe" style="max-width:420px"></select></div>
-  <div class="panel"><div class="ph">Mis envíos <small>clic en un envío para ver lo que se cargó</small></div><div class="pb"><div id="tMisEnv"></div></div></div>
-  <div class="panel" id="meDet" style="display:none"><div class="ph"><span id="meT"></span><small>consumo mensual</small></div><div class="pb"><div id="meInfo"></div><div id="tMeDet"></div></div></div>
+ <!-- 2 · REVISAR -->
+ <div class="view" id="v-rev">
+  <div class="legend" id="rLeg"></div>
+  <div class="sub" id="rSub"></div>
+  <div class="ctrl"><label>Periodo</label><select id="rPer"></select><label>Categoría</label><select id="rCat"></select><label>UE</label><select id="rUe" style="max-width:360px"><option value="">Todas</option></select><button id="rRef">Actualizar</button></div>
+  <div class="panel"><div class="ph"><span id="rTit"></span><small id="rCnt"></small></div><div class="pb"><div id="tRev"></div></div></div>
+  <div class="panel" id="rDet" style="display:none"><div class="ph"><span id="rDetT"></span><small id="rDetS"></small></div><div class="pb">
+   <div id="rInfo"></div>
+   <div class="ctrl"><input id="rQ" placeholder="Filtrar renglón" style="width:240px"><label><input type="checkbox" id="rOnly"> Solo variaciones marcadas</label></div>
+   <div id="tRDet"></div>
+   <div class="foot"><span class="note" id="rSeg"></span><span id="rAcc"></span></div></div></div>
  </div>
 
- <div class="view" id="v-bandeja">
-  <div class="legend" id="bLeg"></div>
-  <div class="ctrl"><label>Periodo</label><select id="bPer"></select><label>Categoría</label><select id="bCat"></select><label>UE</label><select id="bUe"><option value="">Todas</option></select><label>Estado</label><select id="bEst"></select><button id="bRef">Actualizar</button></div>
-  <div class="panel"><div class="ph"><span id="bTit"></span><small id="bCnt"></small></div><div class="pb"><div id="tBandeja"></div></div></div>
-  <div class="panel" id="bDet" style="display:none"><div class="ph"><span id="bDetT"></span><small id="bDetS"></small></div><div class="pb">
-   <div id="bInfo"></div>
-   <div class="ctrl"><input id="bQ" placeholder="Filtrar renglón" style="width:240px"><label><input type="checkbox" id="bOnly"> Solo variaciones marcadas</label></div>
-   <div id="tDet"></div>
-   <div class="foot"><span class="note" id="bSeg"></span><span id="bAcc"></span></div></div></div>
+ <!-- 3 · ANÁLISIS -->
+ <div class="view" id="v-ana">
+  <div class="ctrl" id="aCtrl"><label>Comparar</label><select id="aA"></select><label>contra</label><select id="aB"></select>
+   <label>Categoría</label><select id="aCat"><option value="">Todas</option><option>MED</option><option>MQ</option><option>LAB</option></select>
+   <label>UE</label><select id="aUe" style="max-width:300px"><option value="">Todas</option></select>
+   <input id="aRen" list="dlRen" placeholder="Renglón: código o descripción" style="width:240px"><datalist id="dlRen"></datalist>
+   <label>Umbral</label><select id="aThr"><option value="0.25">25 %</option><option value="0.5" selected>50 %</option><option value="1">100 %</option></select>
+   <button id="aClr">Limpiar</button></div>
+  <div class="kpis" id="aK"></div>
+  <div class="sub" id="aSub"><div data-s="gra" class="active">Gráficos</div><div data-s="ren">Por renglón</div><div data-s="ue">Por Unidad Ejecutora</div><div data-s="bre">Brechas UE–renglón</div><div data-s="cob">Cobertura del mes</div></div>
+  <div id="a-gra">
+   <div class="legend" id="aGLeg"></div>
+   <div class="grid2">
+    <div class="panel" id="pEvo"><div class="ph"><span id="tEvo">Evolución nacional del renglón</span><small>consumo mensual · UE que reportan</small></div><div class="pb"><div class="cbox"><canvas id="chEvo"></canvas></div></div></div>
+    <div class="panel" id="pDis"><div class="ph">Dispersión: periodo A contra periodo B<small>cada punto es una UE y un renglón · escala logarítmica</small></div><div class="pb"><div class="cbox"><canvas id="chDis"></canvas></div><div class="note">Sobre la diagonal: sin cambio. Lejos de ella: brecha. Haga clic en un punto para analizar ese renglón.</div></div></div>
+   </div>
+   <div class="panel" id="pUes"><div class="ph"><span id="tUes">El renglón UE por UE</span><small>consumo mensual en los dos periodos</small></div><div class="pb"><div class="cbox t"><canvas id="chUes"></canvas></div></div></div>
+   <div class="panel" id="pHeat"><div class="ph"><span id="tHeat">Mapa de calor por periodo</span><small>consumo mensual · color = variación contra el periodo anterior</small></div><div class="pb"><div id="heat"></div></div></div>
+  </div>
+  <div id="a-tab" style="display:none"><div class="panel"><div class="ph"><span id="aTit"></span><small>consumo mensual en unidades del renglón</small></div><div class="pb"><div class="ctrl"><button id="aCsv">Exportar CSV</button></div><div id="tAna"></div></div></div></div>
+  <div id="a-cob" style="display:none">
+   <div class="ctrl"><label>Periodo</label><select id="kPer"></select><label>CEDIS</label><select id="kCed"><option value="">Todos</option></select><input id="kQ" placeholder="Buscar UE" style="width:220px"></div>
+   <div class="kpis" id="kCob"></div>
+   <div class="panel"><div class="ph">Estado de los envíos por CEDIS<small id="kSub"></small></div><div class="pb"><div class="cbox"><canvas id="chCob"></canvas></div></div></div>
+   <div class="panel"><div class="ph">Cobertura por UE y categoría</div><div class="pb"><div id="tCob"></div></div></div>
+  </div>
  </div>
 
- <div class="view" id="v-cobertura">
-  <div class="kpis" id="kCob"></div>
-  <div class="ctrl"><label>Periodo</label><select id="kPer"></select><label>CEDIS</label><select id="kCed"><option value="">Todos</option></select><input id="kQ" placeholder="Buscar UE" style="width:220px"><button id="kRef">Actualizar</button></div>
-  <div class="panel"><div class="ph">Cobertura de reporte por UE y categoría <small id="kSub"></small></div><div class="pb"><div id="tCob"></div></div></div>
- </div>
-
- <div class="view" id="v-dash">
-  <div class="ctrl"><label>Comparar</label><select id="dA"></select><label>contra</label><select id="dB"></select>
-   <label>Categoría</label><select id="dCat"><option value="">Todas</option></select><label>UE</label><select id="dUe" style="max-width:300px"><option value="">Todas</option></select>
-   <input id="dQ" placeholder="Renglón: código o descripción" style="width:220px">
-   <label>Umbral</label><select id="dThr"><option value="0.25">25 %</option><option value="0.5" selected>50 %</option><option value="1">100 %</option></select>
-   <button class="pri" id="dGo">Ver comparativo</button></div>
-  <div class="kpis" id="dK"></div>
-  <div class="sub" id="dSub"><div data-s="ren" class="active">Por renglón</div><div data-s="ue">Por Unidad Ejecutora</div><div data-s="bre">Brechas UE–renglón</div></div>
-  <div class="panel"><div class="ph"><span id="dTit">Seleccione dos periodos</span><small>consumo mensual en unidades del renglón</small></div><div class="pb"><div class="ctrl"><button id="dCsv">Exportar CSV</button></div><div id="tDash"></div></div></div>
- </div>
-
- <div class="view" id="v-sol">
-  <div class="panel"><div class="ph">Solicitudes de acceso <small>CARGA y LECTURA · las aprueba APRUEBA o ADMIN</small></div><div class="pb"><div class="ctrl"><select id="sEst"><option value="PENDIENTE">Pendientes</option><option value="">Todas</option></select></div><div id="tSol"></div></div></div>
- </div>
-
- <div class="view" id="v-admin">
-  <div class="sub" id="aSub"><div data-s="usr" class="active">Usuarios</div><div data-s="per">Periodos</div><div data-s="pub">Publicación al Motor</div><div data-s="log">Bitácora</div></div>
-  <div id="a-usr"><div class="ctrl"><button class="pri" id="aNew">Nuevo usuario</button><input id="aQ" placeholder="Buscar nombre, cédula o UE" style="width:240px"><select id="aRol"><option value="">Todos los roles</option></select></div><div id="tUsr"></div></div>
-  <div id="a-per" style="display:none"><div class="ctrl"><button id="pNew">Crear el mes siguiente</button></div><div id="tPer"></div><div class="note" style="margin-top:6px">Abrir un periodo habilita la carga a las UE. Cerrarlo bloquea nuevos envíos.</div></div>
-  <div id="a-pub" style="display:none">
+ <!-- 4 · ADMINISTRACIÓN -->
+ <div class="view" id="v-adm">
+  <div class="sub" id="dSub"></div>
+  <div id="d-usr"><div class="ctrl"><button class="pri" id="uNew">Nuevo usuario</button><input id="uQ" placeholder="Buscar nombre, cédula o UE" style="width:240px"><select id="uRol"><option value="">Todos los roles</option><option>ADMIN</option><option>APRUEBA</option><option>VALIDA</option><option>CARGA</option><option>LECTURA</option></select></div><div id="tUsr"></div></div>
+  <div id="d-sol"><div class="ctrl"><select id="sEst"><option value="PENDIENTE">Pendientes</option><option value="">Todas</option></select></div><div id="tSol"></div></div>
+  <div id="d-per"><div class="ctrl"><button id="pNew">Crear el mes siguiente</button></div><div id="tPer"></div><div class="note" style="margin-top:6px">Abrir un periodo habilita la carga a las UE. Cerrarlo bloquea nuevos envíos.</div></div>
+  <div id="d-pub">
    <div class="legend">La publicación escribe el último consumo aprobado por UE y renglón en MAESTROS_DINALOG › MAESTRO_CONSUMOS_UE, la hoja que leen el Motor de Asignación y Curvas de Inventario. Siempre se corre primero la simulación, que compara sin escribir. Antes de escribir se guarda una copia completa de la hoja en Drive; la última publicación se puede revertir desde aquí.</div>
    <div class="ctrl"><button class="pri" id="pSim">Correr simulación</button><button class="ok" id="pPub" disabled>Publicar al Motor</button><span class="note" id="pInfo"></span></div>
    <div id="pRes"></div>
    <div class="panel" style="margin-top:10px"><div class="ph">Publicaciones anteriores</div><div class="pb"><div id="tPubs"></div></div></div>
   </div>
-  <div id="a-log" style="display:none"><div class="ctrl"><input id="lQ" placeholder="Buscar en la bitácora" style="width:260px"><button id="lRef">Actualizar</button></div><div id="tLog"></div></div>
+  <div id="d-json"><div class="legend">Los tableros leen archivos JSON publicados en el repositorio, no el script. Se actualizan solos cuando llega un envío, una firma o una publicación. Use <b>Regenerar JSON</b> la primera vez y si algún tablero muestra datos desactualizados.</div><div class="ctrl"><button class="pri" id="jReg">Regenerar JSON</button><span class="note" id="jInfo"></span></div></div>
+  <div id="d-log"><div class="ctrl"><input id="lQ" placeholder="Buscar en la bitácora" style="width:260px"><button id="lRef">Actualizar</button></div><div id="tLog"></div></div>
  </div>
-</div>
-</div>
+</div></div>
 
 <div class="modal-bg" id="mb"><div class="modal"><div class="ph"><span id="mT"></span><span class="lnk" style="color:#fff" id="mX">Cerrar</span></div><div class="pb" id="mB"></div></div></div>
+<div id="tourOverlay"><div id="tourBox"><div id="tourTitulo"></div><div id="tourTexto"></div><div id="tourNav"><span id="tourPaso"></span><span style="flex:1"></span><button id="tourSkip" class="btn-plano">Saltar</button><button id="tourPrev" class="btn-plano">Atrás</button><button id="tourNext">Siguiente</button></div></div></div>
 <div class="toast" id="toast"></div>
 <script>
 (function(){
 /* ======================================================================
- *  CONFIGURACIÓN: pegar aquí la URL /exec del despliegue del script
+ *  CONFIGURACIÓN
  * ==================================================================== */
-const API = 'https://script.google.com/macros/s/AKfycbxX8DxhSvo6jSLjLi8FvWqQWb8hG3bNt6V6kwjqntEFypZiMYk372eBJY-seAF4ThM_fw/exec';
+const API='https://script.google.com/macros/s/AKfycbxX8DxhSvo6jSLjLi8FvWqQWb8hG3bNt6V6kwjqntEFypZiMYk372eBJY-seAF4ThM_fw/exec';
+const BASE='https://torredecontrolcss.github.io/REPOSICION_UE_CSS/consumos/';
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -201,44 +206,53 @@ const fmt=(x,d=0)=>x==null||x===''||isNaN(x)?'—':Number(x).toLocaleString('es-
 const fmU=x=>x==null||x===''?'—':fmt(x,Math.abs(x)<10&&x%1?2:0);
 const pct=x=>x==null||!isFinite(x)?'—':(x>0?'+':'')+fmt(x*100,1)+' %';
 const st=s=>'<span class="st s-'+esc(s)+'">'+esc(String(s).replace('_',' '))+'</span>';
-function toast(m,ms){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',ms||3200);}
+const kpi=(l,v,c,d)=>'<div class="kpi '+(c||'')+'"><div class="l">'+l+'</div><div class="v">'+v+'</div>'+(d?'<div class="d">'+d+'</div>':'')+'</div>';
+function toast(m,ms){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',ms||3500);}
 function modal(t,html,after){$('mT').textContent=t;$('mB').innerHTML=html;$('mb').classList.add('show');if(after)after($('mB'));}
-function cerrarModal(){$('mb').classList.remove('show');}
+function cerrarModal(){$('mb').classList.remove('show');$('mX').style.display='';}
 $('mX').onclick=cerrarModal;
-const hoyPTY=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'});
 const CATN={MED:'Medicamentos',MQ:'Material quirúrgico',LAB:'Laboratorio y radiología'};
 let UMBRAL=3;
 function marcado(prev,v){if(v===''||v==null)return false;if(prev==null||prev===0)return v>0;const r=v/prev;return r>=UMBRAL||r<=1/UMBRAL;}
 const ss={get:k=>{try{return sessionStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{sessionStorage.setItem(k,v);}catch(e){}},del:k=>{try{sessionStorage.removeItem(k);}catch(e){}}};
 const ls={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);return true;}catch(e){return false;}},del:k=>{try{localStorage.removeItem(k);}catch(e){}}};
+const slug=n=>String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 
-/* ---------- comunicación con el script ---------- */
+/* ---------- lectura de JSON publicados (sin el script) ---------- */
+const JC={};
+async function getJ(f,fresco){
+ if(!fresco&&JC[f])return JC[f];
+ for(let i=0;i<3;i++){
+  try{const r=await fetch(BASE+f+'?ts='+Date.now(),{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error(r.status);const j=await r.json();JC[f]=j;return j;}
+  catch(e){if(i===2)throw new Error('No se pudo leer '+f+'. Revise la conexión.');await new Promise(z=>setTimeout(z,1200*(i+1)));}
+ }}
+
+/* ---------- escrituras y datos con nombres: script ---------- */
 let TOKEN=ss.get('cons_tok')||'';
-function jsonp(params,intento){
- intento=intento||0;
+function jsonp(params,opt){
+ opt=opt||{};const intento=opt.intento||0,to=opt.timeout||45000,reint=opt.reintentos==null?2:opt.reintentos;
  return new Promise((res,rej)=>{
-  if(API.indexOf('http')!==0){rej(new Error('Falta configurar la URL del script en el front (constante API).'));return;}
   const cb='__cb'+Date.now()+Math.floor(Math.random()*1e6);const s=document.createElement('script');
   const q=Object.assign({},params,{callback:cb});if(TOKEN&&!q.token)q.token=TOKEN;
   s.src=API+'?'+Object.keys(q).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(q[k]==null?'':q[k])).join('&');
-  const fin=()=>{delete window[cb];s.remove();clearTimeout(to);};
-  const to=setTimeout(()=>{fin();if(intento<2)jsonp(params,intento+1).then(res,rej);else rej(new Error('Sin respuesta del servidor. Revise su conexión e intente de nuevo.'));},45000);
-  window[cb]=r=>{fin();if(r&&r.ok)res(r);else{const m=r&&r.error||'Error desconocido';if(m==='SESION_VENCIDA'){sesionVencida();}rej(new Error(m));}};
-  s.onerror=()=>{fin();if(intento<2)setTimeout(()=>jsonp(params,intento+1).then(res,rej),1500);else rej(new Error('No se pudo contactar al servidor.'));};
+  const fin=()=>{delete window[cb];s.remove();clearTimeout(tm);};
+  const tm=setTimeout(()=>{fin();if(intento<reint)jsonp(params,Object.assign({},opt,{intento:intento+1})).then(res,rej);else rej(new Error('Sin respuesta del servidor. Revise su conexión e intente de nuevo.'));},to);
+  window[cb]=r=>{fin();if(r&&r.ok)res(r);else{const m=r&&r.error||'Error desconocido';if(m==='SESION_VENCIDA')sesionVencida();rej(new Error(m));}};
+  s.onerror=()=>{fin();if(intento<reint)setTimeout(()=>jsonp(params,Object.assign({},opt,{intento:intento+1})).then(res,rej),1500);else rej(new Error('No se pudo contactar al servidor.'));};
   document.head.appendChild(s);});
 }
 async function postJson(body){
  const uid='u'+Date.now()+Math.floor(Math.random()*1e9);body.uid=uid;body.token=TOKEN;
  await fetch(API,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
  for(let i=0;i<60;i++){await new Promise(r=>setTimeout(r,i<5?1500:3000));
-  let r;try{r=await jsonp({accion:'resultado',uid});}catch(e){if(/SESION/.test(e.message))throw e;continue;}
+  let r;try{r=await jsonp({accion:'resultado',uid},{reintentos:0,timeout:20000});}catch(e){if(/SESI/.test(e.message))throw e;continue;}
   if(!r.pendiente)return r;}
- throw new Error('El servidor no confirmó el envío. Revise "Mis envíos" antes de reintentar.');
+ throw new Error('El servidor no confirmó el envío. Revise el historial antes de reintentar.');
 }
 function err(e){toast(e.message||String(e),6000);}
 function sesionVencida(){TOKEN='';ss.del('cons_tok');ME=null;$('scrApp').style.display='none';$('scrLogin').style.display='';$('who').innerHTML='';toast('Su sesión venció. Ingrese de nuevo.');}
 
-/* ---------- tabla genérica ordenable ---------- */
+/* ---------- tabla ordenable ---------- */
 function table(el,cols,rows,opt={}){
  const s=el._s||(el._s={k:opt.sort||cols[0].k,d:opt.dir||1,lim:300});
  if(opt.reset){s.k=opt.sort||cols[0].k;s.d=opt.dir||1;s.lim=300;}
@@ -246,7 +260,7 @@ function table(el,cols,rows,opt={}){
  const so=rows.slice().sort((a,b)=>{let x=a[s.k],y=b[s.k];if(x==null||x==='')x=col.t==='n'?-1e18:'';if(y==null||y==='')y=col.t==='n'?-1e18:'';return (col.t==='n'?x-y:String(x).localeCompare(String(y),'es'))*s.d;});
  const sh=so.slice(0,s.lim);
  let h='<div class="tw"><table><thead><tr>'+cols.map((c,i)=>'<th data-i="'+i+'">'+c.l+(s.k===c.k&&!c.ns?'<span class="ar">'+(s.d>0?'▲':'▼')+'</span>':'')+'</th>').join('')+'</tr></thead><tbody>';
- if(!rows.length)h+='<tr><td colspan="'+cols.length+'" class="note" style="padding:10px">Sin registros para el filtro.</td></tr>';
+ if(!rows.length)h+='<tr><td colspan="'+cols.length+'" class="note" style="padding:10px">'+(opt.vacio||'Sin registros para el filtro.')+'</td></tr>';
  sh.forEach((r,i)=>{h+='<tr data-i="'+i+'" class="'+(opt.click?'clk ':'')+(opt.cls?opt.cls(r):'')+'">'+cols.map(c=>'<td class="'+(c.t==='n'?'n':'')+'">'+(c.f?c.f(r[c.k],r):esc(r[c.k]))+'</td>').join('')+'</tr>';});
  h+='</tbody></table></div>';if(so.length>s.lim)h+='<div style="margin-top:6px"><button data-more>Mostrar más ('+s.lim+' de '+so.length+')</button></div>';
  el.innerHTML=h;
@@ -258,36 +272,55 @@ function table(el,cols,rows,opt={}){
 }
 function csv(name,cols,rows){
  const q=v=>{v=v==null?'':String(v);return /[",;\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
- const txt='\ufeff'+cols.map(c=>q(c.l.replace(/<[^>]+>/g,''))).join(',')+'\n'+rows.map(r=>cols.map(c=>q(c.x?c.x(r):r[c.k])).join(',')).join('\n');
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
-}
+ const txt='\ufeff'+cols.filter(c=>!c.ns).map(c=>q(c.l.replace(/<[^>]+>/g,''))).join(',')+'\n'+rows.map(r=>cols.filter(c=>!c.ns).map(c=>q(r[c.k])).join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
 
-/* ---------- datos comunes ---------- */
-let ME=null,CAT=null,RI={},PERS=[],cur=null;
+/* ---------- gráficos ---------- */
+const CH={};
+function chart(id,cfg){if(!window.Chart)return;if(CH[id])CH[id].destroy();CH[id]=new Chart($(id),cfg);}
+if(window.Chart){Chart.defaults.font.family='Calibri, Segoe UI, sans-serif';Chart.defaults.font.size=12;}
+const CA='#9fb6d3',CB='#0C447C';
+
+/* ======================================================================
+ *  DATOS BASE
+ * ==================================================================== */
+let ME=null,CAT=null,RI={},UEI={},PERS=[],cur=null,SIN_JSON=false;
 async function cargarBase(){
- const [c,p]=await Promise.all([jsonp({accion:'catalogo'}),jsonp({accion:'periodos'})]);
- CAT=c.catalogo;RI={};CAT.R.forEach((r,i)=>RI[r[0]]=i);PERS=p.periodos;
+ let c=null,p=null;
+ try{[c,p]=await Promise.all([getJ('catalogo.json',true),getJ('periodos.json',true)]);}catch(e){}
+ if(c&&p){CAT={R:c.R,U:c.U.map(u=>({n:u[0],ced:u[1],cod:u[2],cat:u[3],slug:u[4]}))};PERS=p.P;SIN_JSON=false;}
+ else{const [a,b]=await Promise.all([jsonp({accion:'catalogo'}),jsonp({accion:'periodos'})]);CAT=a.catalogo;CAT.U.forEach(u=>u.slug=slug(u.n));PERS=b.periodos;SIN_JSON=true;}
+ RI={};CAT.R.forEach((r,i)=>RI[r[0]]=i);UEI={};CAT.U.forEach(u=>UEI[u.n]=u);
 }
-const desc=cod=>{const i=RI[cod];return i==null?'':CAT.R[i][1];};
-const grupo=cod=>{const i=RI[cod];return i==null?'':CAT.R[i][2];};
+const desc=c=>{const i=RI[c];return i==null?'':CAT.R[i][1];};
+const grupo=c=>{const i=RI[c];return i==null?'':CAT.R[i][2];};
+const tipo=c=>{const i=RI[c];return i==null?'':CAT.R[i][3];};
 const tiene=r=>ME&&(ME.roles.indexOf('ADMIN')>=0||ME.roles.indexOf(r)>=0);
 const esAdmin=()=>ME&&ME.roles.indexOf('ADMIN')>=0;
 function misCats(){return esAdmin()?['MED','MQ','LAB']:ME.cats;}
-function periodoAbierto(){const m=PERS.filter(p=>p.t==='MENSUAL');return (m.find(p=>p.e==='ABIERTO')||m.filter(p=>p.e==='CERRADO').slice(-1)[0]||m[0]||{}).p;}
-
-/* ---------- ingreso ---------- */
-$('lgPin').addEventListener('keydown',e=>{if(e.key==='Enter')$('lgBtn').click();});
-$('lgBtn').onclick=async()=>{
- const b=$('lgBtn');b.disabled=true;
- try{const r=await jsonp({accion:'login',cedula:$('lgCed').value.trim(),pin:$('lgPin').value.trim()});TOKEN=r.token;ss.set('cons_tok',TOKEN);$('lgPin').value='';
-  if(r.sesion.cambiarPin)pedirCambioPin(r.sesion);else await entrar(r.sesion);}catch(e){err(e);}finally{b.disabled=false;}};
-function pedirCambioPin(s){
- modal('Cambio de PIN obligatorio','<div class="note">Está usando un PIN temporal. Defina un PIN nuevo de 4 a 6 dígitos. Se guarda cifrado; nadie, ni el administrador, puede verlo.</div><label>PIN nuevo</label><input id="p1" type="password" maxlength="6" inputmode="numeric"><label>Repetir PIN</label><input id="p2" type="password" maxlength="6" inputmode="numeric"><button class="pri" id="pinOk">Guardar e ingresar</button>',
- ()=>{$('mX').style.display='none';$('pinOk').onclick=async()=>{try{const r=await jsonp({accion:'cambiar_pin',pin:$('p1').value.trim(),pin2:$('p2').value.trim()});$('mX').style.display='';cerrarModal();toast('PIN actualizado');await entrar(r.sesion);}catch(e){err(e);}};});
+function mensuales(){return PERS.filter(p=>p.t==='MENSUAL');}
+function periodoAbierto(){const m=mensuales();return (m.find(p=>p.e==='ABIERTO')||m.filter(p=>p.e==='CERRADO').slice(-1)[0]||m[0]||{}).p;}
+async function ueJson(ue,fresco){
+ const j=await getJ('ue/'+slug(ue)+'.json',fresco).catch(()=>null);
+ if(j)return j;
+ /* respaldo si aún no hay JSON: lo pide al script */
+ const r=await jsonp({accion:'mi_reporte',ue,cat:misCats()[0],periodo:periodoAbierto()});
+ return {ue,P:[],R:{},ult:r.ultimo,env:{},umbral:r.umbral,_vivo:true};
 }
+
+/* ======================================================================
+ *  INGRESO
+ * ==================================================================== */
+$('lgPin').addEventListener('keydown',e=>{if(e.key==='Enter')$('lgBtn').click();});
+$('lgBtn').onclick=async()=>{const b=$('lgBtn');b.disabled=true;
+ try{const r=await jsonp({accion:'login',cedula:$('lgCed').value.trim(),pin:$('lgPin').value.trim()},{reintentos:0});TOKEN=r.token;ss.set('cons_tok',TOKEN);$('lgPin').value='';
+  if(r.sesion.cambiarPin)pedirCambioPin();else await entrar(r.sesion);}catch(e){err(e);}finally{b.disabled=false;}};
+function pedirCambioPin(){
+ modal('Cambio de PIN obligatorio','<div class="note">Está usando un PIN temporal. Defina un PIN nuevo de 4 a 6 dígitos. Se guarda cifrado; nadie, ni el administrador, puede verlo.</div><label>PIN nuevo</label><input id="p1" type="password" maxlength="6" inputmode="numeric"><label>Repetir PIN</label><input id="p2" type="password" maxlength="6" inputmode="numeric"><button class="pri" id="pinOk">Guardar e ingresar</button>',
+ ()=>{$('mX').style.display='none';$('pinOk').onclick=async()=>{try{const r=await jsonp({accion:'cambiar_pin',pin:$('p1').value.trim(),pin2:$('p2').value.trim()});cerrarModal();toast('PIN actualizado');await entrar(r.sesion);}catch(e){err(e);}};});}
 $('lnkOlv').onclick=()=>modal('Olvidé mi PIN','<div class="note">Comuníquese con la Dirección Nacional de Logística. Un administrador restablecerá su PIN y le entregará uno temporal; el sistema le pedirá cambiarlo al ingresar. El restablecimiento queda en la bitácora.</div>');
 $('lnkSol').onclick=async()=>{
- let U=[];try{U=(await jsonp({accion:'ues_publico'})).ues;}catch(e){err(e);return;}
+ let U=[];try{const c=await getJ('catalogo.json');U=c?c.U.map(u=>u[0]):(await jsonp({accion:'ues_publico'})).ues;}catch(e){err(e);return;}
  modal('Solicitar acceso','<div class="note">Solicite acceso como CARGA (reporta el consumo de su UE) o LECTURA (consulta). Los roles de validación, aprobación y administración los asigna un administrador.</div>'+
  '<label>Cédula</label><input id="sCed"><label>Nombre completo</label><input id="sNom"><label>Cargo</label><input id="sCar"><label>Correo institucional</label><input id="sCor"><label>Teléfono</label><input id="sTel">'+
  '<label>Unidad Ejecutora</label><select id="sUe"><option value=""></option>'+U.map(u=>'<option>'+esc(u)+'</option>').join('')+'</select>'+
@@ -295,85 +328,86 @@ $('lnkSol').onclick=async()=>{
  '<label>Rol solicitado</label><select id="sRol"><option>CARGA</option><option>LECTURA</option></select><label>Justificación</label><textarea id="sJus" rows="2"></textarea>'+
  '<label>PIN que usará (4 a 6 dígitos)</label><input id="sPin" type="password" maxlength="6" inputmode="numeric"><button class="pri" id="solOk">Enviar solicitud</button>',
  b=>$('solOk').onclick=async()=>{const cats=[...b.querySelectorAll('.chk input:checked')].map(x=>x.value).join(',');
-  try{await jsonp({accion:'solicitar_acceso',cedula:$('sCed').value,nombre:$('sNom').value,cargo:$('sCar').value,correo:$('sCor').value,telefono:$('sTel').value,ue:$('sUe').value,cats,rol:$('sRol').value,justificacion:$('sJus').value,pin:$('sPin').value});
-   cerrarModal();toast('Solicitud enviada. Podrá ingresar cuando sea aprobada.',6000);}catch(e){err(e);}});
-};
+  try{await jsonp({accion:'solicitar_acceso',cedula:$('sCed').value,nombre:$('sNom').value,cargo:$('sCar').value,correo:$('sCor').value,telefono:$('sTel').value,ue:$('sUe').value,cats,rol:$('sRol').value,justificacion:$('sJus').value,pin:$('sPin').value},{reintentos:0});
+   cerrarModal();toast('Solicitud enviada. Podrá ingresar cuando sea aprobada.',6000);}catch(e){err(e);}});};
 
 async function entrar(s){
  ME=s;$('scrLogin').style.display='none';$('scrApp').style.display='';
  $('who').innerHTML='<b>'+esc(s.nombre)+'</b><br>'+esc(s.roles.join(' · '))+(s.cats.length?' · '+esc(s.cats.join(',')):'')+'<br><span class="lnk" style="color:#d6e2f0" id="out">Salir</span>';
- $('out').onclick=async()=>{try{await jsonp({accion:'salir'});}catch(e){}sesionVencida();};
+ $('out').onclick=async()=>{try{await jsonp({accion:'salir'},{reintentos:0});}catch(e){}sesionVencida();};
  try{await cargarBase();}catch(e){err(e);return;}
  const T=[];
- if(tiene('CARGA'))T.push(['carga',esAdmin()?'Carga como UE':'Mi reporte'],['envios',esAdmin()?'Envíos por UE':'Mis envíos']);
- if(tiene('VALIDA')||tiene('APRUEBA'))T.push(['bandeja',esAdmin()?'Bandeja (validación y aprobación)':tiene('APRUEBA')&&!tiene('VALIDA')?'Bandeja de aprobación':'Bandeja de validación']);
- T.push(['cobertura','Cobertura'],['dash','Dashboard']);
- if(tiene('APRUEBA'))T.push(['sol','Solicitudes de acceso']);
- if(esAdmin())T.push(['admin','Administración']);
- if(!esAdmin()&&!tiene('CARGA')&&(tiene('VALIDA')||tiene('APRUEBA')))T.sort((a,b)=>a[0]==='bandeja'?-1:b[0]==='bandeja'?1:0);
- $('tabs').innerHTML=T.map(([k,l])=>'<div class="tab" data-v="'+k+'">'+l+'</div>').join('');
+ if(tiene('CARGA'))T.push(['rep','1 · Reportar']);
+ if(tiene('VALIDA')||tiene('APRUEBA'))T.push(['rev','2 · Revisar']);
+ T.push(['ana','3 · Análisis']);
+ if(esAdmin()||tiene('APRUEBA'))T.push(['adm','4 · Administración']);
+ $('tabs').innerHTML=T.map(([k,l])=>'<div class="tab" data-v="'+k+'">'+l+'</div>').join('')+'<div class="sp"></div><button class="tbtn" id="btnTour">Ver tutorial guiado</button>';
  document.querySelectorAll('.tab').forEach(x=>x.onclick=()=>go(x.dataset.v));
- initSelects();go(T[0][0]);
+ $('btnTour').onclick=()=>iniciarTour();
+ initSelects();
+ await go(T[0][0]);
+ if(SIN_JSON&&esAdmin())toast('Los JSON aún no están publicados. Vaya a Administración › JSON y pulse Regenerar JSON.',8000);
+ if(!ls.get('cons_tour_'+ME.cedula)){ls.set('cons_tour_'+ME.cedula,'1');setTimeout(()=>modal('Bienvenido','<div class="note">¿Es su primera vez en el Registro de Consumos? El tutorial guiado le muestra, paso a paso, lo que usted puede hacer según su rol.</div><button class="pri" id="tOk">Ver tutorial guiado</button><button id="tNo">Ahora no</button>',()=>{$('tOk').onclick=()=>{cerrarModal();iniciarTour();};$('tNo').onclick=cerrarModal;}),600);}
 }
-function go(v){cur=v;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.v===v));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id==='v-'+v));
- ({carga:rCarga,envios:rMisEnv,bandeja:rBandeja,cobertura:rCob,dash:rDash,sol:rSol,admin:rAdmin})[v]();}
+async function go(v){cur=v;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.v===v));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id==='v-'+v));
+ return ({rep:rRep,rev:rRev,ana:rAna,adm:rAdm})[v]();}
 
 function initSelects(){
- const mens=PERS.filter(p=>p.t==='MENSUAL'),todos=PERS.map(p=>p.p),pa=periodoAbierto();
+ const mens=mensuales(),pa=periodoAbierto();
  $('cPer').innerHTML=mens.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+p.e.toLowerCase()+'</option>').join('');
- ['bPer','kPer'].forEach(id=>$(id).innerHTML=mens.slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join(''));
+ $('rPer').innerHTML=mens.slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('');
+ $('kPer').innerHTML=mens.slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('');
  const uesCarga=esAdmin()?CAT.U.map(u=>u.n):ME.ues;
- [$('cUe'),$('meUe')].forEach(s=>s.innerHTML=uesCarga.map(u=>'<option>'+esc(u)+'</option>').join(''));
- $('cUeBox').style.display=uesCarga.length>1?'':'none';$('meUeBox').style.display=uesCarga.length>1?'':'none';
- $('bCat').innerHTML='<option value="">Todas mis categorías</option>'+misCats().map(c=>'<option>'+c+'</option>').join('');
- $('bUe').innerHTML='<option value="">Todas</option>'+CAT.U.map(u=>'<option>'+esc(u.n)+'</option>').join('');
+ $('cUe').innerHTML=uesCarga.map(u=>'<option>'+esc(u)+'</option>').join('');$('cUeBox').style.display=uesCarga.length>1?'':'none';
+ $('rCat').innerHTML='<option value="">Todas mis categorías</option>'+misCats().map(c=>'<option>'+c+'</option>').join('');
+ $('rUe').innerHTML='<option value="">Todas</option>'+CAT.U.map(u=>'<option>'+esc(u.n)+'</option>').join('');
  $('kCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(String))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');
- const ofic=todos.slice().reverse();$('dA').innerHTML=ofic.map((p,i)=>'<option'+(i===1?' selected':'')+'>'+p+'</option>').join('');$('dB').innerHTML=ofic.map((p,i)=>'<option'+(i===0?' selected':'')+'>'+p+'</option>').join('');
- const hs=todos.filter(p=>/S\d/.test(p));if(hs.length>=2){$('dA').value=hs[hs.length-2];$('dB').value=hs[hs.length-1];}
- $('dCat').innerHTML='<option value="">Todas</option>'+['MED','MQ','LAB'].map(c=>'<option>'+c+'</option>').join('');
- $('dUe').innerHTML='<option value="">Todas</option>'+CAT.U.map(u=>'<option>'+esc(u.n)+'</option>').join('');
- $('aRol').innerHTML='<option value="">Todos los roles</option>'+['ADMIN','APRUEBA','VALIDA','CARGA','LECTURA'].map(x=>'<option>'+x+'</option>').join('');
+ const todos=PERS.filter(p=>p.e!=='PROGRAMADO').map(p=>p.p);$('aA').innerHTML=todos.map(p=>'<option>'+p+'</option>').join('');$('aB').innerHTML=$('aA').innerHTML;
+ const hs=todos.filter(p=>/S\d/.test(p));$('aA').value=hs.length>=2?hs[hs.length-2]:todos[0];$('aB').value=hs.length>=1?hs[hs.length-1]:todos[todos.length-1];
+ const soloUE=!ME.nacional;const uesA=soloUE?ME.ues:CAT.U.map(u=>u.n);
+ $('aUe').innerHTML=(soloUE?'':'<option value="">Todas</option>')+uesA.map(u=>'<option>'+esc(u)+'</option>').join('');
+ $('dlRen').innerHTML=CAT.R.map(r=>'<option value="'+esc(r[0]+' · '+r[1])+'">').join('');
 }
 
 /* ======================================================================
- *  MI REPORTE (CARGA)
+ *  1 · REPORTAR
  * ==================================================================== */
-let C={ue:'',cat:'',per:'',ult:{},env:null,soloLectura:false,filas:[],archivo:null};
+let C={ue:'',cat:'',per:'',J:null,ult:{},env:null,soloLectura:false,archivo:null,d:{}};
 function dkey(){return 'cons_draft|'+ME.cedula+'|'+C.ue+'|'+C.cat+'|'+C.per;}
 function draft(){try{return JSON.parse(ls.get(dkey())||'{}');}catch(e){return {};}}
 function saveDraft(d){d._t=new Date().toISOString();if(ls.set(dkey(),JSON.stringify(d)))$('cDraft').textContent='Borrador guardado en este equipo '+new Date().toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit'})+' ·';}
-$('cPer').onchange=()=>rCarga();$('cUe').onchange=()=>rCarga();
-async function rCarga(){
- C.per=$('cPer').value;C.ue=$('cUe').value;C.archivo=null;
+$('cPer').onchange=()=>rRep();$('cUe').onchange=()=>{C.J=null;rRep();};
+async function rRep(fresco){
+ const ueN=$('cUe').value;if(ueN!==C.ue)C.J=null;C.per=$('cPer').value;C.ue=ueN;C.archivo=null;
  const cats=misCats();if(!cats.includes(C.cat))C.cat=cats[0];
  const P=PERS.find(p=>p.p===C.per)||{};
  $('cPerInfo').innerHTML=st(P.e||'—')+(P.lim?' Fecha límite '+P.lim+' (P-240: cinco primeros días del mes siguiente)':'');
  $('cCat').innerHTML=cats.map(c=>'<div data-c="'+c+'" class="'+(c===C.cat?'active':'')+'">'+c+' · '+CATN[c]+'</div>').join('');
- $('cCat').querySelectorAll('div').forEach(d=>d.onclick=()=>{C.cat=d.dataset.c;rCarga();});
+ $('cCat').querySelectorAll('div').forEach(d=>d.onclick=()=>{C.cat=d.dataset.c;rRep();});
  $('cTit').textContent=C.ue+' · '+CATN[C.cat];$('tCarga').innerHTML='<div class="cargando">Cargando…</div>';$('cEstado').innerHTML='';
- let r;try{r=await jsonp({accion:'mi_reporte',ue:C.ue,cat:C.cat,periodo:C.per});}catch(e){err(e);$('tCarga').innerHTML='<div class="cargando">'+esc(e.message)+'</div>';return;}
- UMBRAL=r.umbral||3;C.ult=r.ultimo;C.env=r.envio;
- const e=C.env,est=e?e.e:'SIN_REPORTE';
+ try{if(!C.J||fresco)C.J=await ueJson(C.ue,fresco);}catch(e){err(e);$('tCarga').innerHTML='<div class="cargando">'+esc(e.message)+'</div>';return;}
+ UMBRAL=C.J.umbral||3;C.ult=C.J.ult||{};
+ const lo=ls.get('cons_env|'+C.ue+'|'+C.cat+'|'+C.per);let e=(C.J.env[C.cat]||{})[C.per]||null;
+ if(lo){try{const x=JSON.parse(lo);if(!e||x.ver>e.ver||(x.ver===e.ver&&x.t>Date.parse(C.J.generado)))e=x;}catch(z){}}
+ C.env=e;const est=e?e.e:'SIN_REPORTE';
  C.soloLectura=P.e!=='ABIERTO'||['VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
- $('cEstado').innerHTML='<div class="legend">Estado del envío de '+CATN[C.cat].toLowerCase()+' para '+C.per+': '+st(est)+(e?' · '+esc(e.id)+' versión '+e.ver+' · '+esc(e.fc):'')+
-  (e&&e.obs&&['OBSERVADO','DEVUELTO'].includes(est)?'<br><b>Observación de Planificación:</b> '+esc(e.obs):'')+
+ $('cEstado').innerHTML='<div class="legend">Estado del envío de '+CATN[C.cat].toLowerCase()+' para '+C.per+': '+st(est)+(e?' · '+esc(e.id)+' versión '+e.ver+' · '+esc(e.f||''):'')+
+  (e&&e.obs?'<br><b>Observación de Planificación:</b> '+esc(e.obs):'')+
   '<br>'+(C.soloLectura?(P.e!=='ABIERTO'?'El periodo no está abierto para carga.':'El envío está en revisión o aprobado; no se puede modificar. Si hay un error, pida a Planificación que lo observe.'):'Deje vacío un renglón para conservar su último valor aprobado. Escriba 0 si no hubo consumo. Una variación de '+UMBRAL+' veces o más, hacia arriba o hacia abajo, pide justificación.')+'</div>';
  let d=draft();
- if(e&&!d._t&&(est==='OBSERVADO'||est==='ENVIADO'||C.soloLectura)){
-  try{const x=await jsonp({accion:'envio_detalle',id:e.id});d={};x.filas.forEach(f=>d[f[0]]={v:f[1],j:f[4]});if(!C.soloLectura)saveDraft(d);C._det=d;}catch(e2){err(e2);}
+ if(e&&e.id&&!d._t&&(est==='OBSERVADO'||est==='ENVIADO'||C.soloLectura)){
+  try{const x=await jsonp({accion:'envio_detalle',id:e.id});const dd={};x.filas.forEach(f=>dd[f[0]]={v:f[1],j:f[4]});if(C.soloLectura)d=dd;else{d=dd;saveDraft(d);}}catch(z){err(z);}
  }
- if(C.soloLectura&&C._det)d=C._det;C._det=null;
- C.d=d;$('cDraft').textContent=d._t&&!C.soloLectura?'Borrador guardado en este equipo ·':'';
+ C.d=d;if(!C.soloLectura&&d._t)$('cDraft').textContent='Borrador guardado en este equipo ·';else $('cDraft').textContent='';
  ['cCopy','cUp','cClr'].forEach(id=>$(id).disabled=C.soloLectura);
- renderCarga();
+ renderCarga();rHist();
 }
 function cRows(){const d=C.d||{};
  return CAT.R.filter(r=>r[3]===C.cat).map(r=>{const o=C.ult[r[0]];const x=d[r[0]]||{};const v=x.v==null?'':x.v;const prev=o?o[0]:null;
   return {cod:r[0],des:r[1],grp:r[2],prev,pp:o?o[1]:'',v,dp:(v!==''&&prev)?(v-prev)/prev:null,fl:marcado(prev,v===''?null:+v),j:x.j||''};});}
 function renderCarga(){
- const q=$('cQ').value.trim().toLowerCase(),f=$('cF').value;let rows=cRows();
- const conPrev=rows.some(r=>r.prev>0);if(f==='prev'&&!conPrev&&!q)$('cF').value='all';
- const ff=$('cF').value;
+ const q=$('cQ').value.trim().toLowerCase();let rows=cRows();
+ if($('cF').value==='prev'&&!rows.some(r=>r.prev>0)&&!q)$('cF').value='all';const ff=$('cF').value;
  rows=rows.filter(r=>(!q||r.cod.includes(q)||r.des.toLowerCase().includes(q))&&(ff==='all'||(ff==='prev'&&(r.prev>0||r.v!==''))||(ff==='mod'&&r.v!=='')||(ff==='flag'&&r.fl)));
  const dis=C.soloLectura?' disabled':'';
  table($('tCarga'),[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'grp',l:'Grupo'},{k:'prev',l:'Último aprobado',t:'n',f:(v,r)=>fmU(v)+(r.pp?' <span class="note">'+esc(r.pp)+'</span>':'')},
@@ -385,75 +419,69 @@ function renderCarga(){
     const d=C.d;d[i.dataset.c]=Object.assign(d[i.dataset.c]||{},{v:t===''?null:+t});if(t==='')delete d[i.dataset.c].v;saveDraft(d);renderCarga();});
    el.querySelectorAll('input[data-j]').forEach(i=>i.onchange=()=>{const d=C.d;d[i.dataset.j]=Object.assign(d[i.dataset.j]||{},{j:i.value});saveDraft(d);resumen();});}});
  resumen();}
-function resumen(){const rows=cRows();const con=rows.filter(r=>r.v!=='').length,prev=rows.filter(r=>r.prev!=null).length,sin=rows.filter(r=>r.v===''&&r.prev!=null).length,fl=rows.filter(r=>r.fl&&!String(r.j).trim()).length;
- $('cRes').innerHTML='<b>'+con+'</b> renglones con dato este mes · <b>'+sin+'</b> de '+prev+' con histórico quedan vacíos y conservarán su último valor aprobado · '+(fl?'<span style="color:#b3261e"><b>'+fl+'</b> requieren justificación</span>':'sin justificaciones pendientes');
+function resumen(){const rows=cRows();const con=rows.filter(r=>r.v!=='').length,prev=rows.filter(r=>r.prev>0).length,sin=rows.filter(r=>r.v===''&&r.prev>0).length,fl=rows.filter(r=>r.fl&&!String(r.j).trim()).length;
+ $('cRes').innerHTML='<b>'+con+'</b> renglones con dato este mes · <b>'+sin+'</b> de '+prev+' con consumo previo quedan vacíos y conservarán su último valor aprobado · '+(fl?'<span style="color:#b3261e"><b>'+fl+'</b> requieren justificación</span>':'sin justificaciones pendientes');
  $('cSend').disabled=C.soloLectura||!con||fl>0;}
 $('cQ').oninput=()=>renderCarga();$('cF').onchange=()=>renderCarga();
 $('cCopy').onclick=()=>{const d=C.d;let n=0;cRows().forEach(r=>{if(r.v===''&&r.prev!=null){d[r.cod]=Object.assign(d[r.cod]||{},{v:r.prev});n++;}});saveDraft(d);renderCarga();toast(n+' renglones completados con su último valor');};
 $('cClr').onclick=()=>modal('Borrar borrador','<div class="note">Se borran los valores escritos en este equipo para '+esc(C.ue)+' · '+C.cat+' · '+C.per+'. Lo ya enviado no se modifica.</div><button class="bad" id="clrOk">Borrar borrador</button>',()=>$('clrOk').onclick=()=>{ls.del(dkey());C.d={};C.archivo=null;cerrarModal();renderCarga();$('cDraft').textContent='';});
 $('cTpl').onclick=()=>{
  if(!window.XLSX){toast('No se pudo cargar el componente de Excel. Revise la conexión.');return;}
- const rows=cRows().filter(r=>r.prev!=null||$('cF').value==='all');
+ const rows=cRows().filter(r=>r.prev>0||$('cF').value==='all');
  const aoa=[['CODIGO','DESCRIPCION','GRUPO','ULTIMO_APROBADO','PERIODO_ULTIMO','CONSUMO_DEL_MES','JUSTIFICACION']].concat(rows.map(r=>[r.cod,r.des,r.grp,r.prev==null?'':r.prev,r.pp,r.v===''?'':r.v,r.j||'']));
  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=[{wch:12},{wch:60},{wch:16},{wch:16},{wch:14},{wch:18},{wch:40}];
  XLSX.utils.book_append_sheet(wb,ws,'CONSUMO');
  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['UNIDAD_EJECUTORA',C.ue],['PERIODO',C.per],['CATEGORIA',C.cat],['INSTRUCCIONES','Llene solo CONSUMO_DEL_MES (consumo mensual en unidades del renglón) y JUSTIFICACION cuando la variación sea de '+UMBRAL+' veces o más. Vacío = conserva el último valor aprobado. 0 = no hubo consumo. No cambie los códigos.']]),'DATOS');
- XLSX.writeFile(wb,'PLANTILLA_CONSUMO_'+C.per+'_'+C.cat+'_'+C.ue.replace(/[^A-Z0-9]+/gi,'_').slice(0,30)+'.xlsx');};
-$('cUp').onclick=()=>modal('Subir Excel','<div class="note">El archivo se lee en este equipo. Antes de aplicar verá qué se reconoció y qué no. Se acepta la plantilla del sistema o cualquier archivo con una columna de código y una de consumo del mes.</div><input type="file" id="upF" accept=".xlsx,.xls,.csv"><div id="upR"></div>',
- b=>$('upF').onchange=()=>leerExcel($('upF').files[0]));
+ XLSX.writeFile(wb,'PLANTILLA_CONSUMO_'+C.per+'_'+C.cat+'_'+slug(C.ue).slice(0,30)+'.xlsx');};
+$('cUp').onclick=()=>modal('Subir Excel','<div class="note">El archivo se lee en este equipo. Antes de aplicar verá qué se reconoció y qué no. Se acepta la plantilla del sistema o cualquier archivo con una columna de código y una de consumo del mes.</div><input type="file" id="upF" accept=".xlsx,.xls,.csv"><div id="upR"></div>',()=>$('upF').onchange=()=>leerExcel($('upF').files[0]));
 function leerExcel(f){
- if(!f)return;if(!window.XLSX){toast('No se pudo cargar el componente de Excel.');return;}
- if(f.size>5*1024*1024){toast('El archivo supera 5 MB.');return;}
+ if(!f)return;if(!window.XLSX){toast('No se pudo cargar el componente de Excel.');return;}if(f.size>5*1024*1024){toast('El archivo supera 5 MB.');return;}
  const rd=new FileReader();rd.onload=()=>{
   let wb;try{wb=XLSX.read(new Uint8Array(rd.result),{type:'array'});}catch(e){toast('No se pudo leer el archivo.');return;}
-  const ws=wb.Sheets[wb.SheetNames.find(n=>/CONSUMO/i.test(n))||wb.SheetNames[0]];
-  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  const ws=wb.Sheets[wb.SheetNames.find(n=>/CONSUMO/i.test(n))||wb.SheetNames[0]];const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
   let hi=-1,ic=-1,iv=-1,ij=-1;
   for(let i=0;i<Math.min(aoa.length,20)&&hi<0;i++){const h=aoa[i].map(x=>String(x).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim());
-   const c=h.findIndex(x=>/^(CODIGO|RENGLON|CODIGO DEL PRODUCTO|COD_RENGLON)$/.test(x)||x==='CODIGO DEL PRODUCTO');
+   const c=h.findIndex(x=>/^(CODIGO|RENGLON|CODIGO DEL PRODUCTO|COD_RENGLON)$/.test(x));
    let v=h.findIndex(x=>/CONSUMO_DEL_MES|CONSUMO DEL MES/.test(x));if(v<0)v=h.findIndex(x=>/^CONSUMO/.test(x)&&!/ULTIMO/.test(x));
    if(c>=0&&v>=0){hi=i;ic=c;iv=v;ij=h.findIndex(x=>/JUSTIF/.test(x));}}
   if(hi<0){$('upR').innerHTML='<div class="warn">No se encontraron las columnas de código y de consumo del mes. Use la plantilla del sistema.</div>';return;}
-  const tipo={};CAT.R.forEach(r=>tipo[r[0]]=r[3]);const out=[],seen={};let vacios=0;
+  const out=[],seen={};let vacios=0;
   aoa.slice(hi+1).forEach((row,k)=>{const cod=String(row[ic]).trim().replace(/\.0+$/,'');const raw=String(row[iv]).trim().replace(/,/g,'');if(!cod&&!raw)return;
    let res='Reconocido',ok=true;const v=raw===''?null:Number(raw);
-   if(!cod){res='Sin código';ok=false;}else if(!tipo[cod]){res='No existe en el catálogo';ok=false;}else if(tipo[cod]!==C.cat){res='Pertenece a '+tipo[cod]+', no a '+C.cat;ok=false;}
+   if(!cod){res='Sin código';ok=false;}else if(!tipo(cod)){res='No existe en el catálogo';ok=false;}else if(tipo(cod)!==C.cat){res='Pertenece a '+tipo(cod)+', no a '+C.cat;ok=false;}
    else if(raw===''){vacios++;return;}else if(isNaN(v)||v<0){res='Valor no válido';ok=false;}else if(seen[cod]){res='Código repetido en el archivo';ok=false;}
-   if(ok)seen[cod]=1;const o=C.ult[cod];
-   out.push({fila:hi+2+k,cod,des:desc(cod),prev:o?o[0]:null,v,j:ij>=0?String(row[ij]).trim():'',res,ok});});
+   if(ok)seen[cod]=1;const o=C.ult[cod];out.push({fila:hi+2+k,cod,des:desc(cod),prev:o?o[0]:null,v,j:ij>=0?String(row[ij]).trim():'',res,ok});});
   const okN=out.filter(x=>x.ok).length;
   $('upR').innerHTML='<div class="legend"><b>'+esc(f.name)+'</b> · filas con valor: '+out.length+' · reconocidas: '+okN+' · no aplicables: '+(out.length-okN)+' · sin valor (conservan su último aprobado): '+vacios+'</div><div class="tw" style="max-height:280px"><table><thead><tr><th>Fila</th><th>Código</th><th>Descripción</th><th>Último aprobado</th><th>Valor en el archivo</th><th>Resultado</th></tr></thead><tbody>'+
-   out.map(x=>'<tr class="'+(x.ok?'':'flag')+'"><td class="n">'+x.fila+'</td><td>'+esc(x.cod)+'</td><td>'+esc(x.des)+'</td><td class="n">'+fmU(x.prev)+'</td><td class="n">'+fmU(x.v)+'</td><td>'+esc(x.res)+'</td></tr>').join('')+'</tbody></table></div>'+
-   '<button class="pri" id="upOk"'+(okN?'':' disabled')+'>Aplicar '+okN+' valores al formulario</button>';
+   out.map(x=>'<tr class="'+(x.ok?'':'flag')+'"><td class="n">'+x.fila+'</td><td>'+esc(x.cod)+'</td><td>'+esc(x.des)+'</td><td class="n">'+fmU(x.prev)+'</td><td class="n">'+fmU(x.v)+'</td><td>'+esc(x.res)+'</td></tr>').join('')+'</tbody></table></div><button class="pri" id="upOk"'+(okN?'':' disabled')+'>Aplicar '+okN+' valores al formulario</button>';
   $('upOk').onclick=()=>{const d=C.d;out.filter(x=>x.ok).forEach(x=>{d[x.cod]=Object.assign(d[x.cod]||{},{v:x.v});if(x.j)d[x.cod].j=x.j;});saveDraft(d);
    const r2=new FileReader();r2.onload=()=>{C.archivo={nombre:f.name,mime:f.type||'application/octet-stream',b64:String(r2.result).split(',')[1]};};r2.readAsDataURL(f);
-   cerrarModal();$('cF').value='mod';renderCarga();toast(okN+' valores aplicados. Revise y envíe.');};
- };rd.readAsArrayBuffer(f);}
+   cerrarModal();$('cF').value='mod';renderCarga();toast(okN+' valores aplicados. Revise y envíe.');};};rd.readAsArrayBuffer(f);}
 $('cSend').onclick=()=>{const rows=cRows().filter(r=>r.v!=='');
  modal('Confirmar envío','<div class="note">Se enviará a validación el consumo de <b>'+esc(CATN[C.cat].toLowerCase())+'</b> de <b>'+esc(C.ue)+'</b> para <b>'+C.per+'</b>: '+rows.length+' renglones'+(C.archivo?', con el archivo <b>'+esc(C.archivo.nombre)+'</b> como respaldo':'')+'. Quedará registrado a su nombre con fecha y hora de Panamá. Después de enviar no se edita: una corrección genera una versión nueva.</div><button class="pri" id="sOk">Enviar</button>',
  ()=>$('sOk').onclick=async()=>{const b=$('sOk');b.disabled=true;b.textContent='Enviando…';
   try{const r=await postJson({accion:'enviar',ue:C.ue,cat:C.cat,periodo:C.per,canal:C.archivo?'EXCEL':'FORMULARIO',archivo:C.archivo,filas:rows.map(x=>[x.cod,+x.v,String(x.j||'')])});
-   if(!r.ok)throw new Error(r.error);ls.del(dkey());cerrarModal();toast('Envío '+r.id+' recibido (versión '+r.version+').',6000);rCarga();}
+   if(!r.ok)throw new Error(r.error);ls.del(dkey());
+   const hp=new Date().toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16);
+   ls.set('cons_env|'+C.ue+'|'+C.cat+'|'+C.per,JSON.stringify({id:r.id,ver:r.version,e:'ENVIADO',f:hp,n:r.renglones,t:Date.now()}));
+   cerrarModal();toast('Envío '+r.id+' recibido (versión '+r.version+').',6000);C.J=null;rRep(true);}
   catch(e){b.disabled=false;b.textContent='Enviar';err(e);}});};
+function rHist(){
+ const env=C.J&&C.J.env||{},rows=[];
+ Object.keys(env).forEach(c=>Object.keys(env[c]).forEach(p=>{const x=env[c][p];rows.push({per:p,cat:c,id:x.id,ver:x.ver,e:x.e,n:x.n,f:x.f,obs:x.obs||''});}));
+ table($('tHist'),[{k:'per',l:'Periodo'},{k:'cat',l:'Categoría'},{k:'id',l:'Envío'},{k:'ver',l:'Versión',t:'n'},{k:'e',l:'Estado',f:v=>st(v)},{k:'n',l:'Renglones',t:'n'},{k:'f',l:'Fecha de carga'},{k:'obs',l:'Observación'}],rows,
+  {sort:'per',dir:-1,vacio:'Aún no hay envíos de esta unidad.',click:x=>verEnvio(x.id,'h')});}
 
-/* ======================================================================
- *  MIS ENVÍOS
- * ==================================================================== */
-$('meUe').onchange=()=>rMisEnv();
-async function rMisEnv(){const ue=$('meUe').value;$('meDet').style.display='none';$('tMisEnv').innerHTML='<div class="cargando">Cargando…</div>';
- let r;try{r=await jsonp({accion:'mis_envios',ue});}catch(e){err(e);return;}
- table($('tMisEnv'),[{k:'per',l:'Periodo'},{k:'cat',l:'Categoría'},{k:'id',l:'Envío'},{k:'ver',l:'Versión',t:'n'},{k:'canal',l:'Canal'},{k:'e',l:'Estado',f:v=>st(v)},{k:'n',l:'Renglones',t:'n'},{k:'fc',l:'Fecha de carga'},{k:'obs',l:'Observación'}],r.envios,
-  {sort:'per',dir:-1,reset:true,click:x=>verEnvio(x.id,'me')});}
+/* detalle de un envío (en vivo: lleva nombres de quien firmó) */
 async function verEnvio(id,dest){
- const box=dest==='me'?'meDet':'bDet';$(box).style.display='';
- const tt=dest==='me'?$('tMeDet'):$('tDet');tt.innerHTML='<div class="cargando">Cargando…</div>';
+ const box=dest==='h'?'hDet':'rDet',tt=dest==='h'?$('tHDet'):$('tRDet');$(box).style.display='';tt.innerHTML='<div class="cargando">Cargando…</div>';
  let r;try{r=await jsonp({accion:'envio_detalle',id});}catch(e){err(e);return;}
  const e=r.envio;
- if(dest==='me'){$('meT').textContent=e.id+' · '+e.ue+' · '+CATN[e.cat];$('meInfo').innerHTML=infoEnv(r);}
- else{selEnv=r;$('bDetT').textContent=e.id+' · '+e.ue+' · '+CATN[e.cat];$('bDetS').textContent='versión '+e.ver+' · recibido '+e.fc+' · estado '+e.e;$('bInfo').innerHTML=infoEnv(r);}
+ if(dest==='h'){$('hT').textContent=e.id+' · '+e.ue+' · '+CATN[e.cat];$('hInfo').innerHTML=infoEnv(r);}
+ else{SEL=r;$('rDetT').textContent=e.id+' · '+e.ue+' · '+CATN[e.cat];$('rDetS').textContent='versión '+e.ver+' · recibido '+e.fc+' · estado '+e.e;$('rInfo').innerHTML=infoEnv(r);}
  const rows=r.filas.map(f=>({cod:f[0],des:desc(f[0]),v:f[1],prev:f[2],pp:f[3],j:f[4],o:f[5],dp:f[2]?(f[1]-f[2])/f[2]:null,fl:e.e!=='HISTORICO'&&marcado(f[2],f[1])}));
  tt._all=rows;
- if(dest==='me')table(tt,colsDet(e),rows,{sort:'cod',reset:true,cls:x=>x.fl?'flag':''});else rDet();
+ if(dest==='h')table(tt,colsDet(e),rows,{sort:'cod',reset:true,cls:x=>x.fl?'flag':''});else rDetalle();
  $(box).scrollIntoView({behavior:'smooth'});}
 function colsDet(e){return e.e==='HISTORICO'
  ?[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'v',l:'Consumo mensual',t:'n',f:fmU},{k:'o',l:'Celda de origen en el libro'}]
@@ -467,115 +495,178 @@ function infoEnv(r){const e=r.envio;
  (e.obs&&e.e!=='HISTORICO'?'<tr><td style="font-weight:700">Observación vigente</td><td colspan="3">'+esc(e.obs)+'</td></tr>':'')+'</tbody></table>';}
 
 /* ======================================================================
- *  BANDEJA
+ *  2 · REVISAR
  * ==================================================================== */
-let BJ=[],selEnv=null;
-['bCat','bUe','bEst'].forEach(id=>$(id).onchange=()=>pintarBandeja());$('bPer').onchange=()=>rBandeja();$('bRef').onclick=()=>rBandeja();
-async function rBandeja(){
- const V=tiene('VALIDA'),A=tiene('APRUEBA');
- const lista=esAdmin()?['ENVIADO','OBSERVADO','DEVUELTO','VALIDADO','APROBADO','PUBLICADO']:[].concat(V?['ENVIADO','DEVUELTO','OBSERVADO']:[],A?['VALIDADO','APROBADO']:[],['PUBLICADO']);
- if($('bEst')._k!==lista.join()){$('bEst').innerHTML='<option value="">Todos</option>'+[...new Set(lista)].map(x=>'<option>'+x+'</option>').join('');$('bEst').value=esAdmin()?'':A&&!V?'VALIDADO':'ENVIADO';$('bEst')._k=lista.join();}
- $('bLeg').innerHTML=(esAdmin()?'Vista completa. Como ADMIN puede validar o aprobar cualquier envío, pero no las dos cosas en el mismo envío.':A&&!V?'Envíos ya validados en sus categorías. Aprobar deja el valor listo para publicarse al Motor. Devolver lo regresa al validador con motivo obligatorio.':'Envíos recibidos de las UE en sus categorías. Validar lo pasa a aprobación. Observar lo devuelve a la UE con comentario obligatorio; la UE responde con una versión nueva.')+' <b>Haga clic en un envío para ver, debajo de la tabla, exactamente lo que cargó la UE.</b>';
- $('bTit').textContent=esAdmin()?'Bandeja general':A&&!V?'Bandeja de aprobación':'Bandeja de validación';
- $('tBandeja').innerHTML='<div class="cargando">Cargando…</div>';$('bDet').style.display='none';selEnv=null;
- try{BJ=(await jsonp({accion:'bandeja',periodo:$('bPer').value})).envios;}catch(e){err(e);return;}pintarBandeja();}
-function pintarBandeja(){const fc=$('bCat').value,fu=$('bUe').value,fe=$('bEst').value;
- const cedis={};CAT.U.forEach(u=>cedis[u.n]=u.ced);
- const rows=BJ.filter(e=>(!fc||e.cat===fc)&&(!fu||e.ue===fu)&&(!fe||e.e===fe)).map(e=>Object.assign({ced:cedis[e.ue]||''},e));
- $('bCnt').textContent=rows.length+' envíos';
- table($('tBandeja'),[{k:'id',l:'Envío'},{k:'ue',l:'Unidad Ejecutora'},{k:'ced',l:'CEDIS'},{k:'cat',l:'Cat.'},{k:'ver',l:'Versión',t:'n'},{k:'canal',l:'Canal'},{k:'fc',l:'Recibido'},{k:'n',l:'Renglones',t:'n'},{k:'nm',l:'Variaciones marcadas',t:'n',f:v=>v?'<b style="color:#b3261e">'+v+'</b>':'0'},{k:'vpor',l:'Validado por'},{k:'e',l:'Estado',f:v=>st(v)}],rows,{sort:'fc',dir:1,click:x=>verEnvio(x.id,'b')});}
-$('bQ').oninput=()=>rDet();$('bOnly').onchange=()=>rDet();
-function rDet(){const r=selEnv;if(!r)return;const e=r.envio,q=$('bQ').value.trim().toLowerCase(),only=$('bOnly').checked;
- const rows=($('tDet')._all||[]).filter(x=>(!q||x.cod.includes(q)||x.des.toLowerCase().includes(q))&&(!only||x.fl));
- table($('tDet'),colsDet(e),rows,{sort:'dp',dir:-1,cls:x=>x.fl?'flag':''});
+let BJ=[],SEL=null,rS='';
+const RSUB={val:{l:'Por validar',est:['ENVIADO','DEVUELTO'],r:'VALIDA',hot:1},apr:{l:'Por aprobar',est:['VALIDADO'],r:'APRUEBA',hot:1},obs:{l:'Observados',est:['OBSERVADO'],r:'VALIDA'},fin:{l:'Aprobados y publicados',est:['APROBADO','PUBLICADO'],r:''}};
+['rCat','rUe'].forEach(id=>$(id).onchange=()=>pintarRev());$('rPer').onchange=()=>rRev();$('rRef').onclick=()=>rRev();
+function subsRev(){return Object.keys(RSUB).filter(k=>!RSUB[k].r||tiene(RSUB[k].r));}
+async function rRev(){
+ const subs=subsRev();if(!subs.includes(rS))rS=subs[0];
+ $('rLeg').innerHTML='Aquí llegan los envíos de las UE que esperan una firma. <b>Por validar</b>: Planificación revisa lo recibido y lo valida o lo observa (vuelve a la UE con un comentario). <b>Por aprobar</b>: la jefatura aprueba lo validado o lo devuelve al validador. Solo lo aprobado puede publicarse al Motor. Haga clic en un envío para ver, debajo, exactamente lo que cargó la UE.';
+ $('tRev').innerHTML='<div class="cargando">Cargando…</div>';$('rDet').style.display='none';SEL=null;
+ try{BJ=(await jsonp({accion:'bandeja',periodo:$('rPer').value})).envios;}catch(e){err(e);return;}
+ pintarRev();}
+function pintarRev(){
+ const subs=subsRev(),fc=$('rCat').value,fu=$('rUe').value;
+ const base=BJ.filter(e=>(!fc||e.cat===fc)&&(!fu||e.ue===fu));
+ $('rSub').innerHTML=subs.map(k=>{const n=base.filter(e=>RSUB[k].est.includes(e.e)).length;return '<div data-s="'+k+'" class="'+(k===rS?'active':'')+'">'+RSUB[k].l+'<span class="cnt'+(RSUB[k].hot&&n?' hot':'')+'">'+n+'</span></div>';}).join('');
+ $('rSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{rS=d.dataset.s;$('rDet').style.display='none';pintarRev();});
+ const rows=base.filter(e=>RSUB[rS].est.includes(e.e)).map(e=>Object.assign({ced:(UEI[e.ue]||{}).ced||''},e));
+ $('rTit').textContent=RSUB[rS].l;$('rCnt').textContent=rows.length+' envíos · periodo '+$('rPer').value;
+ table($('tRev'),[{k:'id',l:'Envío'},{k:'ue',l:'Unidad Ejecutora'},{k:'ced',l:'CEDIS'},{k:'cat',l:'Cat.'},{k:'ver',l:'Versión',t:'n'},{k:'canal',l:'Canal'},{k:'fc',l:'Recibido'},{k:'n',l:'Renglones',t:'n'},{k:'nm',l:'Variaciones marcadas',t:'n',f:v=>v?'<b style="color:#b3261e">'+v+'</b>':'0'},{k:'vpor',l:'Validado por'},{k:'e',l:'Estado',f:v=>st(v)}],rows,
+  {sort:'fc',dir:1,reset:true,vacio:'No hay envíos en esta lista.',click:x=>verEnvio(x.id,'r')});}
+$('rQ').oninput=()=>rDetalle();$('rOnly').onchange=()=>rDetalle();
+function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.trim().toLowerCase(),only=$('rOnly').checked;
+ const rows=($('tRDet')._all||[]).filter(x=>(!q||x.cod.includes(q)||x.des.toLowerCase().includes(q))&&(!only||x.fl));
+ table($('tRDet'),colsDet(e),rows,{sort:'dp',dir:-1,cls:x=>x.fl?'flag':''});
  const canV=tiene('VALIDA')&&['ENVIADO','DEVUELTO'].includes(e.e),canA=tiene('APRUEBA')&&e.e==='VALIDADO';
  const segV=canV&&e.cpor===ME.nombre,segA=canA&&(e.vpor===ME.nombre||e.cpor===ME.nombre);
  let acc='';
  if(canV)acc+='<button class="bad" id="aObs">Observar</button> <button class="ok" id="aVal"'+(segV?' disabled':'')+'>Validar</button> ';
  if(canA)acc+='<button class="bad" id="aDev">Devolver</button> <button class="ok" id="aApr"'+(segA?' disabled':'')+'>Aprobar</button>';
- $('bAcc').innerHTML=acc||'<span class="note">Sin acciones disponibles para su rol en este estado.</span>';
- $('bSeg').innerHTML=segA?'<span style="color:#b3261e">Usted validó o cargó este envío; otra persona debe aprobarlo (segregación de funciones).</span>':segV?'<span style="color:#b3261e">Usted cargó este envío; otra persona debe validarlo.</span>':(e.vpor?'Validado por '+esc(e.vpor)+'.':'');
- const act=(op,titulo,req)=>modal(titulo+' '+e.id,'<label>'+(req?'Comentario (obligatorio, lo verá la UE)':'Comentario (opcional)')+'</label><textarea rows="3" id="cm" style="width:100%" maxlength="500"></textarea><button class="pri" id="cmOk">'+titulo+'</button>',
+ $('rAcc').innerHTML=acc||'<span class="note">Sin acciones para su rol en este estado.</span>';
+ $('rSeg').innerHTML=segA?'<span style="color:#b3261e">Usted validó o cargó este envío; otra persona debe aprobarlo (segregación de funciones).</span>':segV?'<span style="color:#b3261e">Usted cargó este envío; otra persona debe validarlo.</span>':(e.vpor?'Validado por '+esc(e.vpor)+'.':'');
+ const act=(op,titulo,req)=>modal(titulo+' '+e.id,'<label>'+(req?'Comentario (obligatorio, lo verá '+(op==='OBSERVAR'?'la UE':'el validador')+')':'Comentario (opcional)')+'</label><textarea rows="3" id="cm" style="width:100%" maxlength="500"></textarea><button class="pri" id="cmOk">'+titulo+'</button>',
   ()=>$('cmOk').onclick=async()=>{const c=$('cm').value.trim();if(req&&!c){toast('El comentario es obligatorio');return;}
-   $('cmOk').disabled=true;try{await jsonp({accion:'accion_envio',id:e.id,op,comentario:c});cerrarModal();toast(titulo+': '+e.id);rBandeja();}catch(x){$('cmOk').disabled=false;err(x);}});
+   $('cmOk').disabled=true;$('cmOk').textContent='Guardando…';
+   try{const x=await jsonp({accion:'accion_envio',id:e.id,op,comentario:c},{reintentos:0,timeout:90000});cerrarModal();
+    const it=BJ.find(z=>z.id===e.id);if(it){it.e=x.estado;if(x.estado==='VALIDADO')it.vpor=ME.nombre;}
+    $('rDet').style.display='none';SEL=null;pintarRev();toast(titulo+': '+e.id+(x.json&&!x.json.ok?' · aviso: los tableros se actualizarán al regenerar JSON':''),5000);}
+   catch(z){$('cmOk').disabled=false;$('cmOk').textContent=titulo;err(z);}});
  if($('aVal'))$('aVal').onclick=()=>act('VALIDAR','Validar',false);if($('aObs'))$('aObs').onclick=()=>act('OBSERVAR','Observar',true);
  if($('aApr'))$('aApr').onclick=()=>act('APROBAR','Aprobar',false);if($('aDev'))$('aDev').onclick=()=>act('DEVOLVER','Devolver',true);}
 
 /* ======================================================================
- *  COBERTURA
+ *  3 · ANÁLISIS (todo desde JSON)
  * ==================================================================== */
-let COB=[];
-$('kPer').onchange=()=>rCob();$('kRef').onclick=()=>rCob();$('kCed').onchange=()=>pintarCob();$('kQ').oninput=()=>pintarCob();
-async function rCob(){$('tCob').innerHTML='<div class="cargando">Cargando…</div>';try{COB=(await jsonp({accion:'cobertura',periodo:$('kPer').value})).filas;}catch(e){err(e);return;}pintarCob();}
-function pintarCob(){const fc=$('kCed').value,q=$('kQ').value.trim().toLowerCase(),cats=['MED','MQ','LAB'];
- const m=COB.filter(u=>(!fc||u.ced===fc)&&(!q||u.ue.toLowerCase().includes(q)));
+let NAC=null,PA=null,PB=null,aS='gra',SELR='',ESTP=null;
+['aA','aB'].forEach(id=>$(id).onchange=()=>rAna());['aCat','aUe','aThr'].forEach(id=>$(id).onchange=()=>pintarAna());
+$('aRen').onchange=()=>{SELR=($('aRen').value.split(' · ')[0]||'').trim();pintarAna();};
+$('aClr').onclick=()=>{$('aRen').value='';SELR='';$('aCat').value='';if(ME.nacional)$('aUe').value='';pintarAna();};
+$('aSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{aS=d.dataset.s;$('aSub').querySelectorAll('div').forEach(x=>x.classList.toggle('active',x===d));$('tAna')._s=null;vistaAna();});
+function clase(a,b,thr){if(a===0&&b===0)return 'ESTABLE';if(a===0)return 'NUEVO';if(b===0)return 'CESA';const d=(b-a)/a;return d>=thr?'ALZA':d<=-thr?'BAJA':'ESTABLE';}
+async function rAna(){
+ const a=$('aA').value,b=$('aB').value;
+ $('aK').innerHTML='<div class="cargando">Cargando datos…</div>';
+ try{[NAC,PA,PB]=await Promise.all([getJ('nacional.json'),getJ('periodo_'+a+'.json'),getJ('periodo_'+b+'.json')]);}catch(e){err(e);return;}
+ if(!NAC||!PA||!PB){$('aK').innerHTML='<div class="warn">Aún no hay datos publicados para el análisis. Un administrador debe pulsar Regenerar JSON en Administración.</div>';return;}
+ pintarAna();}
+function paresFiltrados(){
+ const fc=$('aCat').value,fu=$('aUe').value,thr=+$('aThr').value,m={};
+ const put=(P,i)=>P.V.forEach(v=>{const ue=P.U[v[0]],cod=P.R[v[1]];if(fu&&ue!==fu)return;if(fc&&tipo(cod)!==fc)return;const k=ue+'|'+cod;(m[k]=m[k]||{ue,cod,a:0,b:0})[i]=v[2];});
+ put(PA,'a');put(PB,'b');
+ const repB=new Set(PB.reportan);
+ return Object.values(m).map(o=>Object.assign(o,{des:desc(o.cod),grp:grupo(o.cod),d:o.b-o.a,dp:o.a?(o.b-o.a)/o.a:null,cls:!repB.has(o.ue)?'SIN_REPORTE':clase(o.a,o.b,thr)}));}
+function pintarAna(){
+ if(!PA||!PB)return;const V=paresFiltrados(),a=PA.p,b=PB.p;const cc={};V.forEach(x=>cc[x.cls]=(cc[x.cls]||0)+1);
+ const fu=$('aUe').value;const repA=fu?(PA.reportan.includes(fu)?1:0):PA.reportan.length,repB=fu?(PB.reportan.includes(fu)?1:0):PB.reportan.length;
+ $('aK').innerHTML=kpi('UE que reportan',repA+' → '+repB,'',a+' → '+b)+kpi('Pares UE–renglón',fmt(V.length),'gr')+kpi('En alza',fmt(cc.ALZA||0),'ro','umbral ±'+fmt(+$('aThr').value*100)+' %')+kpi('En baja',fmt(cc.BAJA||0),'')+kpi('Nuevos',fmt(cc.NUEVO||0),'ve')+kpi('Cesan',fmt(cc.CESA||0),'am')+kpi('Sin reporte en '+b,fmt(cc.SIN_REPORTE||0),'li','pares con dato en '+a);
+ if(!SELR||!V.some(x=>x.cod===SELR)){const top={};V.forEach(x=>{top[x.cod]=(top[x.cod]||0)+Math.abs(x.d);});SELR=Object.keys(top).sort((x,y)=>top[y]-top[x])[0]||'';}
+ PAR=V;vistaAna();}
+let PAR=[];
+function vistaAna(){
+ ['gra','cob'].forEach(s=>$('a-'+s).style.display=aS===s?'':'none');$('a-tab').style.display=['ren','ue','bre'].includes(aS)?'':'none';
+ if(aS==='gra')graficos();else if(aS==='cob')rCob();else tablasAna();}
+function graficos(){
+ const a=PA.p,b=PB.p,cod=SELR,fu=$('aUe').value;
+ $('aGLeg').innerHTML='Renglón analizado: <b>'+esc(cod)+' · '+esc(desc(cod))+'</b>'+(fu?' · UE: <b>'+esc(fu)+'</b>':'')+'. Elija otro en el buscador de renglón, en las tablas o haciendo clic en un punto de la dispersión. Todos los valores son consumo mensual.';
+ /* 1. evolución nacional */
+ const n=NAC&&NAC.R[cod];$('tEvo').textContent='Evolución nacional · '+cod;
+ if(n)chart('chEvo',{data:{labels:NAC.P,datasets:[{type:'line',label:'Consumo mensual nacional',data:n[0],borderColor:CB,backgroundColor:CB,yAxisID:'y',tension:.2},{type:'bar',label:'UE que lo reportan',data:n[1],backgroundColor:'#c8d9ec',yAxisID:'y2'}]},options:{maintainAspectRatio:false,scales:{y:{beginAtZero:true,title:{display:true,text:'unidades'}},y2:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'UE'}}}}});
+ /* 2. UE por UE */
+ const rows=PAR.filter(x=>x.cod===cod).sort((x,y)=>Math.max(y.a,y.b)-Math.max(x.a,x.b)).slice(0,30);
+ $('tUes').textContent='UE por UE · '+cod+' · '+a+' contra '+b;
+ chart('chUes',{type:'bar',data:{labels:rows.map(x=>x.ue.length>28?x.ue.slice(0,26)+'…':x.ue),datasets:[{label:a,data:rows.map(x=>x.a),backgroundColor:CA},{label:b,data:rows.map(x=>x.b),backgroundColor:CB}]},options:{maintainAspectRatio:false,plugins:{tooltip:{callbacks:{title:c=>rows[c[0].dataIndex].ue,afterBody:c=>{const r=rows[c[0].dataIndex];return 'Δ '+pct(r.dp);}}}},scales:{x:{ticks:{autoSkip:false,maxRotation:60,minRotation:45,font:{size:10}}}}}});
+ /* 3. dispersión */
+ const col={ALZA:'#b3261e',BAJA:'#1E5A9E',NUEVO:'#2e7d32',CESA:'#6d4c41',ESTABLE:'#b9b9b9',SIN_REPORTE:'#e0a800'};
+ const pts=PAR.filter(x=>x.a>0&&x.b>0).slice(0,6000);
+ const grupos={};pts.forEach(x=>(grupos[x.cls]=grupos[x.cls]||[]).push({x:x.a,y:x.b,r:x}));
+ const mx=Math.max(1,...pts.map(x=>Math.max(x.a,x.b)));
+ chart('chDis',{type:'scatter',data:{datasets:Object.keys(grupos).map(k=>({label:k.replace('_',' '),data:grupos[k],backgroundColor:col[k],pointRadius:k==='ESTABLE'?2:3})).concat([{type:'line',label:'Sin cambio',data:[{x:0.1,y:0.1},{x:mx,y:mx}],borderColor:'#888',borderDash:[4,4],pointRadius:0}])},
+  options:{maintainAspectRatio:false,scales:{x:{type:'logarithmic',title:{display:true,text:a}},y:{type:'logarithmic',title:{display:true,text:b}}},plugins:{tooltip:{callbacks:{label:c=>{const r=c.raw.r;return r?[r.ue,r.cod+' '+r.des.slice(0,40),fmU(r.a)+' → '+fmU(r.b)+' ('+pct(r.dp)+')']:'';}}}},
+   onClick:(e,el)=>{if(!el.length)return;const r=CH.chDis.data.datasets[el[0].datasetIndex].data[el[0].index].r;if(!r)return;SELR=r.cod;$('aRen').value=r.cod+' · '+r.des;graficos();}}});
+ heatmap();}
+async function heatmap(){
+ const cod=SELR,fu=$('aUe').value,P=PERS.filter(p=>p.e!=='PROGRAMADO').map(p=>p.p);
+ $('heat').innerHTML='<div class="cargando">Cargando periodos…</div>';
+ const F=await Promise.all(P.map(p=>getJ('periodo_'+p+'.json').catch(()=>null)));
+ const ok=P.map((p,i)=>[p,F[i]]).filter(x=>x[1]);
+ let filas=[],titulo;
+ if(fu){titulo='Mapa de calor · '+fu+' · renglones con mayor variación';
+  const m={};ok.forEach(([p,J],i)=>{const ui=J.U.indexOf(fu);if(ui<0)return;J.V.forEach(v=>{if(v[0]!==ui)return;const c=J.R[v[1]];if($('aCat').value&&tipo(c)!==$('aCat').value)return;(m[c]=m[c]||{})[p]=v[2];});});
+  filas=Object.keys(m).map(c=>({k:c,l:c+' · '+desc(c).slice(0,50),v:m[c]}));}
+ else{titulo='Mapa de calor · '+cod+' · UE por periodo';
+  const m={};ok.forEach(([p,J])=>{const ri=J.R.indexOf(cod);if(ri<0)return;J.V.forEach(v=>{if(v[1]!==ri)return;const u=J.U[v[0]];(m[u]=m[u]||{})[p]=v[2];});});
+  filas=Object.keys(m).map(u=>({k:u,l:u,v:m[u]}));}
+ const ps=ok.map(x=>x[0]);
+ filas.forEach(f=>{let s=0;ps.forEach((p,i)=>{if(i>0){const a=f.v[ps[i-1]]||0,b=f.v[p]||0;s=Math.max(s,Math.abs(b-a)/(a||1));}});f.s=s;});
+ filas.sort((x,y)=>y.s-x.s);filas=filas.slice(0,40);
+ $('tHeat').textContent=titulo;
+ const color=(a,b)=>{if(a==null&&b==null)return '#fff';if(!a)return b>0?'#e3f2e4':'#fff';const d=((b||0)-a)/a;if(Math.abs(d)<0.1)return '#f6f6f6';const t=Math.min(1,Math.abs(d));return d>0?'rgba(179,38,30,'+(0.12+0.5*t)+')':'rgba(30,90,158,'+(0.12+0.5*t)+')';};
+ let h='<div class="tw heat"><table><thead><tr><th>'+(fu?'Renglón':'Unidad Ejecutora')+'</th>'+ps.map(p=>'<th class="rot">'+p+'</th>').join('')+'</tr></thead><tbody>';
+ const REP={};ok.forEach(([p,J])=>REP[p]=new Set(J.reportan||[]));
+ const reporto=(f,p)=>fu?REP[p].has(fu):REP[p].has(f.k);
+ filas.forEach(f=>{h+='<tr><td>'+esc(f.l)+'</td>'+ps.map((p,i)=>{
+  if(!reporto(f,p))return '<td class="h" style="background:#f3f3f3;color:#888" title="La UE no reportó en '+esc(p)+'">sin reporte</td>';
+  const v=f.v[p];if(v==null)return '<td class="h" style="color:#888" title="No incluido en el envío: conserva su último valor">·</td>';
+  const q=ps.slice(0,i).reverse().find(x=>reporto(f,x)&&f.v[x]!=null);const prev=q?f.v[q]:null;
+  return '<td class="h" style="background:'+(prev!=null?color(prev,v):'#fff')+'" title="'+esc(p)+(prev!=null?' · Δ '+pct(prev?(v-prev)/prev:null)+' contra '+q:'')+'">'+fmU(v)+'</td>';}).join('')+'</tr>';});
+ h+='</tbody></table></div><div class="note" style="margin-top:6px">Cada celda se compara con el último periodo en que hubo dato. Rojo: sube. Azul: baja. Más intenso, mayor variación. Verde: aparece por primera vez. Gris: la UE no reportó ese periodo. Se muestran las 40 filas con mayor variación.</div>';
+ $('heat').innerHTML=filas.length?h:'<div class="cargando">Sin datos para esta selección.</div>';}
+function tablasAna(){
+ const V=PAR,A=PA.p,B=PB.p;let cols,rows;
+ if(aS==='ren'){const m={};V.forEach(x=>{const o=m[x.cod]||(m[x.cod]={cod:x.cod,des:x.des,grp:x.grp,a:0,b:0,na:0,nb:0});o.a+=x.a;o.b+=x.b;if(x.a>0)o.na++;if(x.b>0)o.nb++;});
+  rows=Object.values(m).map(o=>Object.assign(o,{d:o.b-o.a,dp:o.a?(o.b-o.a)/o.a:null,cls:clase(o.a,o.b,+$('aThr').value)}));
+  cols=[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'grp',l:'Grupo'},{k:'a',l:A,t:'n',f:fmU},{k:'b',l:B,t:'n',f:fmU},{k:'d',l:'Δ',t:'n',f:fmU},{k:'dp',l:'Δ %',t:'n',f:v=>pct(v)},{k:'na',l:'UE '+A,t:'n'},{k:'nb',l:'UE '+B,t:'n'},{k:'cls',l:'Clase',f:v=>st(v)}];
+  $('aTit').textContent='Por renglón · '+A+' contra '+B+' · clic para graficar';}
+ else if(aS==='ue'){const m={};V.forEach(x=>{const o=m[x.ue]||(m[x.ue]={ue:x.ue,ced:(UEI[x.ue]||{}).ced||'',na:0,nb:0,alz:0,baj:0,nue:0,ces:0});if(x.a>0)o.na++;if(x.b>0)o.nb++;if(x.cls==='ALZA')o.alz++;if(x.cls==='BAJA')o.baj++;if(x.cls==='NUEVO')o.nue++;if(x.cls==='CESA')o.ces++;});
+  rows=Object.values(m).map(o=>Object.assign(o,{ra:PA.reportan.includes(o.ue)?'SI':'NO',rb:PB.reportan.includes(o.ue)?'SI':'NO'}));
+  cols=[{k:'ue',l:'Unidad Ejecutora'},{k:'ced',l:'CEDIS'},{k:'ra',l:'Reportó '+A},{k:'rb',l:'Reportó '+B},{k:'na',l:'Renglones '+A,t:'n'},{k:'nb',l:'Renglones '+B,t:'n'},{k:'alz',l:'En alza',t:'n'},{k:'baj',l:'En baja',t:'n'},{k:'nue',l:'Nuevos',t:'n'},{k:'ces',l:'Cesan',t:'n'}];
+  $('aTit').textContent='Por Unidad Ejecutora · clic para ver su mapa de calor';}
+ else{rows=V.filter(x=>x.cls!=='ESTABLE').map(x=>Object.assign({ad:Math.abs(x.d)},x));
+  cols=[{k:'ue',l:'Unidad Ejecutora'},{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'a',l:A,t:'n',f:fmU},{k:'b',l:B,t:'n',f:fmU},{k:'d',l:'Δ',t:'n',f:fmU},{k:'dp',l:'Δ %',t:'n',f:v=>pct(v)},{k:'cls',l:'Clase',f:v=>st(v)}];
+  $('aTit').textContent='Brechas UE–renglón · '+A+' contra '+B+' · clic para graficar';}
+ table($('tAna'),cols,rows,{sort:aS==='ue'?'ue':'d',dir:aS==='ue'?1:-1,click:r=>{if(r.cod){SELR=r.cod;$('aRen').value=r.cod+' · '+r.des;}if(aS==='ue'&&ME.nacional){$('aUe').value=r.ue;pintarAna();}aS='gra';$('aSub').querySelectorAll('div').forEach(x=>x.classList.toggle('active',x.dataset.s==='gra'));vistaAna();window.scrollTo({top:0,behavior:'smooth'});}});}
+$('aCsv').onclick=()=>{const el=$('tAna');if(el._rows)csv('CONSUMOS_'+aS+'_'+PA.p+'_'+PB.p+'.csv',el._cols,el._rows);};
+/* cobertura del mes */
+$('kPer').onchange=()=>rCob();$('kCed').onchange=()=>pintarCob();$('kQ').oninput=()=>pintarCob();
+async function rCob(){$('tCob').innerHTML='<div class="cargando">Cargando…</div>';
+ try{ESTP=await getJ('estado_'+$('kPer').value+'.json',true);}catch(e){err(e);return;}
+ if(!ESTP){$('tCob').innerHTML='<div class="cargando">Aún no hay estado publicado para este periodo.</div>';$('kCob').innerHTML='';return;}pintarCob();}
+function pintarCob(){if(!ESTP)return;const cats=ESTP.cats,fc=$('kCed').value,q=$('kQ').value.trim().toLowerCase();
+ let m=ESTP.F.map(f=>{const o={ue:f[0],ced:f[1],cod:f[2]};cats.forEach((c,i)=>{o[c]=f[3+i*2];o[c+'_f']=f[4+i*2];});return o;});
+ if(!ME.nacional)m=m.filter(o=>ME.ues.includes(o.ue));
+ m=m.filter(o=>(!fc||o.ced===fc)&&(!q||o.ue.toLowerCase().includes(q)));
  const all=[];m.forEach(o=>cats.forEach(c=>all.push(o[c])));const cnt=s=>all.filter(x=>x===s).length;
- const P=PERS.find(p=>p.p===$('kPer').value)||{};let dias='—';if(P.lim){const d=Math.ceil((new Date(P.lim+'T23:59:59-05:00')-new Date())/864e5);dias=d>=0?String(d):'vencido';}
- $('kCob').innerHTML=[['Envíos esperados',all.length],['Sin reporte',cnt('SIN_REPORTE'),1],['Enviados',cnt('ENVIADO')],['Observados o devueltos',cnt('OBSERVADO')+cnt('DEVUELTO')],['Validados',cnt('VALIDADO')],['Aprobados',cnt('APROBADO')],['Publicados al Motor',cnt('PUBLICADO')],['Días para el vencimiento',dias]].map(k=>'<div class="kpi'+(k[2]?' w':'')+'"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div></div>').join('');
- $('kSub').textContent='periodo '+(P.p||'')+(P.lim?' · vence '+P.lim:'');
+ const P=PERS.find(p=>p.p===ESTP.p)||{};let dias='—';if(P.lim){const d=Math.ceil((new Date(P.lim+'T23:59:59-05:00')-new Date())/864e5);dias=d>=0?String(d):'vencido';}
+ $('kCob').innerHTML=kpi('Envíos esperados',all.length,'gr')+kpi('Sin reporte',cnt('SIN_REPORTE'),'ro')+kpi('Enviados',cnt('ENVIADO'),'')+kpi('Observados o devueltos',cnt('OBSERVADO')+cnt('DEVUELTO'),'am')+kpi('Validados',cnt('VALIDADO'),'li')+kpi('Aprobados',cnt('APROBADO'),'ve')+kpi('Publicados al Motor',cnt('PUBLICADO'),'ve')+kpi('Días para el vencimiento',dias,'gr',P.lim?'vence '+P.lim:'');
+ $('kSub').textContent='periodo '+ESTP.p+' · actualizado '+new Date(ESTP.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16)+' (hora de Panamá)';
+ const E=['SIN_REPORTE','ENVIADO','OBSERVADO','DEVUELTO','VALIDADO','APROBADO','PUBLICADO'],col={SIN_REPORTE:'#d9d9d9',ENVIADO:'#9fb6d3',OBSERVADO:'#e0c068',DEVUELTO:'#e6a39e',VALIDADO:'#b9a3d9',APROBADO:'#8fca9c',PUBLICADO:'#2e7d32'};
+ const ceds=[...new Set(m.map(o=>o.ced))].sort();
+ chart('chCob',{type:'bar',data:{labels:ceds,datasets:E.map(s=>({label:s.replace('_',' '),backgroundColor:col[s],data:ceds.map(c=>m.filter(o=>o.ced===c).reduce((t,o)=>t+cats.filter(k=>o[k]===s).length,0))}))},options:{maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true,title:{display:true,text:'envíos (UE × categoría)'}}}}});
  table($('tCob'),[{k:'ue',l:'Unidad Ejecutora'},{k:'cod',l:'Código'},{k:'ced',l:'CEDIS'}].concat(cats.map(c=>({k:c,l:c+' · '+CATN[c],f:(v,r)=>st(v)+(r[c+'_f']?' <span class="note">'+esc(r[c+'_f'])+'</span>':'')}))),m,{sort:'ue'});}
 
 /* ======================================================================
- *  DASHBOARD COMPARATIVO
+ *  4 · ADMINISTRACIÓN
  * ==================================================================== */
-let CMP=null,dS='ren';
-$('dGo').onclick=()=>rCmp();['dCat','dUe','dThr'].forEach(id=>$(id).onchange=()=>pintarCmp());$('dQ').oninput=()=>pintarCmp();
-$('dSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{dS=d.dataset.s;$('dSub').querySelectorAll('div').forEach(x=>x.classList.toggle('active',x===d));$('tDash')._s=null;pintarCmp();});
-function rDash(){if(!CMP)rCmp();}
-async function rCmp(){const a=$('dA').value,b=$('dB').value;if(a===b){toast('Elija dos periodos distintos');return;}
- $('tDash').innerHTML='<div class="cargando">Calculando comparativo…</div>';$('dTit').textContent=a+' contra '+b;
- try{CMP=(await jsonp({accion:'comparativo',a,b})).comparativo;}catch(e){err(e);return;}pintarCmp();}
-function clase(a,b,thr){if(a===0&&b===0)return 'ESTABLE';if(a===0)return 'NUEVO';if(b===0)return 'CESA';const d=(b-a)/a;return d>=thr?'ALZA':d<=-thr?'BAJA':'ESTABLE';}
-function pintarCmp(){if(!CMP)return;
- const fc=$('dCat').value,fu=$('dUe').value,q=$('dQ').value.trim().toLowerCase(),thr=+$('dThr').value;
- const U=CMP.U,R=CMP.R,tipo=cod=>{const i=RI[cod];return i==null?'':CAT.R[i][3];};
- const V=CMP.V.filter(v=>{const cod=R[v[1]];return (!fc||tipo(cod)===fc)&&(!fu||U[v[0]][0]===fu)&&(!q||cod.includes(q)||desc(cod).toLowerCase().includes(q));});
- const repA=U.filter(u=>u[1]).length,repB=U.filter(u=>u[2]).length,cc={};
- V.forEach(v=>{const k=!U[v[0]][2]?'SIN_REPORTE':clase(v[2],v[3],thr);cc[k]=(cc[k]||0)+1;});
- $('dK').innerHTML=[['UE que reportan',repA+' → '+repB],['Pares UE–renglón',fmt(V.length)],['En alza',fmt(cc.ALZA||0)],['En baja',fmt(cc.BAJA||0)],['Nuevos',fmt(cc.NUEVO||0)],['Cesan',fmt(cc.CESA||0)],['UE sin reporte en '+CMP.b,fmt(cc.SIN_REPORTE||0),1]].map(k=>'<div class="kpi'+(k[2]?' w':'')+'"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div></div>').join('');
- let cols,rows;const A=CMP.a,B=CMP.b;
- if(dS==='ren'){const m={};V.forEach(v=>{const o=m[v[1]]||(m[v[1]]={cod:R[v[1]],a:0,b:0,n25:0,n26:0});o.a+=v[2];o.b+=v[3];if(v[2]>0)o.n25++;if(v[3]>0)o.n26++;});
-  rows=Object.values(m).map(o=>Object.assign(o,{des:desc(o.cod),grp:grupo(o.cod),d:o.b-o.a,dp:o.a?(o.b-o.a)/o.a:null,cls:clase(o.a,o.b,thr)}));
-  cols=[{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'grp',l:'Grupo'},{k:'a',l:A,t:'n',f:fmU},{k:'b',l:B,t:'n',f:fmU},{k:'d',l:'Δ',t:'n',f:fmU},{k:'dp',l:'Δ %',t:'n',f:v=>pct(v)},{k:'n25',l:'UE '+A,t:'n'},{k:'n26',l:'UE '+B,t:'n'},{k:'cls',l:'Clase',f:v=>st(v),x:r=>r.cls}];}
- else if(dS==='ue'){const m={};V.forEach(v=>{const o=m[v[0]]||(m[v[0]]={ue:U[v[0]][0],ra:U[v[0]][1]?'SI':'NO',rb:U[v[0]][2]?'SI':'NO',n25:0,n26:0,alz:0,baj:0,nue:0,ces:0});if(v[2]>0)o.n25++;if(v[3]>0)o.n26++;const c=clase(v[2],v[3],thr);if(c==='ALZA')o.alz++;if(c==='BAJA')o.baj++;if(c==='NUEVO')o.nue++;if(c==='CESA')o.ces++;});
-  rows=Object.values(m);cols=[{k:'ue',l:'Unidad Ejecutora'},{k:'ra',l:'Reportó '+A},{k:'rb',l:'Reportó '+B},{k:'n25',l:'Renglones '+A,t:'n'},{k:'n26',l:'Renglones '+B,t:'n'},{k:'alz',l:'Alza',t:'n'},{k:'baj',l:'Baja',t:'n'},{k:'nue',l:'Nuevos',t:'n'},{k:'ces',l:'Cesan',t:'n'}];}
- else{rows=V.map(v=>{const cod=R[v[1]],c=!U[v[0]][2]?'SIN_REPORTE':clase(v[2],v[3],thr);return {ue:U[v[0]][0],cod,des:desc(cod),a:v[2],b:v[3],d:v[3]-v[2],dp:v[2]?(v[3]-v[2])/v[2]:null,ad:Math.abs(v[3]-v[2]),cls:c};}).filter(r=>r.cls!=='ESTABLE');
-  cols=[{k:'ue',l:'Unidad Ejecutora'},{k:'cod',l:'Código'},{k:'des',l:'Descripción'},{k:'a',l:A,t:'n',f:fmU},{k:'b',l:B,t:'n',f:fmU},{k:'d',l:'Δ',t:'n',f:fmU},{k:'dp',l:'Δ %',t:'n',f:v=>pct(v)},{k:'cls',l:'Clase',f:v=>st(v),x:r=>r.cls}];}
- table($('tDash'),cols,rows,{sort:dS==='bre'?'dp':dS==='ren'?'d':'ue',dir:dS==='ue'?1:-1});}
-$('dCsv').onclick=()=>{const el=$('tDash');if(!el._rows){toast('Primero genere el comparativo');return;}csv('COMPARATIVO_'+CMP.a+'_'+CMP.b+'_'+dS+'.csv',el._cols,el._rows);};
-
-/* ======================================================================
- *  SOLICITUDES DE ACCESO
- * ==================================================================== */
-let SOL=[];$('sEst').onchange=()=>pintarSol();
-async function rSol(){$('tSol').innerHTML='<div class="cargando">Cargando…</div>';try{SOL=(await jsonp({accion:'solicitudes'})).solicitudes;}catch(e){err(e);return;}pintarSol();}
-function pintarSol(){const fe=$('sEst').value;
- table($('tSol'),[{k:'id',l:'Solicitud'},{k:'f',l:'Fecha'},{k:'ced',l:'Cédula'},{k:'n',l:'Nombre'},{k:'cargo',l:'Cargo'},{k:'ue',l:'Unidad Ejecutora'},{k:'cats',l:'Categorías'},{k:'rol',l:'Rol'},{k:'j',l:'Justificación'},{k:'e',l:'Estado',f:v=>st(v)},
-  {k:'id',l:'',ns:1,f:(v,r)=>r.e==='PENDIENTE'?'<button class="bad" data-r="'+esc(v)+'">Rechazar</button> <button class="ok" data-a="'+esc(v)+'">Aprobar</button>':esc(r.rpor||'')}],SOL.filter(s=>!fe||s.e===fe),{after:el=>{
-  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await jsonp({accion:'resolver_solicitud',id:b.dataset.a,decision:'APROBAR'});toast('Acceso aprobado. La persona ya puede ingresar con el PIN que definió.');rSol();}catch(e){b.disabled=false;err(e);}});
-  el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>modal('Rechazar '+b.dataset.r,'<label>Motivo (obligatorio)</label><textarea rows="3" id="rm" style="width:100%"></textarea><button class="pri" id="rOk">Rechazar</button>',
-   ()=>$('rOk').onclick=async()=>{if(!$('rm').value.trim()){toast('El motivo es obligatorio');return;}try{await jsonp({accion:'resolver_solicitud',id:b.dataset.r,decision:'RECHAZAR',motivo:$('rm').value});cerrarModal();rSol();}catch(e){err(e);}}));}});}
-
-/* ======================================================================
- *  ADMINISTRACIÓN
- * ==================================================================== */
-let aS='usr',USR=[],LOG=[],SIM=null;
-$('aSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{aS=d.dataset.s;$('aSub').querySelectorAll('div').forEach(x=>x.classList.toggle('active',x===d));['usr','per','pub','log'].forEach(s=>$('a-'+s).style.display=s===aS?'':'none');rAdmin();});
-$('aQ').oninput=()=>pintarUsr();$('aRol').onchange=()=>pintarUsr();$('lQ').oninput=()=>pintarLog();$('lRef').onclick=()=>rAdmin();
-async function rAdmin(){
- try{
-  if(aS==='usr'){$('tUsr').innerHTML='<div class="cargando">Cargando…</div>';USR=(await jsonp({accion:'usuarios'})).usuarios;pintarUsr();}
-  if(aS==='per'){PERS=(await jsonp({accion:'periodos'})).periodos;pintarPer();}
-  if(aS==='pub'){pintarPubs((await jsonp({accion:'publicaciones'})).publicaciones);}
-  if(aS==='log'){$('tLog').innerHTML='<div class="cargando">Cargando…</div>';LOG=(await jsonp({accion:'bitacora'})).eventos;pintarLog();}
- }catch(e){err(e);}}
-function pintarUsr(){const q=$('aQ').value.trim().toLowerCase(),fr=$('aRol').value;
+let dS='',USR=[],LOG=[],SOL=[],SIM=null;
+const DSUB=[['usr','Usuarios','ADMIN'],['sol','Solicitudes de acceso','APRUEBA'],['per','Periodos','ADMIN'],['pub','Publicación al Motor','ADMIN'],['json','JSON de los tableros','ADMIN'],['log','Bitácora','ADMIN']];
+function rAdm(){
+ const subs=DSUB.filter(x=>tiene(x[2]));if(!subs.find(x=>x[0]===dS))dS=subs[0][0];
+ $('dSub').innerHTML=subs.map(x=>'<div data-s="'+x[0]+'" class="'+(x[0]===dS?'active':'')+'">'+x[1]+'</div>').join('');
+ $('dSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{dS=d.dataset.s;rAdm();});
+ DSUB.forEach(x=>$('d-'+x[0]).style.display=x[0]===dS?'':'none');
+ return ({usr:rUsr,sol:rSol,per:rPer,pub:rPub,json:rJson,log:rLog})[dS]();}
+async function rUsr(){$('tUsr').innerHTML='<div class="cargando">Cargando…</div>';try{USR=(await jsonp({accion:'usuarios'})).usuarios;}catch(e){err(e);return;}pintarUsr();}
+$('uQ').oninput=()=>pintarUsr();$('uRol').onchange=()=>pintarUsr();
+function pintarUsr(){const q=$('uQ').value.trim().toLowerCase(),fr=$('uRol').value;
  table($('tUsr'),[{k:'id',l:'Usuario'},{k:'ced',l:'Cédula'},{k:'n',l:'Nombre'},{k:'cargo',l:'Cargo'},{k:'rol',l:'Rol'},{k:'ue',l:'Unidad Ejecutora'},{k:'cats',l:'Categorías'},{k:'act',l:'Activo',f:v=>st(v==='SI'?'ACTIVO':'INACTIVO')},{k:'pin',l:'PIN'},{k:'alta',l:'Alta'},
   {k:'fila',l:'',ns:1,f:(v,r)=>'<button data-ed="'+v+'">Editar</button> <button data-pin="'+esc(r.ced)+'">Restablecer PIN</button>'}],
   USR.filter(u=>(!fr||u.rol===fr)&&(!q||(u.n+' '+u.ced+' '+u.ue).toLowerCase().includes(q))),{after:el=>{
   el.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>userForm(USR.find(u=>String(u.fila)===b.dataset.ed)));
   el.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>modal('Restablecer PIN','<div class="note">Se generará un PIN temporal para la cédula '+esc(b.dataset.pin)+'. Se muestra una sola vez; entrégueselo a la persona. Deberá cambiarlo al ingresar. Queda en la bitácora.</div><button class="pri" id="rpOk">Generar PIN temporal</button><div id="rpR"></div>',
-   ()=>$('rpOk').onclick=async()=>{try{const r=await jsonp({accion:'restablecer_pin',cedula:b.dataset.pin});$('rpOk').remove();$('rpR').innerHTML='<div class="legend num" style="font-size:20px">PIN temporal: '+esc(r.pinTemporal)+'</div>';rAdmin();}catch(e){err(e);}}));}});}
+   ()=>$('rpOk').onclick=async()=>{try{const r=await jsonp({accion:'restablecer_pin',cedula:b.dataset.pin},{reintentos:0});$('rpOk').remove();$('rpR').innerHTML='<div class="legend num" style="font-size:20px">PIN temporal: '+esc(r.pinTemporal)+'</div>';rUsr();}catch(e){err(e);}}));}});}
 function userForm(u){const nuevo=!u;u=u||{ced:'',n:'',cargo:'',correo:'',tel:'',rol:'CARGA',ue:'',cats:'',act:'SI'};
  modal(nuevo?'Nuevo usuario':'Editar '+u.id+' · '+u.rol,'<label>Cédula</label><input id="fCed" value="'+esc(u.ced)+'"'+(nuevo?'':' disabled')+'><label>Nombre</label><input id="fNom" value="'+esc(u.n)+'"><label>Cargo</label><input id="fCar" value="'+esc(u.cargo)+'"><label>Correo</label><input id="fCor" value="'+esc(u.correo)+'"><label>Teléfono</label><input id="fTel" value="'+esc(u.tel)+'">'+
  '<label>Rol</label><select id="fRol">'+['CARGA','VALIDA','APRUEBA','LECTURA','ADMIN'].map(r=>'<option'+(r===u.rol?' selected':'')+'>'+r+'</option>').join('')+'</select>'+
@@ -584,34 +675,93 @@ function userForm(u){const nuevo=!u;u=u||{ced:'',n:'',cargo:'',correo:'',tel:'',
  '<label>Activo</label><select id="fAct"><option'+(u.act==='SI'?' selected':'')+'>SI</option><option'+(u.act!=='SI'?' selected':'')+'>NO</option></select>'+
  '<div class="note">'+(nuevo?'Para dar un segundo rol a una persona ya registrada, cree otra fila con la misma cédula: conserva su PIN. Un usuario nuevo recibe un PIN temporal que se muestra una sola vez.':'Desactivar no borra al usuario: sus firmas siguen visibles en los envíos y en la bitácora.')+'</div><button class="pri" id="uOk">Guardar</button><div id="uR"></div>',
  b=>$('uOk').onclick=async()=>{const cats=[...b.querySelectorAll('#fCats input:checked')].map(x=>x.value).join(',');
-  try{const r=await jsonp({accion:'guardar_usuario',fila:nuevo?'':u.fila,cedula:$('fCed').value,nombre:$('fNom').value,cargo:$('fCar').value,correo:$('fCor').value,telefono:$('fTel').value,rol:$('fRol').value,ue:$('fUe').value,cats,activo:$('fAct').value});
+  try{const r=await jsonp({accion:'guardar_usuario',fila:nuevo?'':u.fila,cedula:$('fCed').value,nombre:$('fNom').value,cargo:$('fCar').value,correo:$('fCor').value,telefono:$('fTel').value,rol:$('fRol').value,ue:$('fUe').value,cats,activo:$('fAct').value},{reintentos:0});
    if(r.pinTemporal){$('uOk').remove();$('uR').innerHTML='<div class="legend num" style="font-size:20px">PIN temporal: '+esc(r.pinTemporal)+'</div><div class="note">Entrégueselo a la persona. Se muestra una sola vez.</div>';}else{cerrarModal();toast('Usuario guardado');}
-   rAdmin();}catch(e){err(e);}});}
-$('aNew').onclick=()=>userForm(null);
-function pintarPer(){table($('tPer'),[{k:'p',l:'Periodo'},{k:'t',l:'Tipo'},{k:'ini',l:'Inicio'},{k:'fin',l:'Fin'},{k:'lim',l:'Fecha límite'},{k:'e',l:'Estado',f:v=>st(v)},
+   rUsr();}catch(e){err(e);}});}
+$('uNew').onclick=()=>userForm(null);
+async function rSol(){$('tSol').innerHTML='<div class="cargando">Cargando…</div>';try{SOL=(await jsonp({accion:'solicitudes'})).solicitudes;}catch(e){err(e);return;}pintarSol();}
+$('sEst').onchange=()=>pintarSol();
+function pintarSol(){const fe=$('sEst').value;
+ table($('tSol'),[{k:'id',l:'Solicitud'},{k:'f',l:'Fecha'},{k:'ced',l:'Cédula'},{k:'n',l:'Nombre'},{k:'cargo',l:'Cargo'},{k:'ue',l:'Unidad Ejecutora'},{k:'cats',l:'Categorías'},{k:'rol',l:'Rol'},{k:'j',l:'Justificación'},{k:'e',l:'Estado',f:v=>st(v)},
+  {k:'id',l:'',ns:1,f:(v,r)=>r.e==='PENDIENTE'?'<button class="bad" data-r="'+esc(v)+'">Rechazar</button> <button class="ok" data-a="'+esc(v)+'">Aprobar</button>':esc(r.rpor||'')}],SOL.filter(s=>!fe||s.e===fe),{vacio:'No hay solicitudes en esta lista.',after:el=>{
+  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await jsonp({accion:'resolver_solicitud',id:b.dataset.a,decision:'APROBAR'},{reintentos:0});toast('Acceso aprobado. La persona ya puede ingresar con el PIN que definió.');rSol();}catch(e){b.disabled=false;err(e);}});
+  el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>modal('Rechazar '+b.dataset.r,'<label>Motivo (obligatorio)</label><textarea rows="3" id="rm" style="width:100%"></textarea><button class="pri" id="rOk">Rechazar</button>',
+   ()=>$('rOk').onclick=async()=>{if(!$('rm').value.trim()){toast('El motivo es obligatorio');return;}try{await jsonp({accion:'resolver_solicitud',id:b.dataset.r,decision:'RECHAZAR',motivo:$('rm').value},{reintentos:0});cerrarModal();rSol();}catch(e){err(e);}}));}});}
+async function rPer(){try{PERS=(await jsonp({accion:'periodos'})).periodos;}catch(e){err(e);return;}
+ table($('tPer'),[{k:'p',l:'Periodo'},{k:'t',l:'Tipo'},{k:'ini',l:'Inicio'},{k:'fin',l:'Fin'},{k:'lim',l:'Fecha límite'},{k:'e',l:'Estado',f:v=>st(v)},
  {k:'p',l:'',ns:1,f:(v,r)=>r.t!=='MENSUAL'?'':r.e==='ABIERTO'?'<button data-c="'+v+'">Cerrar</button>':'<button data-o="'+v+'">Abrir</button>'}],PERS,{sort:'fin',after:el=>{
- el.querySelectorAll('[data-o],[data-c]').forEach(b=>b.onclick=async()=>{const abrir=!!b.dataset.o;try{await jsonp({accion:'periodo_estado',periodo:b.dataset.o||b.dataset.c,estado:abrir?'ABIERTO':'CERRADO'});toast('Periodo '+(abrir?'abierto':'cerrado'));PERS=(await jsonp({accion:'periodos'})).periodos;initSelects();pintarPer();}catch(e){err(e);}});}});}
-$('pNew').onclick=async()=>{try{const r=await jsonp({accion:'crear_periodo'});toast('Periodo '+r.periodo+' creado');PERS=(await jsonp({accion:'periodos'})).periodos;initSelects();pintarPer();}catch(e){err(e);}};
+ el.querySelectorAll('[data-o],[data-c]').forEach(b=>b.onclick=async()=>{const abrir=!!b.dataset.o;b.disabled=true;try{await jsonp({accion:'periodo_estado',periodo:b.dataset.o||b.dataset.c,estado:abrir?'ABIERTO':'CERRADO'},{reintentos:0,timeout:90000});toast('Periodo '+(abrir?'abierto':'cerrado'));await rPer();initSelects();}catch(e){b.disabled=false;err(e);}});}});}
+$('pNew').onclick=async()=>{try{const r=await jsonp({accion:'crear_periodo'},{reintentos:0,timeout:90000});toast('Periodo '+r.periodo+' creado');await rPer();initSelects();}catch(e){err(e);}};
+async function rPub(){try{pintarPubs((await jsonp({accion:'publicaciones'})).publicaciones);}catch(e){err(e);}}
 $('pSim').onclick=async()=>{const b=$('pSim');b.disabled=true;$('pRes').innerHTML='<div class="cargando">Calculando la simulación…</div>';
- try{const r=await jsonp({accion:'simular'});SIM=r.simulacion;const s=r.resumen;
-  $('pRes').innerHTML='<div class="kpis"><div class="kpi"><div class="l">Envíos aprobados sin publicar</div><div class="v">'+r.aprobadosPendientes+'</div></div><div class="kpi"><div class="l">Pares UE–renglón evaluados</div><div class="v">'+fmt(s.evaluados)+'</div></div><div class="kpi"><div class="l">Cambian de valor</div><div class="v">'+fmt(s.cambios)+'</div></div><div class="kpi"><div class="l">Pares nuevos</div><div class="v">'+fmt(s.nuevos)+'</div></div><div class="kpi w"><div class="l">Pasan a cero</div><div class="v">'+fmt(s.aCero)+'</div></div></div><div id="tSim"></div>';
-  table($('tSim'),[{k:'ue',l:'Unidad Ejecutora'},{k:'ren',l:'Código'},{k:'des',l:'Descripción'},{k:'antes',l:'Hoy en el Motor',t:'n',f:fmU},{k:'despues',l:'Queda en el Motor',t:'n',f:fmU},{k:'per',l:'Periodo del dato'},{k:'tipo',l:'Tipo',f:v=>st(v)}],s.lista.map(x=>Object.assign({des:desc(x.ren)},x)),{sort:'ue',reset:true});
+ try{const r=await jsonp({accion:'simular'},{reintentos:0,timeout:120000});SIM=r.simulacion;const s=r.resumen;
+  $('pRes').innerHTML='<div class="kpis">'+kpi('Envíos aprobados sin publicar',r.aprobadosPendientes,'ve')+kpi('Pares UE–renglón evaluados',fmt(s.evaluados),'gr')+kpi('Cambian de valor',fmt(s.cambios),'')+kpi('Pares nuevos',fmt(s.nuevos),'ve')+kpi('Pasan a cero',fmt(s.aCero),'ro')+'</div><div id="tSim"></div>';
+  table($('tSim'),[{k:'ue',l:'Unidad Ejecutora'},{k:'ren',l:'Código'},{k:'des',l:'Descripción'},{k:'antes',l:'Hoy en el Motor',t:'n',f:fmU},{k:'despues',l:'Queda en el Motor',t:'n',f:fmU},{k:'per',l:'Periodo del dato'},{k:'tipo',l:'Tipo',f:v=>st(v)}],s.lista.map(x=>Object.assign({des:desc(x.ren)},x)),{sort:'ue',reset:true,vacio:'Sin diferencias.'});
   const n=s.cambios+s.nuevos+s.aCero;$('pPub').disabled=!n;$('pInfo').textContent=n?'La publicación usará exactamente este resultado. Vence en 30 minutos.':'No hay diferencias: el Motor ya tiene los valores vigentes.';}
  catch(e){err(e);$('pRes').innerHTML='';}finally{b.disabled=false;}};
 $('pPub').onclick=()=>modal('Publicar al Motor','<div class="note">Se guardará una copia completa de MAESTRO_CONSUMOS_UE en Drive y luego se escribirán los cambios de la simulación. Solo se tocan los pares UE–renglón del registro; el resto de la hoja no se modifica. La última publicación se puede revertir desde esta pantalla.</div><button class="ok" id="pbOk">Publicar</button>',
  ()=>$('pbOk').onclick=async()=>{$('pbOk').disabled=true;$('pbOk').textContent='Publicando…';
-  try{const r=await jsonp({accion:'publicar',simulacion:SIM});cerrarModal();$('pPub').disabled=true;$('pRes').innerHTML='<div class="legend"><b>Publicado '+esc(r.publicacion)+'</b> · cambios '+r.resumen.cambios+' · nuevos '+r.resumen.nuevos+' · a cero '+r.resumen.aCero+' · '+r.enviosPublicados+' envíos pasan a PUBLICADO · <a href="'+esc(r.respaldo)+'" target="_blank" rel="noopener">respaldo</a></div>';rAdmin();}
+  try{const r=await jsonp({accion:'publicar',simulacion:SIM},{reintentos:0,timeout:240000});cerrarModal();$('pPub').disabled=true;$('pRes').innerHTML='<div class="legend"><b>Publicado '+esc(r.publicacion)+'</b> · cambios '+r.resumen.cambios+' · nuevos '+r.resumen.nuevos+' · a cero '+r.resumen.aCero+' · '+r.enviosPublicados+' envíos pasan a PUBLICADO · <a href="'+esc(r.respaldo)+'" target="_blank" rel="noopener">respaldo</a></div>';rPub();}
   catch(e){$('pbOk').disabled=false;$('pbOk').textContent='Publicar';err(e);}});
 function pintarPubs(L){const ult=L.find(p=>p.e==='PUBLICADA');
  table($('tPubs'),[{k:'id',l:'Publicación'},{k:'f',l:'Fecha'},{k:'u',l:'Usuario'},{k:'ev',l:'Pares evaluados',t:'n',f:fmt},{k:'c',l:'Cambios',t:'n'},{k:'n',l:'Nuevos',t:'n'},{k:'z',l:'A cero',t:'n'},{k:'e',l:'Estado',f:v=>st(v)},
-  {k:'id',l:'',ns:1,f:(v,r)=>(r.bk?'<a href="https://docs.google.com/spreadsheets/d/'+esc(r.bk)+'" target="_blank" rel="noopener">Respaldo</a> ':'')+(ult&&ult.id===v?'<button class="bad" data-rv="'+esc(v)+'">Revertir</button>':'')}],L,{sort:'f',dir:-1,after:el=>{
+  {k:'id',l:'',ns:1,f:(v,r)=>(r.bk?'<a href="https://docs.google.com/spreadsheets/d/'+esc(r.bk)+'" target="_blank" rel="noopener">Respaldo</a> ':'')+(ult&&ult.id===v?'<button class="bad" data-rv="'+esc(v)+'">Revertir</button>':'')}],L,{sort:'f',dir:-1,vacio:'Aún no hay publicaciones.',after:el=>{
   el.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>modal('Revertir '+b.dataset.rv,'<div class="note">MAESTRO_CONSUMOS_UE vuelve a quedar exactamente como estaba antes de esta publicación, y sus envíos regresan a APROBADO.</div><button class="bad" id="rvOk">Revertir</button>',
-   ()=>$('rvOk').onclick=async()=>{try{const r=await jsonp({accion:'revertir',id:b.dataset.rv});cerrarModal();toast('Publicación revertida · '+r.enviosRevertidos+' envíos vuelven a APROBADO',6000);rAdmin();}catch(e){err(e);}}));}});}
+   ()=>$('rvOk').onclick=async()=>{try{const r=await jsonp({accion:'revertir',id:b.dataset.rv},{reintentos:0,timeout:240000});cerrarModal();toast('Publicación revertida · '+r.enviosRevertidos+' envíos vuelven a APROBADO',6000);rPub();}catch(e){err(e);}}));}});}
+async function rJson(){try{const r=await jsonp({accion:'estado_json'});$('jInfo').innerHTML='Token de GitHub: <b>'+(r.token?'configurado':'FALTA · ejecute CONS_GUARDAR_TOKEN en el script')+'</b> · última reconstrucción completa: <b>'+esc(r.ultimo||'nunca')+'</b> · <a href="'+esc(r.base)+'catalogo.json" target="_blank" rel="noopener">ver catalogo.json</a>';}catch(e){err(e);}}
+$('jReg').onclick=async()=>{const b=$('jReg');b.disabled=true;b.textContent='Regenerando… (hasta 2 minutos)';
+ try{const r=await jsonp({accion:'regenerar_json'},{reintentos:0,timeout:330000});toast(r.archivos+' archivos publicados en '+r.segundos+' s. Los tableros los verán en 1 a 2 minutos.',7000);Object.keys(JC).forEach(k=>delete JC[k]);rJson();}
+ catch(e){err(e);}finally{b.disabled=false;b.textContent='Regenerar JSON';}};
+async function rLog(){$('tLog').innerHTML='<div class="cargando">Cargando…</div>';try{LOG=(await jsonp({accion:'bitacora'})).eventos;}catch(e){err(e);return;}pintarLog();}
+$('lQ').oninput=()=>pintarLog();$('lRef').onclick=()=>rLog();
 function pintarLog(){const q=$('lQ').value.trim().toLowerCase();
  table($('tLog'),[{k:'f',l:'Fecha y hora (Panamá)'},{k:'a',l:'Acción'},{k:'u',l:'Usuario'},{k:'ue',l:'Unidad Ejecutora'},{k:'per',l:'Periodo'},{k:'env',l:'Envío'},{k:'d',l:'Detalle'}],LOG.filter(r=>!q||(r.a+' '+r.u+' '+r.d+' '+r.ue+' '+r.env).toLowerCase().includes(q)),{sort:'f',dir:-1});}
 
-/* ---------- arranque: sesión guardada ---------- */
-if(TOKEN){jsonp({accion:'sesion'}).then(r=>r.sesion.cambiarPin?pedirCambioPin(r.sesion):entrar(r.sesion)).catch(()=>{TOKEN='';ss.del('cons_tok');});}
+/* ======================================================================
+ *  TUTORIAL GUIADO (pasos según el rol)
+ * ==================================================================== */
+let TOUR=[],TI=0;
+function pasosTour(){
+ const p=[{sel:'#tabs',tit:'Las pestañas',txt:'Todo el sistema está en estas pestañas, en el orden del trabajo: reportar, revisar, analizar y administrar. Usted solo ve las que corresponden a su rol.'}];
+ if(tiene('CARGA'))p.push(
+  {tab:'rep',sel:'#cPer',tit:'1 · Reportar: el periodo',txt:'Elija el mes que va a reportar. Solo se puede cargar el periodo abierto. La fecha límite es el día 5 del mes siguiente, según el P-240.'},
+  {tab:'rep',sel:'#cCat',tit:'Su categoría',txt:'Medicamentos, material quirúrgico y laboratorio se reportan por separado. Usted ve solo las categorías que tiene asignadas.'},
+  {tab:'rep',sel:'#cEstado',tit:'El estado de su envío',txt:'Aquí ve si ya envió, si Planificación le hizo una observación y en qué etapa está. Si le observaron algo, el comentario aparece aquí.'},
+  {tab:'rep',sel:'#cTools',tit:'Buscar, plantilla y Excel',txt:'Puede buscar un renglón, descargar la plantilla en Excel, llenarla en su computadora y subirla. Antes de aplicar, el sistema le muestra qué reconoció y qué no.'},
+  {tab:'rep',sel:'#cPanel',tit:'La tabla del mes',txt:'Escriba el consumo mensual de cada renglón. Vacío conserva el último valor aprobado; 0 significa que no hubo consumo. Las filas en rojo cambiaron 3 veces o más y piden una justificación.'},
+  {tab:'rep',sel:'#cFoot',tit:'Enviar a validación',txt:'Cuando termine, pulse Enviar. Queda registrado a su nombre con fecha y hora. Mientras escribe, el borrador se guarda en su equipo aunque se caiga la conexión.'},
+  {tab:'rep',sel:'#hPanel',tit:'Su historial',txt:'Todos los envíos de su unidad, con su estado. Haga clic en uno para ver exactamente lo que se cargó, quién lo validó y quién lo aprobó.'});
+ if(tiene('VALIDA')||tiene('APRUEBA'))p.push(
+  {tab:'rev',sel:'#rSub',tit:'2 · Revisar: sus pendientes',txt:'Los envíos que esperan su firma. El número en rojo indica cuántos tiene pendientes. Por validar es el trabajo de Planificación; Por aprobar, el de la jefatura.'},
+  {tab:'rev',sel:'#tRev',tit:'La lista de envíos',txt:'Cada fila es el reporte de una UE para una categoría. La columna de variaciones marcadas le dice cuántos renglones cambiaron fuerte. Haga clic en una fila para abrir su detalle.'},
+  {tab:'rev',sel:'#rLeg',tit:'Firmar',txt:'En el detalle aparecen los botones Validar u Observar (o Aprobar y Devolver). Observar y devolver exigen un comentario. Nadie puede validar y aprobar el mismo envío.'});
+ p.push(
+  {tab:'ana',sel:'#aCtrl',tit:'3 · Análisis: qué comparar',txt:'Elija dos periodos, y si quiere una categoría, una UE o un renglón. Todos los gráficos y tablas se ajustan a esta selección.'},
+  {tab:'ana',sel:'#aK',tit:'El resumen',txt:'Cuántas UE reportaron, cuántos pares UE–renglón subieron o bajaron más que el umbral, cuántos son nuevos y cuántos dejaron de reportarse.'},
+  {tab:'ana',sel:'#pEvo',tit:'Evolución del renglón',txt:'La línea es el consumo mensual nacional en cada periodo; las barras, cuántas UE lo reportaron. Así distingue un salto real de un mes en que faltaron unidades.'},
+  {tab:'ana',sel:'#pDis',tit:'Dispersión',txt:'Cada punto es una UE con un renglón. Sobre la diagonal no hubo cambio; lejos de ella hay una brecha. Haga clic en un punto para analizar ese renglón.'},
+  {tab:'ana',sel:'#pHeat',tit:'Mapa de calor',txt:'Cada celda compara un periodo con el anterior: rojo si sube, azul si baja. Si elige una UE, muestra sus renglones; si no, muestra las UE del renglón elegido.'},
+  {tab:'ana',sel:'#aSub',tit:'Tablas y cobertura',txt:'Por renglón, por UE y brechas, con orden por columna y exportación a CSV. En Cobertura del mes ve qué UE ya reportaron y cuáles faltan, por CEDIS.'});
+ if(esAdmin()||tiene('APRUEBA'))p.push({tab:'adm',sel:'#dSub',tit:'4 · Administración',txt:esAdmin()?'Usuarios y solicitudes de acceso, apertura de periodos, publicación al Motor con simulación y reversión, regeneración de los JSON y la bitácora completa.':'Aquí aprueba o rechaza las solicitudes de acceso de las UE.'});
+ return p;}
+function iniciarTour(){TOUR=pasosTour();TI=0;$('tourOverlay').style.display='block';paso();}
+function cerrarTour(){$('tourOverlay').style.display='none';const sp=document.querySelector('.tour-spot');if(sp)sp.remove();}
+async function paso(){const s=TOUR[TI];if(!s){cerrarTour();return;}
+ if(s.tab&&cur!==s.tab){await go(s.tab);await new Promise(r=>setTimeout(r,500));}
+ const t=document.querySelector(s.sel),box=$('tourBox');let sp=document.querySelector('.tour-spot');
+ if(!sp){sp=document.createElement('div');sp.className='tour-spot';$('tourOverlay').appendChild(sp);}
+ $('tourTitulo').textContent=s.tit;$('tourTexto').textContent=s.txt;$('tourPaso').textContent='Paso '+(TI+1)+' de '+TOUR.length;
+ $('tourPrev').style.visibility=TI===0?'hidden':'visible';$('tourNext').textContent=TI===TOUR.length-1?'Terminar':'Siguiente';
+ if(t&&t.offsetParent!==null){t.scrollIntoView({block:'center',behavior:'smooth'});setTimeout(()=>{const r=t.getBoundingClientRect();
+  sp.style.display='block';sp.style.top=(r.top-6)+'px';sp.style.left=(r.left-6)+'px';sp.style.width=(r.width+12)+'px';sp.style.height=Math.min(r.height+12,window.innerHeight-20)+'px';
+  const bh=box.offsetHeight||160,bw=box.offsetWidth||340;let top=r.bottom+14;if(top+bh>window.innerHeight-10)top=Math.max(10,r.top-bh-14);
+  box.style.transform='';box.style.top=top+'px';box.style.left=Math.min(Math.max(10,r.left),window.innerWidth-bw-10)+'px';},350);}
+ else{sp.style.display='none';box.style.top='50%';box.style.left='50%';box.style.transform='translate(-50%,-50%)';}}
+$('tourNext').onclick=()=>{if(TI>=TOUR.length-1){cerrarTour();return;}TI++;paso();};
+$('tourPrev').onclick=()=>{if(TI>0){TI--;paso();}};$('tourSkip').onclick=cerrarTour;
+
+/* ---------- arranque ---------- */
+if(TOKEN){jsonp({accion:'sesion'},{reintentos:1}).then(r=>r.sesion.cambiarPin?pedirCambioPin():entrar(r.sesion)).catch(()=>{TOKEN='';ss.del('cons_tok');});}
 })();
 </script>
 </body></html>
