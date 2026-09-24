@@ -322,16 +322,24 @@ function ovrAplicar(e,generado){const o=ovrLeer()[e.id];if(o&&o.t>Date.parse(gen
 
 /* ---------- escrituras: script ---------- */
 let TOKEN=ss.get('cons_tok')||'';
+/* Lecturas (listas de Administración, bitácora, sesión): si ya hay un pedido igual en curso,
+   se reutiliza en lugar de abrir otro; así no se acumulan pedidos colgados. */
+const LECTURAS=new Set(['usuarios','solicitudes','bitacora','publicaciones','periodos','estado_json','sesion','ues_publico']);
+const ENCURSO={};
 function jsonp(params,opt){
+ if(LECTURAS.has(params.accion)&&!(opt&&opt._interno)){const k=JSON.stringify(params);if(ENCURSO[k])return ENCURSO[k];
+  const pr=jsonp(params,Object.assign({reintentos:1,timeout:25000},opt||{},{_interno:true})).finally(()=>{delete ENCURSO[k];});ENCURSO[k]=pr;return pr;}
+ return jsonp0(params,opt);}
+function jsonp0(params,opt){
  opt=opt||{};const intento=opt.intento||0,to=opt.timeout||45000,reint=opt.reintentos==null?2:opt.reintentos;
  return new Promise((res,rej)=>{
   const cb='__cb'+Date.now()+Math.floor(Math.random()*1e6);const s=document.createElement('script');
   const q=Object.assign({},params,{callback:cb});if(TOKEN&&!q.token)q.token=TOKEN;
   s.src=API+'?'+Object.keys(q).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(q[k]==null?'':q[k])).join('&');
   const fin=()=>{delete window[cb];s.remove();clearTimeout(tm);};
-  const tm=setTimeout(()=>{fin();if(intento<reint)jsonp(params,Object.assign({},opt,{intento:intento+1})).then(res,rej);else rej(new Error('Sin respuesta del servidor. Revise su conexión e intente de nuevo.'));},to);
+  const tm=setTimeout(()=>{fin();if(intento<reint)jsonp0(params,Object.assign({},opt,{intento:intento+1})).then(res,rej);else rej(new Error('Sin respuesta del servidor. Revise su conexión e intente de nuevo.'));},to);
   window[cb]=r=>{fin();if(r&&r.ok)res(r);else{const m=r&&r.error||'Error desconocido';if(m==='SESION_VENCIDA')sesionVencida();rej(new Error(m));}};
-  s.onerror=()=>{fin();if(intento<reint)setTimeout(()=>jsonp(params,Object.assign({},opt,{intento:intento+1})).then(res,rej),1500);else rej(new Error('No se pudo contactar al servidor.'));};
+  s.onerror=()=>{fin();if(intento<reint)setTimeout(()=>jsonp0(params,Object.assign({},opt,{intento:intento+1})).then(res,rej),1500);else rej(new Error('No se pudo contactar al servidor.'));};
   document.head.appendChild(s);});
 }
 async function postJson(body){
@@ -932,7 +940,8 @@ function rAdm(){
  $('dSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{dS=d.dataset.s;rAdm();});
  DSUB.forEach(x=>$('d-'+x[0]).style.display=x[0]===dS?'':'none');
  return ({usr:rUsr,sol:rSol,per:rPer,pub:rPub,json:rJson,log:rLog})[dS]();}
-async function rUsr(){$('tUsr').innerHTML='<div class="cargando">Cargando…</div>';try{USR=(await jsonp({accion:'usuarios'})).usuarios;}catch(e){err(e);return;}pintarUsr();}
+const ADM_T={};const admFresco=k=>ADM_T[k]&&Date.now()-ADM_T[k]<120000;
+async function rUsr(forzar){if(!forzar&&admFresco('usr')){pintarUsr();return;}$('tUsr').innerHTML='<div class="cargando">Cargando…</div>';try{USR=(await jsonp({accion:'usuarios'})).usuarios;ADM_T.usr=Date.now();}catch(e){err(e);return;}pintarUsr();}
 $('uQ').oninput=()=>pintarUsr();$('uRol').onchange=()=>pintarUsr();
 function pintarUsr(){const q=$('uQ').value.trim().toLowerCase(),fr=$('uRol').value;
  table($('tUsr'),[{k:'id',l:'Usuario'},{k:'ced',l:'Cédula'},{k:'n',l:'Nombre'},{k:'cargo',l:'Cargo'},{k:'rol',l:'Rol'},{k:'ue',l:'Unidad Ejecutora'},{k:'cats',l:'Categorías'},{k:'correo',l:'Correo'},{k:'act',l:'Activo',f:v=>st(v==='SI'?'ACTIVO':'INACTIVO')},{k:'pin',l:'PIN'},{k:'alta',l:'Alta'},
@@ -940,7 +949,7 @@ function pintarUsr(){const q=$('uQ').value.trim().toLowerCase(),fr=$('uRol').val
   USR.filter(u=>(!fr||u.rol===fr)&&(!q||(u.n+' '+u.ced+' '+u.ue).toLowerCase().includes(q))),{after:el=>{
   el.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>userForm(USR.find(u=>String(u.fila)===b.dataset.ed)));
   el.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>modal('Restablecer PIN','<div class="note">El PIN de la cédula '+esc(b.dataset.pin)+' vuelve a ser los últimos 4 dígitos de su cédula. La persona deberá cambiarlo al ingresar. Queda en la bitácora.</div><button class="pri" id="rpOk">Restablecer PIN</button><div id="rpR"></div>',
-   ()=>$('rpOk').onclick=async()=>{try{const r=await jsonp({accion:'restablecer_pin',cedula:b.dataset.pin},{reintentos:0});$('rpOk').remove();$('rpR').innerHTML='<div class="legend">PIN restablecido. La persona ingresa con su cédula y <b class="num">'+esc(r.pinTemporal)+'</b> (últimos 4 dígitos de su cédula); el sistema le pedirá definir uno nuevo.</div>';rUsr();}catch(e){err(e);}}));}});}
+   ()=>$('rpOk').onclick=async()=>{try{const r=await jsonp({accion:'restablecer_pin',cedula:b.dataset.pin},{reintentos:0});$('rpOk').remove();$('rpR').innerHTML='<div class="legend">PIN restablecido. La persona ingresa con su cédula y <b class="num">'+esc(r.pinTemporal)+'</b> (últimos 4 dígitos de su cédula); el sistema le pedirá definir uno nuevo.</div>';rUsr(true);}catch(e){err(e);}}));}});}
 function userForm(u){const nuevo=!u;u=u||{ced:'',n:'',cargo:'',correo:'',tel:'',rol:'CARGA',ue:'',cats:'',act:'SI'};
  modal(nuevo?'Nuevo usuario':'Editar '+u.id+' · '+u.rol,'<label>Cédula</label><input id="fCed" value="'+esc(u.ced)+'"'+(nuevo?'':' disabled')+'><label>Nombre</label><input id="fNom" value="'+esc(u.n)+'"><label>Cargo</label><input id="fCar" value="'+esc(u.cargo)+'"><label>Correo institucional (opcional)</label><input id="fCor" type="email" value="'+esc(u.correo)+'"><label>Teléfono</label><input id="fTel" value="'+esc(u.tel)+'">'+
  '<label>Rol</label><select id="fRol">'+['CARGA','VALIDA','APRUEBA','LECTURA','ADMIN'].map(r=>'<option'+(r===u.rol?' selected':'')+'>'+r+'</option>').join('')+'</select>'+
@@ -951,16 +960,16 @@ function userForm(u){const nuevo=!u;u=u||{ced:'',n:'',cargo:'',correo:'',tel:'',
  b=>$('uOk').onclick=async()=>{const cats=[...b.querySelectorAll('#fCats input:checked')].map(x=>x.value).join(',');
   try{const r=await jsonp({accion:'guardar_usuario',fila:nuevo?'':u.fila,cedula:$('fCed').value,nombre:$('fNom').value,cargo:$('fCar').value,correo:$('fCor').value,telefono:$('fTel').value,rol:$('fRol').value,ue:$('fUe').value,cats,activo:$('fAct').value},{reintentos:0});
    if(r.pinTemporal){$('uOk').remove();$('uR').innerHTML='<div class="legend">Usuario creado. Ingresa con su cédula y el PIN temporal <b class="num">'+esc(r.pinTemporal)+'</b> (últimos 4 dígitos de su cédula); el sistema le pedirá cambiarlo.</div>';}else{cerrarModal();toast('Usuario guardado');}
-   rUsr();}catch(e){err(e);}});}
+   rUsr(true);}catch(e){err(e);}});}
 $('uNew').onclick=()=>userForm(null);
-async function rSol(){$('tSol').innerHTML='<div class="cargando">Cargando…</div>';try{SOL=(await jsonp({accion:'solicitudes'})).solicitudes;}catch(e){err(e);return;}pintarSol();}
+async function rSol(forzar){if(!forzar&&admFresco('sol')){pintarSol();return;}$('tSol').innerHTML='<div class="cargando">Cargando…</div>';try{SOL=(await jsonp({accion:'solicitudes'})).solicitudes;ADM_T.sol=Date.now();}catch(e){err(e);return;}pintarSol();}
 $('sEst').onchange=()=>pintarSol();
 function pintarSol(){const fe=$('sEst').value;
  table($('tSol'),[{k:'id',l:'Solicitud'},{k:'f',l:'Fecha'},{k:'ced',l:'Cédula'},{k:'n',l:'Nombre'},{k:'cargo',l:'Cargo'},{k:'ue',l:'Unidad Ejecutora'},{k:'cats',l:'Categorías'},{k:'rol',l:'Rol'},{k:'j',l:'Justificación'},{k:'e',l:'Estado',f:v=>st(v)},
   {k:'id',l:'',ns:1,f:(v,r)=>r.e==='PENDIENTE'?'<button class="bad" data-r="'+esc(v)+'">Rechazar</button> <button class="ok" data-a="'+esc(v)+'">Aprobar</button>':esc(r.rpor||'')}],SOL.filter(s=>!fe||s.e===fe),{vacio:'No hay solicitudes en esta lista.',after:el=>{
-  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const x=await jsonp({accion:'resolver_solicitud',id:b.dataset.a,decision:'APROBAR'},{reintentos:0});toast('Acceso aprobado. La persona ingresa con su cédula'+(x.pinTemporal?' y los últimos 4 dígitos de su cédula como PIN temporal.':' y el PIN que ya usa.'),7000);rSol();}catch(e){b.disabled=false;err(e);}});
+  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const x=await jsonp({accion:'resolver_solicitud',id:b.dataset.a,decision:'APROBAR'},{reintentos:0});toast('Acceso aprobado. La persona ingresa con su cédula'+(x.pinTemporal?' y los últimos 4 dígitos de su cédula como PIN temporal.':' y el PIN que ya usa.'),7000);rSol(true);}catch(e){b.disabled=false;err(e);}});
   el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>modal('Rechazar '+b.dataset.r,'<label>Motivo (obligatorio)</label><textarea rows="3" id="rm" style="width:100%"></textarea><button class="pri" id="rOk">Rechazar</button>',
-   ()=>$('rOk').onclick=async()=>{if(!$('rm').value.trim()){toast('El motivo es obligatorio');return;}try{await jsonp({accion:'resolver_solicitud',id:b.dataset.r,decision:'RECHAZAR',motivo:$('rm').value},{reintentos:0});cerrarModal();toast('Solicitud rechazada.');rSol();}catch(e){err(e);}}));}});}
+   ()=>$('rOk').onclick=async()=>{if(!$('rm').value.trim()){toast('El motivo es obligatorio');return;}try{await jsonp({accion:'resolver_solicitud',id:b.dataset.r,decision:'RECHAZAR',motivo:$('rm').value},{reintentos:0});cerrarModal();toast('Solicitud rechazada.');rSol(true);}catch(e){err(e);}}));}});}
 async function rPer(){try{PERS=(await jsonp({accion:'periodos'})).periodos;}catch(e){err(e);return;}
  table($('tPer'),[{k:'p',l:'Periodo'},{k:'t',l:'Tipo'},{k:'ini',l:'Inicio'},{k:'fin',l:'Fin'},{k:'lim',l:'Fecha límite'},{k:'e',l:'Estado',f:v=>st(v)},
  {k:'p',l:'',ns:1,f:(v,r)=>r.t!=='MENSUAL'?'':r.e==='ABIERTO'?'<button data-c="'+v+'">Cerrar</button>':'<button data-o="'+v+'">Abrir</button>'}],PERS,{sort:'fin',after:el=>{
