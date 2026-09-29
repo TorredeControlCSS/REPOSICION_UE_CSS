@@ -6,16 +6,12 @@
 <title>Tablero de Cobertura y Reposición de Inventario</title>
 <style>
 :root{
+  color-scheme:light;
   --azul:#0C447C; --azul2:#1E5A9E; --fondo:#ececec; --borde:#a8a8a8; --papel:#ffffff; --tinta:#1d2733; --gris:#5f6b78;
   --verde:#2e7d32; --teal:#0f6e6e; --tab1:#1E5A9E; --tab2:#0f6e6e; --tab3:#2e7d32;
   --p-rojo:#f6d5d1; --p-nar:#fbe3cc; --p-verde:#d6efdc; --p-amar:#f5ecc6; --p-lila:#e7def3; --p-mor:#ddd0ea; --p-azul:#d7e5f4; --p-gris:#e2e5e9;
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --fondo:#1b2027; --papel:#252c35; --tinta:#e3e8ee; --gris:#a3adb8; --borde:#4a5563;
-  --p-rojo:#5a2e2a; --p-nar:#5a4128; --p-verde:#2a4a33; --p-amar:#4d4527; --p-lila:#3e3552; --p-mor:#382a4d; --p-azul:#26405c; --p-gris:#363d47; } }
-:root[data-theme="dark"]{ --fondo:#1b2027; --papel:#252c35; --tinta:#e3e8ee; --gris:#a3adb8; --borde:#4a5563;
-  --p-rojo:#5a2e2a; --p-nar:#5a4128; --p-verde:#2a4a33; --p-amar:#4d4527; --p-lila:#3e3552; --p-mor:#382a4d; --p-azul:#26405c; --p-gris:#363d47; }
 *{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--fondo);color:var(--tinta);font:13px/1.45 "Segoe UI",Calibri,system-ui,sans-serif}
