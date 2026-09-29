@@ -18,8 +18,15 @@
   .topbar .t1{font-size:15px;font-weight:700;line-height:1.2;}
   .topbar .t2{font-size:11px;opacity:.85;}
   .topbar .spacer{flex:1;}
-  .topbar .meta{font-size:10.5px;opacity:.9;text-align:right;line-height:1.5;}
-  .wrap{max-width:1300px;margin:0 auto;padding:12px 26px;}
+  .topbar .meta{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;color:#fff;font-size:11px;}
+  .topbar .meta .fr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:3px 8px;color:#e8f0f9;}
+  .topbar .meta .fr b{color:#fff;}
+  .topbar .meta .fr.alerta{background:#8a3b2e;border-color:#c46a5a;}
+  .wrap{max-width:1880px;margin:0 auto;padding:12px 26px;}
+  .lado{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;align-items:start;}
+  .lado>.card{margin-bottom:0;}
+  #panelSankey{position:sticky;top:8px;}
+  @media(max-width:1200px){ .lado{grid-template-columns:1fr;} .lado>.card{margin-bottom:10px;} #panelSankey{position:static;} }
   .card{background:var(--card);border:1px solid var(--bord);padding:12px 14px;margin-bottom:10px;}
   .intro{font-size:12.5px;color:#444;line-height:1.5;}
   .intro b{color:var(--azul2);}
@@ -184,6 +191,7 @@
     <div class="leyenda" id="rengLeyenda"></div>
   </div>
 
+  <div class="lado">
   <!-- Órdenes de traslado -->
   <div class="card">
     <div class="filtros">
@@ -258,6 +266,7 @@
     <div id="sankeyWrap"></div>
     <div id="sankeyDetalle"></div>
   </div>
+  </div><!-- /lado -->
 
   <div class="foot" id="foot"></div>
 </div>
@@ -293,7 +302,14 @@ fetch(DATA_URL, {cache:'no-cache'})
 
 function render(){
   if(!REP){ return; }
-  el('meta').textContent = (REP.kpi&&REP.kpi.corte ? 'Corte '+REP.kpi.corte+' · ' : '') + 'generado '+esc(REP.generado||'');
+  (function(){
+    var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    var f=function(s){ var p=String(s||'').slice(0,10).split('-'); return p.length===3 ? (+p[2])+'-'+M[+p[1]-1]+'-'+p[0] : (s||'—'); };
+    var corte=REP.kpi&&REP.kpi.corte, hoy=new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'});
+    var atraso=corte ? Math.round((new Date(hoy+'T00:00:00')-new Date(corte+'T00:00:00'))/86400000) : 99;
+    el('meta').innerHTML='<span class="fr'+(atraso>4?' alerta':'')+'">Saldos por CEDIS al <b>'+esc(f(corte))+'</b></span>'+
+      '<span class="fr">Publicado <b>'+esc(f(REP.generado))+'</b></span>';
+  })();
   el('foot').textContent = 'Dirección Nacional de Logística · Torre de Control';
   pintarKpis();
   pintarBalance();
