@@ -181,7 +181,7 @@ tr.sel{background:var(--p-azul)!important}
   <section class="panel" id="p-ue"><div id="ueCont"></div></section>
 
   <section class="panel" id="p-tr">
-    <div class="nota">Solo cuentan las órdenes de compra que aún no llegan. Las OC en estado <b>ASISTIO</b> ya se entregaron y su mercancía está en el saldo, así que no se suman otra vez; si la entrega fue parcial, se suma únicamente el saldo pendiente. Los tránsitos aplican a CEDIS Panamá.</div>
+    <div class="nota">Solo cuentan las órdenes de compra que aún no llegan. Las OC en estado <b>ASISTIO</b> ya se entregaron y su mercancía está en el saldo, así que no se suman otra vez. Solo se suma lo que falta de una entrega parcial, cuando SÍGUELO registra un saldo pendiente menor que la OC. Los tránsitos aplican a CEDIS Panamá.</div>
     <div class="kpis" id="kpiTr"></div>
     <div class="ctl"><label>Proveedor <select id="selProv"><option value="">Todos los proveedores</option></select></label><button class="btn" id="xlsTr">Descargar Excel</button></div>
     <div class="tw"><table id="tblTr"></table></div>
@@ -678,7 +678,11 @@ function filtrarTransitoVivo(sol){
     const est=String(s.estado||'').toUpperCase().trim();
     const pend=N(s.saldo_pendiente);
     let cant=0;
-    if(est.indexOf('ASISTIO')===0){ if(pend>0) cant=pend; else { excl++; return; } }
+    /* ASISTIO = el proveedor ya entregó. SÍGUELO manda su saldo_pendiente igual a la
+       OC completa cuando nadie registró lo recibido (medido 29-sep: 0 excluidas de 537),
+       así que "saldo > 0" no prueba nada. Solo cuenta como parcial si el saldo es
+       MENOR que la OC: eso sí demuestra que se registró una recepción parcial. */
+    if(est.indexOf('ASISTIO')===0){ const tot=N(s.cant_unidades); if(pend>0 && tot>0 && pend<tot) cant=pend; else { excl++; return; } }
     else if(ESTADOS_VIVOS.indexOf(est)>=0){ cant=pend>0?pend:N(s.cant_unidades); }
     else return;
     if(!(cant>0)) return;
