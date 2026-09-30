@@ -432,11 +432,23 @@ function pintarSankey(){
   var maxU = Math.max.apply(null, corr.map(function(c){return c.unidades;}));
 
   // layout: origen a la izquierda, destino a la derecha
-  var W=900, H=400, colO=180, colD=W-180, nodoW=26, top=64, bot=H-30, alto=bot-top;
+  /* Altura según el espacio: lado a lado con la tabla, el Sankey se alarga hasta
+     igualar la altura de la tabla, para no dejar un hueco debajo. Apilado (pantalla
+     angosta) conserva su proporción original 900x400. */
+  var W=900, H=400;
+  try{
+    var lado=window.matchMedia && window.matchMedia('(min-width:1201px)').matches;
+    var cT=document.querySelector('.lado>.card'), pS=el('panelSankey'), wS=el('sankeyWrap');
+    if(lado && cT && pS && wS && wS.clientWidth>0){
+      var disp=cT.offsetHeight-(pS.offsetHeight-wS.offsetHeight)-4;
+      if(disp>0) H=Math.max(400, Math.min(820, Math.round(W*disp/wS.clientWidth)));
+    }
+  }catch(eH){ H=400; }
+  var colO=180, colD=W-180, nodoW=26, top=64, bot=H-30, alto=bot-top;
   // posición vertical de cada CEDIS (mismo orden en ambas columnas)
   var yDe={}; CED_SK.forEach(function(c,i){ yDe[c.k] = top + (alto/(CED_SK.length-1))*i; });
   // grosor máximo de una corriente
-  var GMAX = 64;
+  var GMAX = Math.round(64*Math.min(H/400,1.6));
   function grosor(u){ return Math.max(3, (u/maxU)*GMAX); }
 
   var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
@@ -558,6 +570,7 @@ function poblarFiltros(){
   o.addEventListener('change', pintarTabla);
   d.addEventListener('change', pintarTabla);
   el('fBuscar').addEventListener('input', function(){ pintarTabla(); pintarSankey(); });
+  var _rsz=null; window.addEventListener('resize', function(){ clearTimeout(_rsz); _rsz=setTimeout(pintarSankey,200); });
   el('fBuscar').addEventListener('keydown', function(ev){
     if(ev.key==='Enter'){ var arr=filas(); if(arr.length){ abrirGrafica(arr[0].cod); } }
   });
