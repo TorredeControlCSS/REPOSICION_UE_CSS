@@ -53,9 +53,9 @@ main{padding:0 20px 30px}
 .panel{background:var(--papel);border:1px solid var(--borde);padding:14px 16px;display:none}
 .panel.on{display:block}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-.kpi{border:1px solid transparent;border-radius:4px;padding:5px 11px;cursor:pointer;min-width:110px;text-align:left;font:inherit;color:var(--tinta)}
-.kpi .v{font-family:Consolas,monospace;font-size:17px;font-weight:700;display:block;line-height:1.2}
-.kpi .l{font-size:11px}
+.kpi{flex:1 1 0;border:1px solid transparent;border-radius:4px;padding:4px 10px;cursor:pointer;min-width:105px;text-align:left;font:inherit;color:var(--tinta)}
+.kpi .v{font-family:Consolas,monospace;font-size:16px;font-weight:700;display:block;line-height:1.2}
+.kpi .l{font-size:10.5px;line-height:1.25;display:block}
 .kpi.on{border-color:var(--tinta);box-shadow:inset 0 0 0 1px var(--tinta)}
 .split{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:14px;align-items:start}
 @media (max-width:1100px){.split{grid-template-columns:1fr}}
@@ -71,11 +71,11 @@ tr.sel{background:var(--p-azul)!important}
 .desc{color:var(--gris)}
 .nota{font-size:12px;color:var(--gris);margin:6px 0}
 .aviso{background:var(--p-nar);border:1px solid #d9a066;padding:8px 12px;border-radius:3px;margin-bottom:10px;font-size:12.5px}
-.sim{border:1px solid var(--borde);padding:12px;position:sticky;top:78px}
+.sim{border:1px solid var(--borde);padding:10px 12px}
 .sim h3{margin:0 0 2px;font-size:15px;color:var(--azul2)}
 .simk{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
-.simk div{background:var(--p-azul);border-radius:3px;padding:6px 8px}
-.simk .v{font-family:Consolas,monospace;font-size:17px;font-weight:700;display:block}
+.simk div{background:var(--p-azul);border-radius:3px;padding:4px 8px}
+.simk .v{font-family:Consolas,monospace;font-size:15px;font-weight:700;display:block;line-height:1.25}
 .simk .l{font-size:10.5px;color:var(--gris)}
 .ctl{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:6px 0}
 .vacio{padding:40px 10px;text-align:center;color:var(--gris)}
@@ -138,6 +138,15 @@ tr.sel{background:var(--p-azul)!important}
 .res-list td{padding:5px 6px;border-bottom:1px solid var(--fondo);cursor:pointer}
 .res-list tr:hover td{background:var(--p-gris)}
 .sim .sub{font-size:12px;font-weight:700;color:var(--gris);letter-spacing:.3px;margin:12px 0 4px;text-transform:uppercase}
+.split.uno{grid-template-columns:1fr}
+.sim-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:16px;align-items:start}
+@media (max-width:1100px){.sim-grid{grid-template-columns:1fr}}
+th small{display:block;font-weight:400;font-size:10px;color:var(--gris);white-space:nowrap}
+.modal.ancho{max-width:1040px}
+.modal .top{position:sticky;top:-18px;background:var(--papel);display:flex;gap:10px;align-items:center;padding:4px 0 10px;margin-bottom:6px;border-bottom:1px solid var(--borde);flex-wrap:wrap;z-index:2}
+.modal .cols{columns:2 420px;column-gap:28px}
+.modal .cols h4{break-after:avoid}
+.modal .cols p,.modal .cols ul{break-inside:avoid-column}
 </style>
 </head>
 <body>
@@ -175,7 +184,7 @@ tr.sel{background:var(--p-azul)!important}
   <div id="errorCarga"></div>
   <section class="panel on" id="p-ced">
     <div class="kpis" id="kpiCed"><div class="cargando">Cargando cobertura…</div></div>
-    <div class="split">
+    <div class="split" id="split">
       <div>
         <div class="ctl" style="justify-content:space-between"><div class="nota" id="notaCed"></div><button class="btn" id="xlsCed">Descargar Excel</button></div>
         <div class="tw"><table id="tblCed"></table></div>
@@ -196,9 +205,9 @@ tr.sel{background:var(--p-azul)!important}
   </section>
 </main>
 
-<div class="modal-bg" id="modal"><div class="modal" role="dialog" aria-modal="true">
-  <h2>Cómo leer este tablero</h2>
-  <p><button class="btn azul" id="btnTour">▶ Iniciar recorrido guiado</button> <span class="nota">Le muestra paso a paso cada parte del tablero.</span></p>
+<div class="modal-bg" id="modal"><div class="modal ancho" role="dialog" aria-modal="true" id="modalAyuda">
+  <div class="top"><h2 style="margin:0;flex:1">Cómo leer este tablero</h2><button class="btn azul" id="btnTour">▶ Iniciar recorrido guiado</button><button class="btn" id="cerrarModal">Cerrar</button></div>
+  <div class="cols">
   <p>Arriba eliges una sola vez el <b>renglón</b>, la <b>Unidad Ejecutora</b>, el <b>CEDIS</b>, la <b>base de salida</b> y la <b>media móvil</b>. Las tres pestañas respetan esa selección.</p>
   <h4>Base de salida</h4>
   <p><b>Req F8</b>: lo que las unidades piden al CEDIS elegido. <b>Distribuciones</b>: lo que CEDIS Panamá despachó (solo aplica a Panamá). <b>Consumo reportado</b>: lo que las unidades declaran consumir por mes.</p>
@@ -225,7 +234,7 @@ tr.sel{background:var(--p-azul)!important}
   </ul>
   <h4>Tránsitos</h4>
   <p>Solo cuentan las OC que aún no llegan. <b>Tentativa</b>: es la fecha que pidió el proveedor; no hay cita confirmada. <b>Atrasada</b>: la fecha de entrega ya pasó y SÍGUELO no registra que el proveedor haya asistido. Una OC muy atrasada probablemente no llegará en la fecha que muestra la gráfica.</p>
-  <p style="text-align:right"><button class="btn azul" id="cerrarModal">Entendido</button></p>
+  </div>
 </div></div>
 <div class="modal-bg" id="modalUE"><div class="modal" role="dialog" aria-modal="true" id="modalUEc"></div></div>
 <div class="tour-bg" id="tour"><div class="tour-hl" id="tourHl"></div><div class="tour-box" id="tourBox"></div></div>
@@ -269,7 +278,7 @@ const ESCALA=[
   {k:'critalto',lbl:'Críticamente alto',col:'#5b2c8f',pas:'var(--p-mor)',rango:'>12 m',test:c=>c>12}
 ];
 const st={cod:'',ue:'',ced:'PA',base:'req',mm:90,tab:'ced',nivel:'todos',factor:1,
-  sCed:{c:'cob',d:1},ueF:'todos',sUE:{c:'cob',d:1},sRk:{c:'crit',d:-1},sRx:{c:'s',d:1},sTr:{c:'fecha',d:1},soloCed:false,prov:'',vista:'ue',sev:'',diag:'',sDD:{c:'d',d:-1}};
+  sCed:{c:'falta',d:-1},ueF:'todos',sUE:{c:'falta',d:-1},sRk:{c:'crit',d:-1},sRx:{c:'s',d:1},sTr:{c:'fecha',d:1},soloCed:false,prov:'',vista:'ue',sev:'',diag:'',sDD:{c:'d',d:-1}};
 
 /* ---------- utilidades ---------- */
 const $=id=>document.getElementById(id);
@@ -335,7 +344,7 @@ function filasCed(){
     const inv=invCedis(c,st.ced), sal=salidaCedis(c,st.ced,st.base)||0;
     if(inv<=0&&sal<=0) return;
     const cob=sal>0?inv/sal:(inv>0?Infinity:0);
-    out.push({c,inv,sal,cob,niv:nivelDe(cob),tr:st.ced==='PA'&&tieneTransito(c)});
+    out.push({c,inv,sal,cob,falta:Math.max(0,sal-inv),niv:nivelDe(cob),tr:st.ced==='PA'&&tieneTransito(c)});
   });
   return out;
 }
@@ -355,17 +364,19 @@ function renderCed(){
   $('kpiCed').innerHTML=k;
   $('kpiCed').querySelectorAll('.kpi').forEach(b=>b.onclick=()=>{ st.nivel=(st.nivel===b.dataset.n&&b.dataset.n!=='todos')?'todos':b.dataset.n; renderCed(); });
   let vis=filas.filter(f=>st.nivel==='todos'||(st.nivel==='transito'?f.tr:f.niv.k===st.nivel));
-  sortRows(vis,st.sCed,(r,k)=>k==='c'?r.c:k==='inv'?r.inv:k==='sal'?r.sal:r.cob);
+  // Impacto: primero lo que falta para cubrir un mes (mayor a menor); luego, lo que más sale.
+  sortRows(vis,st.sCed,(r,k)=>k==='c'?r.c:k==='inv'?r.inv:k==='sal'?r.sal:k==='falta'?(r.falta>0?1e13+r.falta:r.sal):r.cob);
   VIS_CED=vis;
   const LIM=300; let mostrar=vis.slice(0,LIM);
   const soloUno=!!st.cod; if(soloUno){ const r=filas.find(x=>x.c===st.cod); mostrar=r?[r]:[]; }
   const bl=st.base==='req'?'Req F8':st.base==='dist'?'Distribuciones':'Consumo reportado';
-  $('notaCed').innerHTML='Inventario en <b>'+CED_NOM[st.ced]+'</b> ÷ salida mensual por <b>'+bl+'</b>'+(st.base==='consumo'?'':' (media móvil '+st.mm+' d)')+'. Toca una fila para simular.';
-  let h='<thead><tr><th style="width:5px;padding:0"></th>'+th('c','Renglón',st.sCed)+th('inv','Inventario',st.sCed,'n')+th('sal','Salida / mes',st.sCed,'n')+th('cob','Cobertura',st.sCed,'n')+'<th>Nivel</th></tr></thead><tbody>';
+  $('notaCed').innerHTML=(st.sCed.c==='falta'?'<b>Arriba, lo de mayor impacto:</b> lo que falta para cubrir un mes de salida. ':'')+'Inventario en <b>'+CED_NOM[st.ced]+'</b> ÷ salida mensual por <b>'+bl+'</b>'+(st.base==='consumo'?'':' (media móvil '+st.mm+' d)')+'. Toca una fila para simular.';
+  let h='<thead><tr><th style="width:5px;padding:0"></th>'+th('c','Renglón',st.sCed)+th('inv','Inventario<small>unidades</small>',st.sCed,'n')+th('sal','Salida / mes<small>unidades</small>',st.sCed,'n')+th('falta','Falta para 1 mes<small>unidades</small>',st.sCed,'n')+th('cob','Cobertura<small>meses</small>',st.sCed,'n')+'<th>Nivel</th></tr></thead><tbody>';
   mostrar.forEach(r=>{
     h+='<tr data-c="'+r.c+'"'+(r.c===st.cod?' class="sel"':'')+'><td style="background:'+r.niv.col+';padding:0"></td>'+
       '<td><b class="mono">'+r.c+'</b>'+(canonico(r.c)?'':' <span class="chip" title="Código fuera del estándar de 9 dígitos (compra directa u otro origen)">no canónico</span>')+'<br><span class="desc">'+esc(desc(r.c).slice(0,70))+'</span></td>'+
       '<td class="n num">'+fmt(r.inv)+'</td><td class="n num">'+(r.sal>0?fmt(r.sal):'·')+'</td>'+
+      '<td class="n num"'+(r.falta>0?' style="color:#c0392b;font-weight:700"':'')+'>'+(r.falta>0?fmt(r.falta):'·')+'</td>'+
       '<td class="n num" style="color:'+r.niv.col+';font-weight:700">'+fmtC(r.cob)+'</td>'+
       '<td><span class="tag" style="background:'+r.niv.col+'">'+r.niv.lbl+'</span>'+(r.tr?' <span class="chip" style="color:#2e7d32">OC en camino</span>':'')+'</td></tr>';
   });
@@ -392,7 +403,7 @@ function proyectar(c){
 }
 function mesAgotamiento(rows){ for(let i=0;i<rows.length;i++){ if(rows[i].conTr<=0) return i; } return 60; }
 function svgProyeccion(rows,inv){
-  const W=760,H=340,ml=54,mr=18,mt=18,mb=40;
+  const W=760,H=270,ml=54,mr=18,mt=18,mb=40;
   let mAg=rows.length-1; for(let i=0;i<rows.length;i++){ const v=incluirTransitos?rows[i].conTr:rows[i].sinTr; if(v<=0){ mAg=i; break; } }
   const maxMes=Math.min(60,Math.max(6,Math.ceil(mAg*1.25)));
   const rv=rows.filter(r=>r.mes<=maxMes);
@@ -439,6 +450,7 @@ function resumenCedis(box){
 }
 function renderSim(){
   const box=$('sim'); const c=st.cod;
+  const sp=$('split'); if(sp) sp.classList.toggle('uno', !!(c&&S[c]));
   if(!c||!S[c]){ resumenCedis(box); renderMesAMes(); return; }
   const p=proyectar(c), rows=p.rows, mAg=mesAgotamiento(rows); const trs=transitosDe(c); const totTr=trs.reduce((a,x)=>a+x.cant,0);
   const cob=p.tasa>0?p.inv/p.tasa:(p.inv>0?Infinity:0), niv=nivelDe(cob);
@@ -447,7 +459,7 @@ function renderSim(){
   const nAtr=trs.filter(x=>atrasoDias(x.t)).length, prox=trs.slice().sort((a,b)=>String(a.t.fecha).localeCompare(String(b.t.fecha)))[0];
   const etTr=st.ced!=='PA'?'':SIG_EST!=='ok'?'<span class="chip">tránsitos: '+(SIG_EST==='cargando'?'consultando SÍGUELO':'SÍGUELO sin respuesta')+'</span>':
     trs.length?'<span class="chip verde">'+trs.length+' OC en camino · '+fmt(totTr)+' u · próxima '+fechaLarga(prox.t.fecha)+'</span>'+(nAtr?' <span class="chip rojo">'+nAtr+' atrasada'+(nAtr>1?'s':'')+'</span>':''):'<span class="chip">sin OC en camino</span>';
-  let h='<h3>'+c+' · '+esc(desc(c))+'</h3><div style="margin:2px 0 4px">'+etTr+'</div>'+
+  let h='<h3>'+c+' · '+esc(desc(c))+'</h3><div style="margin:2px 0 4px">'+etTr+'</div><div class="sim-grid"><div>'+
     '<div class="simk"><div><span class="l">Inventario actual</span><span class="v">'+fmt(p.inv)+'</span><span class="l">en '+CED_NOM[st.ced]+'</span></div>'+
     '<div><span class="l">Salida mensual (×'+st.factor.toFixed(1)+')</span><span class="v">'+fmt(p.tasa)+'</span><span class="l">'+(st.base==='consumo'?'consumo':'MM '+st.mm+' d')+' × factor</span></div>'+
     '<div style="background:'+niv.pas+'"><span class="l">Cobertura base</span><span class="v" style="color:'+niv.col+'">'+fmtC(cob)+'</span><span class="l">'+niv.lbl+'</span></div>'+
@@ -456,11 +468,13 @@ function renderSim(){
     '<button class="btn verde" id="btnPlay">'+(playT?'Pausar':'Reproducir')+'</button><button class="btn" id="btnReset">Reiniciar</button>'+
     '<button class="btn'+(incluirTransitos?' verde':'')+'" id="btnTrS"'+(st.ced!=='PA'?' disabled title="Los tránsitos solo aplican a CEDIS Panamá"':'')+'>Tránsitos: '+(st.ced!=='PA'?'solo Panamá':incluirTransitos?'ON':'OFF')+'</button></div>'+
     '<div class="nota">Al factor ×'+st.factor.toFixed(1)+', el inventario '+(p.tasa>0?(mAg>=60?'dura más de 60 meses':'se agota en '+mAg+' meses'):'no tiene salida registrada')+'. Ritmo: '+(st.base==='consumo'?'':'media móvil '+st.mm+' d de ')+bl+'.</div>'+
-    '<div id="grafico"></div>'+
-    '<div class="leyenda"><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#0C447C" stroke-width="2.5"/></svg> Sin tránsitos</span><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#2e7d32" stroke-width="2.5" stroke-dasharray="5 3"/></svg> Con tránsitos por llegar</span></div>';
+    '';
+  const graf='<div><div id="grafico"></div>'+
+    '<div class="leyenda"><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#0C447C" stroke-width="2.5"/></svg> Sin tránsitos</span><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#2e7d32" stroke-width="2.5" stroke-dasharray="5 3"/></svg> Con tránsitos por llegar</span></div></div>';
   if(trs.length){ h+='<h3 style="margin-top:10px">OC pendientes de este renglón</h3><div class="tw" style="max-height:180px"><table><thead><tr><th>OC</th><th>Proveedor</th><th class="n">Cantidad</th><th>Entrega estimada</th><th>Estado</th></tr></thead><tbody>'+
     trs.map(x=>'<tr style="cursor:default"><td class="mono">'+esc(x.t.oc)+'</td><td>'+esc(x.t.prov)+'</td><td class="n num">'+fmt(x.cant)+'</td><td>'+fechaLarga(x.t.fecha)+chipsFecha(x.t)+'</td><td>'+esc(x.t.est)+'</td></tr>').join('')+'</tbody></table></div>'+
     (nAtr?'<div class="nota">Una OC atrasada sigue sumando en la línea verde como si llegara hoy. Si lleva mucho atraso, apague «Tránsitos» para ver el escenario sin ella.</div>':''); }
+  h+='</div>'+graf+'</div>';
   box.innerHTML=h; pintarGrafico();
   $('inFac').oninput=e=>{ st.factor=parseFloat(e.target.value); tiempoMes=0; renderSim(); };
   $('btnTrS').onclick=()=>{ incluirTransitos=!incluirTransitos; renderSim(); };
@@ -597,7 +611,7 @@ function filasUE(u){
     else { est='En cero · no hay en la red'; col='#6a7683'; }
     const dg=dMap[c];
     if(saldo>0&&cob<1) est='Menos de 1 mes';   // con saldo: no se rotula "Desabasto"
-    const r={c,saldo,um,dz,tope,cons,f8,f8a,cob,arriba,pa,cc,est,col,uF8,dg:dg?dg.diag:'',cero:saldo<=0,conArriba:saldo<=0&&(arriba>0||pa>0)};
+    const r={c,saldo,um,dz,tope,cons,f8,f8a,cob,falta:Math.max(0,(baseV||0)-saldo),arriba,pa,cc,est,col,uF8,dg:dg?dg.diag:'',cero:saldo<=0,conArriba:saldo<=0&&(arriba>0||pa>0)};
     r.dgTxt=diagUE(r, hoy); return r;
   });
 }
@@ -648,7 +662,7 @@ function renderRanking(box){
     '<button class="btn" id="xlsRk">Descargar Excel</button></div>';
   if(st.vista==='det'){
     const d=filas.slice(); sortRows(d,st.sDD,(r,k)=>k==='fu'?fechaISO(r.fu):(k==='u'||k==='x'||k==='c'||k==='v')?String(r[k]||''):(r[k]==null?-1:r[k])); VIS_DD=d;
-    h+='<div class="tw"><table id="tDD"><thead><tr>'+th('v','Severidad',st.sDD)+th('u','Unidad Ejecutora',st.sDD)+th('x','CEDIS',st.sDD)+th('c','Renglón',st.sDD)+th('d','Días en cero',st.sDD,'n')+th('is','Inv. su CEDIS',st.sDD,'n')+th('ip','Inv. Panamá',st.sDD,'n')+th('co','Consumo / mes',st.sDD,'n')+th('fn','F8 en el año',st.sDD,'n')+th('fu','Última F8',st.sDD)+'<th>Diagnóstico</th></tr></thead><tbody>';
+    h+='<div class="tw"><table id="tDD"><thead><tr>'+th('v','Severidad',st.sDD)+th('u','Unidad Ejecutora',st.sDD)+th('x','CEDIS',st.sDD)+th('c','Renglón',st.sDD)+th('d','Días en cero<small>días</small>',st.sDD,'n')+th('is','Inv. su CEDIS<small>unidades</small>',st.sDD,'n')+th('ip','Inv. Panamá<small>unidades</small>',st.sDD,'n')+th('co','Consumo / mes<small>unidades</small>',st.sDD,'n')+th('fn','F8 en el año<small>unidades pedidas</small>',st.sDD,'n')+th('fu','Última F8<small>fecha</small>',st.sDD)+'<th>Diagnóstico<small>qué hacer</small></th></tr></thead><tbody>';
     d.slice(0,500).forEach(f=>{ const col=f.v==='CRITICO'?'#c0392b':f.v==='ATENCION'?'#8a5a2a':'';
       h+='<tr data-u="'+esc(f.u)+'" data-c="'+esc(f.c)+'"><td style="color:'+col+';font-weight:700">'+(f.v==='CRITICO'?'Crítico':f.v==='ATENCION'?'Atención':'·')+'</td><td>'+esc(f.u)+'</td><td>'+esc(f.x||'')+'</td><td><b class="mono">'+esc(f.c)+'</b><br><span class="desc">'+esc(String(f.s||desc(f.c)).slice(0,55))+'</span></td>'+
         '<td class="n num" style="color:'+col+';font-weight:700">'+diasTxt(f.d)+'</td><td class="n num">'+(f.cedisTipo==='PA'?fmt(f.is):'·')+'</td><td class="n num">'+fmt(f.ip)+'</td><td class="n num">'+(f.co?fmt(f.co):'<span class="chip">s/rep</span>')+'</td>'+
@@ -659,7 +673,7 @@ function renderRanking(box){
     filas.forEach(f=>{ const r=agg[f.u]||(agg[f.u]={u:f.u,x:f.x||'',g:f.g||'',n:0,crit:0,sinF8:0,co:0,dmax:0}); r.n++; if(f.v==='CRITICO') r.crit++; if(!(f.fq>0)) r.sinF8++; r.co+=f.co||0; if((f.d||0)>r.dmax) r.dmax=f.d||0; });
     if(!st.sev&&!st.diag&&IDX&&IDX.ues) IDX.ues.forEach(e=>{ if(!agg[e.ue]&&(!st.soloCed||cedisCorto(e.cedis)===st.ced)) agg[e.ue]={u:e.ue,x:e.cedis||'',g:'',n:0,crit:0,sinF8:0,co:0,dmax:0}; });
     const rows=Object.values(agg); sortRows(rows,st.sRk,(r,k)=>r[k]); VIS_RK=rows;
-    h+='<div class="tw"><table id="tRk"><thead><tr>'+th('u','Unidad Ejecutora',st.sRk)+th('x','CEDIS que abastece',st.sRk)+th('g','Región',st.sRk)+th('n','Renglones en cero',st.sRk,'n')+th('crit','Críticos',st.sRk,'n')+th('dmax','Días máx. en cero',st.sRk,'n')+th('sinF8','Sin F8 pedida',st.sRk,'n')+th('co','Consumo / mes sin atender',st.sRk,'n')+'</tr></thead><tbody>';
+    h+='<div class="tw"><table id="tRk"><thead><tr>'+th('u','Unidad Ejecutora',st.sRk)+th('x','CEDIS que abastece',st.sRk)+th('g','Región',st.sRk)+th('n','Renglones en cero<small>cantidad de renglones</small>',st.sRk,'n')+th('crit','Críticos<small>renglones ≥60 días en cero</small>',st.sRk,'n')+th('dmax','Días máx. en cero<small>el renglón más antiguo</small>',st.sRk,'n')+th('sinF8','Sin F8 pedida<small>renglones en cero sin requisición</small>',st.sRk,'n')+th('co','Consumo / mes sin atender<small>unidades</small>',st.sRk,'n')+'</tr></thead><tbody>';
     rows.forEach(r=>{ h+='<tr data-u="'+esc(r.u)+'"><td>'+esc(r.u)+'</td><td>'+esc(r.x)+'</td><td>'+esc(r.g)+'</td><td class="n num"><b>'+fmt(r.n)+'</b></td><td class="n num" style="color:#c0392b"><b>'+fmt(r.crit)+'</b></td><td class="n num">'+(r.n?diasTxt(r.dmax):'·')+'</td><td class="n num"'+(r.sinF8?' style="color:#8a5a2a;font-weight:700"':'')+'>'+fmt(r.sinF8)+'</td><td class="n num">'+(r.co?fmt(r.co):(r.n?'<span class="chip" title="Las líneas de esta unidad no traen consumo reportado">sin consumo</span>':'·'))+'</td></tr>'; });
     h+='</tbody></table></div><div class="nota">Toca una unidad para abrir todo su inventario, no solo lo que está en cero.'+(diasTope()!=null?' «≥'+diasTope()+'» = en cero desde que empezó el registro de saldos ('+fechaLarga(IDX.fechas[0])+').':'')+'</div>';
   }
@@ -709,19 +723,19 @@ function renderInventarioUE(box){
   ];
   const g=grupos.find(x=>x.k===st.ueF)||grupos[0];
   let vis=todas.filter(g.f); if(st.cod) vis=vis.filter(r=>r.c===st.cod);
-  sortRows(vis,st.sUE,(r,k)=>k==='c'?r.c:k==='dz'?(r.cero?r.dz:-1):(r[k]==null?-1:r[k])); VIS_UE=vis;
+  sortRows(vis,st.sUE,(r,k)=>k==='c'?r.c:k==='dz'?(r.cero?r.dz:-1):k==='falta'?(r.falta>0?1e13+r.falta:(r.f8||0)):(r[k]==null?-1:r[k])); VIS_UE=vis;
   const baseL=st.base==='consumo'?'consumo reportado':'F8 (media móvil '+st.mm+' d)';
   const fUlt=U.fechas[U.fechas.length-1];
   let h=ruta+'<h3 style="margin:0 0 2px;color:var(--teal)">'+esc(u)+'</h3><div class="nota">La abastece '+esc(U.cedis)+' · saldos al '+fechaLarga(fUlt)+(U.consCorte?' · consumo con corte '+fechaLarga(U.consCorte):'')+' · cobertura = saldo ÷ '+baseL+(st.base==='dist'?' (a nivel de unidad no hay distribución por renglón; se usa F8)':'')+'</div>';
   if(!U.cons) h+='<div class="aviso"><b>Esta unidad no tiene consumo reportado publicado.</b> O no ha reportado consumos, o su nombre en el maestro de consumos no coincide con el de sus saldos. Mientras tanto, la columna de consumo queda vacía y su cobertura se calcula con Formas 8.</div>';
   h+='<div class="kpis">'+grupos.map(x=>'<button class="kpi'+(st.ueF===x.k?' on':'')+'" data-g="'+x.k+'" style="background:'+x.pas+'"><span class="v"'+(x.col?' style="color:'+x.col+'"':'')+'>'+todas.filter(x.f).length.toLocaleString('en-US')+'</span><span class="l">'+x.l+'</span></button>').join('')+'</div>';
   h+='<div class="ctl"><button class="btn" id="xlsUE">Descargar Excel</button>'+(st.cod?'<span class="chip">Filtrado al renglón '+st.cod+'</span>':'')+'</div>';
-  h+='<div class="tw"><table id="tUE"><thead><tr><th style="width:5px;padding:0"></th>'+th('c','Renglón',st.sUE)+th('saldo','Saldo hoy',st.sUE,'n')+'<th>Último cambio</th>'+th('dz','Días en cero',st.sUE,'n')+th('cons','Consumo / mes',st.sUE,'n')+th('f8','F8 / mes ('+st.mm+' d)',st.sUE,'n')+th('f8a','F8 en el año',st.sUE,'n')+th('cob','Cobertura',st.sUE,'n')+'<th>Estado</th>'+th('arriba','Existencia en su CEDIS',st.sUE,'n')+'<th>Última F8</th><th>Diagnóstico</th></tr></thead><tbody>';
+  h+='<div class="tw"><table id="tUE"><thead><tr><th style="width:5px;padding:0"></th>'+th('c','Renglón',st.sUE)+th('saldo','Saldo hoy<small>unidades</small>',st.sUE,'n')+'<th>Último cambio<small>fecha</small></th>'+th('dz','Días en cero<small>días</small>',st.sUE,'n')+th('cons','Consumo / mes<small>unidades, reportado</small>',st.sUE,'n')+th('f8','F8 / mes<small>unidades pedidas, prom. '+st.mm+' d</small>',st.sUE,'n')+th('f8a','F8 en el año<small>unidades pedidas</small>',st.sUE,'n')+th('falta','Falta para 1 mes<small>unidades</small>',st.sUE,'n')+th('cob','Cobertura<small>meses</small>',st.sUE,'n')+'<th>Estado</th>'+th('arriba','Existencia en su CEDIS<small>unidades</small>',st.sUE,'n')+'<th>Última F8<small>fecha</small></th><th>Diagnóstico<small>qué hacer</small></th></tr></thead><tbody>';
   vis.slice(0,500).forEach(r=>{
     h+='<tr data-c="'+r.c+'"><td style="background:'+r.col+';padding:0"></td><td><b class="mono">'+r.c+'</b><br><span class="desc">'+esc(desc(r.c).slice(0,58))+'</span></td>'+
       '<td class="n num"'+(r.cero?' style="color:#c0392b;font-weight:700"':'')+'>'+fmt(r.saldo)+'</td><td>'+fechaTxt(r.um)+'</td>'+
       '<td class="n num">'+(r.cero?(r.tope?'≥'+r.dz+' d':r.dz+' d'):'·')+'</td>'+
-      '<td class="n num">'+(r.cons!=null?fmt(r.cons):'<span class="chip">s/rep</span>')+'</td><td class="n num">'+fmt(r.f8)+'</td><td class="n num">'+(r.f8a?fmt(r.f8a):'<span style="color:#c0392b">sin F8</span>')+'</td>'+
+      '<td class="n num">'+(r.cons!=null?fmt(r.cons):'<span class="chip">s/rep</span>')+'</td><td class="n num">'+fmt(r.f8)+'</td><td class="n num">'+(r.f8a?fmt(r.f8a):'<span style="color:#c0392b">sin F8</span>')+'</td><td class="n num"'+(r.falta>0?' style="color:#c0392b;font-weight:700"':'')+'>'+(r.falta>0?fmt(r.falta):'·')+'</td>'+
       '<td class="n num" style="font-weight:700;color:'+r.col+'">'+(r.cero?'0.0 m':fmtC(r.cob))+'</td>'+
       '<td><span class="tag" style="background:'+r.col+'">'+r.est+'</span></td>'+
       '<td class="n num">'+fmt(r.arriba)+'</td><td>'+fechaTxt(r.uF8)+'</td><td>'+esc(r.dgTxt||'—')+'</td></tr>';
@@ -768,7 +782,7 @@ function renderTr(){
   let d=TRANS.slice(); if(st.prov) d=d.filter(t=>t.prov===st.prov); if(st.cod){ const k=codKey(st.cod); d=d.filter(t=>t.k===k); }
   sortRows(d,st.sTr,(r,k)=>k==='fecha'?(r.fecha||'9999'):k==='cant'?r.cant:String(r[k]||'')); VIS_TR=d;
   const grupos={}; d.forEach(t=>{ (grupos[t.prov]=grupos[t.prov]||[]).push(t); });
-  const provs=Object.keys(grupos).sort((a,b)=>a.localeCompare(b,'es'));
+  const provs=Object.keys(grupos).sort((a,b)=>grupos[b].reduce((s,t)=>s+t.cant,0)-grupos[a].reduce((s,t)=>s+t.cant,0));   // mayor impacto primero
   const abrirTodo=!!(st.prov||st.cod);
   let h='<thead><tr>'+th('oc','OC',st.sTr)+th('cod','Renglón',st.sTr)+th('cant','Unidades por llegar',st.sTr,'n')+th('est','Estado',st.sTr)+th('fecha','Entrega estimada',st.sTr)+'</tr></thead><tbody>';
   if(!d.length) h+='<tr><td colspan="5" class="vacio">No hay OC pendientes con este filtro.</td></tr>';
@@ -817,8 +831,8 @@ async function exportarXLSX(nombre,titulo,meta,cols,filas){
 const metaFiltros=()=>[['CEDIS',CED_NOM[st.ced]],['Base de salida',st.base==='req'?'Req F8':st.base==='dist'?'Distribuciones':'Consumo reportado'],['Media móvil',st.base==='consumo'?'No aplica':st.mm+' días'],['Saldos al',fechaLarga(HOY_SALDOS)]];
 function exportarCed(){ const nv=st.nivel==='todos'?'Todos':st.nivel==='transito'?'Con OC en camino':(ESCALA.find(n=>n.k===st.nivel)||{}).lbl;
   exportarXLSX('COBERTURA_'+st.ced,'Cobertura por renglón · '+CED_NOM[st.ced],metaFiltros().concat([['Nivel',nv]]),
-    [{h:'Renglón',t:'txt',w:12},{h:'Descripción',t:'txt',w:55},{h:'Inventario',t:'num'},{h:'Salida / mes',t:'num'},{h:'Cobertura (meses)',t:'dec'},{h:'Nivel',t:'txt',w:18},{h:'OC en camino',t:'txt',w:12}],
-    VIS_CED.map(r=>[r.c,desc(r.c),r.inv,Math.round(r.sal),isFinite(r.cob)?Math.round(r.cob*10)/10:'sin salida',r.niv.lbl,r.tr?'Sí':''])); }
+    [{h:'Renglón',t:'txt',w:12},{h:'Descripción',t:'txt',w:55},{h:'Inventario',t:'num'},{h:'Salida / mes',t:'num'},{h:'Falta para 1 mes',t:'num'},{h:'Cobertura (meses)',t:'dec'},{h:'Nivel',t:'txt',w:18},{h:'OC en camino',t:'txt',w:12}],
+    VIS_CED.map(r=>[r.c,desc(r.c),r.inv,Math.round(r.sal),Math.round(r.falta),isFinite(r.cob)?Math.round(r.cob*10)/10:'sin salida',r.niv.lbl,r.tr?'Sí':''])); }
 function exportarRanking(){ exportarXLSX('DESABASTO_POR_UE','Unidades en cero con existencia en la red',[['Severidad',st.sev||'Todas'],['Diagnóstico',st.diag?DIAG[st.diag]:'Todos'],['Filtro CEDIS',st.soloCed?CED_NOM[st.ced]:'Todos'],['Reporte de desabasto',DES?horaPTY(DES.generado):'no disponible']],
     [{h:'Unidad Ejecutora',t:'txt',w:44},{h:'CEDIS que abastece',t:'txt',w:18},{h:'Región',t:'txt',w:14},{h:'Renglones en cero',t:'num'},{h:'Críticos',t:'num'},{h:'Días máx. en cero',t:'txt',w:10},{h:'Sin F8 pedida',t:'num'},{h:'Consumo / mes sin atender',t:'num',w:16}],
     VIS_RK.map(r=>[r.u,r.x,r.g,r.n,r.crit,r.n?diasTxt(r.dmax):'',r.sinF8,r.co])); }
@@ -830,8 +844,8 @@ function exportarRenglonUEs(){ exportarXLSX('RENGLON_'+st.cod+'_EN_UES','Rengló
     VIS_RX.map(x=>[x.u,x.x,x.s,x.co||'',x.pR,x.pD,x.cb==null?'':Math.round(x.cb*10)/10])); }
 function exportarInventarioUE(u){ const U=UEC[u]; exportarXLSX('INVENTARIO_'+baseNom(u).replace(/ /g,'_').slice(0,40),'Inventario de '+u,
     metaFiltros().concat([['CEDIS que la abastece',U.cedis],['Consumo reportado',U.cons?'corte '+fechaLarga(U.consCorte):'sin consumo publicado'],['Filtro',(document.querySelector('#ueCont .kpi.on .l')||{}).textContent||'Todos']]),
-    [{h:'Renglón',t:'txt',w:12},{h:'Descripción',t:'txt',w:50},{h:'Saldo hoy',t:'num'},{h:'Último cambio',t:'txt',w:12},{h:'Días en cero',t:'txt',w:11},{h:'Consumo / mes',t:'num'},{h:'F8 / mes ('+st.mm+' d)',t:'num'},{h:'F8 en el año',t:'num'},{h:'Cobertura (meses)',t:'dec'},{h:'Estado',t:'txt',w:24},{h:'Existencia en su CEDIS',t:'num'},{h:'Última F8',t:'txt',w:12},{h:'Diagnóstico',t:'txt',w:26}],
-    VIS_UE.map(r=>[r.c,desc(r.c),r.saldo,r.um,r.cero?(r.tope?'≥'+r.dz:String(r.dz)):'',r.cons==null?'':r.cons,Math.round(r.f8),r.f8a,r.cero?0:(isFinite(r.cob)?Math.round(r.cob*10)/10:'sin salida'),r.est,r.arriba,r.uF8,r.dgTxt||''])); }
+    [{h:'Renglón',t:'txt',w:12},{h:'Descripción',t:'txt',w:50},{h:'Saldo hoy',t:'num'},{h:'Último cambio',t:'txt',w:12},{h:'Días en cero',t:'txt',w:11},{h:'Consumo / mes',t:'num'},{h:'F8 / mes ('+st.mm+' d)',t:'num'},{h:'F8 en el año',t:'num'},{h:'Falta para 1 mes',t:'num'},{h:'Cobertura (meses)',t:'dec'},{h:'Estado',t:'txt',w:24},{h:'Existencia en su CEDIS',t:'num'},{h:'Última F8',t:'txt',w:12},{h:'Diagnóstico',t:'txt',w:26}],
+    VIS_UE.map(r=>[r.c,desc(r.c),r.saldo,r.um,r.cero?(r.tope?'≥'+r.dz:String(r.dz)):'',r.cons==null?'':r.cons,Math.round(r.f8),r.f8a,Math.round(r.falta),r.cero?0:(isFinite(r.cob)?Math.round(r.cob*10)/10:'sin salida'),r.est,r.arriba,r.uF8,r.dgTxt||''])); }
 function exportarMesAMes(c){ if(!DETU) return; const cols=[{h:'CEDIS',t:'txt',w:16},{h:'Unidad Ejecutora',t:'txt',w:42},{h:'Saldo hoy',t:'num'},{h:'Consumo / mes',t:'num'}];
   MESES.forEach(m=>{ cols.push({h:'F8 '+mesLbl(m),t:'num',w:11}); cols.push({h:'Dist '+mesLbl(m),t:'num',w:11}); }); cols.push({h:'F8 total',t:'num'},{h:'Dist total',t:'num'});
   exportarXLSX('MES_A_MES_'+c,'Detalle mes a mes por unidad · '+c+' · '+desc(c),[],cols,
@@ -898,7 +912,7 @@ $('selProv').onchange=e=>{ st.prov=e.target.value; renderTr(); };
 $('xlsCed').onclick=exportarCed; $('xlsTr').onclick=exportarTr;
 function irTab(t){ st.tab=t; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); ['ced','ue','tr'].forEach(x=>$('p-'+x).classList.toggle('on',x===t)); render(); }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>irTab(b.dataset.t));
-$('btnAyuda').onclick=()=>{ $('modal').classList.add('open'); $('cerrarModal').focus(); };
+$('btnAyuda').onclick=()=>{ $('modal').classList.add('open'); $('modalAyuda').scrollTop=0; $('btnTour').focus({preventScroll:true}); };
 $('cerrarModal').onclick=()=>$('modal').classList.remove('open');
 $('modal').onclick=e=>{ if(e.target.id==='modal') $('modal').classList.remove('open'); };
 $('modalUE').onclick=e=>{ if(e.target.id==='modalUE') $('modalUE').classList.remove('open'); };
