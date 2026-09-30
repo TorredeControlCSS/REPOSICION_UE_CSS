@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Calculadora de Reposición · CSS</title>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 <style>
 :root{--azul:#0C447C;--azul2:#1E5A9E;--fondo:#ececec;--borde:#a8a8a8;--papel:#fff;--tinta:#1d2733;--gris:#5f6b78;
  --rojo:#c0392b;--ambar:#b7791f;--verde:#2e7d32;
@@ -73,9 +74,10 @@ tbody tr{cursor:pointer} tbody tr:hover td{background:#f4f7fb}
 .uecard{background:#fff;border:1px solid var(--borde);border-radius:4px;padding:8px 12px;cursor:pointer;text-align:left;font:inherit}
 .uecard:hover{border-color:var(--azul2)} .uecard b{color:var(--azul2)}
 .hoy{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;margin-bottom:10px;align-items:stretch}
-.hoy .tarj{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch;width:100%}
+.hoy .tarj{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;align-items:stretch;width:100%}
+@media(max-width:1300px){.hoy .tarj{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .hoy .frase{margin:0;font-size:12.5px;line-height:1.45;padding:5px 10px}
-.hoy .cel{background:var(--bg,#f1f4f8);border-radius:3px;padding:4px 10px;display:flex;flex-direction:column;justify-content:center;min-width:0;min-height:52px}.hoy .cel>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hoy .cel .l{font-size:10.5px;color:var(--gris);display:block}.hoy .cel .v{font-family:Consolas,monospace;font-size:17px;font-weight:700;color:var(--azul2);line-height:1.25}.hoy .cel .u{font-size:11px;color:var(--gris);margin-left:5px}
+.hoy .cel{background:var(--bg,#f1f4f8);border-radius:3px;padding:4px 8px;display:flex;flex-direction:column;justify-content:center;min-width:0;min-height:52px}.hoy .cel>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hoy .cel .l{font-size:10.5px;color:var(--gris);display:block}.hoy .cel .v{font-family:Consolas,monospace;font-size:16px;font-weight:700;color:var(--azul2);line-height:1.25}.hoy .cel .u{font-size:11px;color:var(--gris);margin-left:5px}
 @media(max-width:1100px){.hoy{grid-template-columns:1fr}}
 .q{font:inherit;font-size:10.5px;font-weight:700;width:16px;height:16px;border-radius:50%;border:1px solid var(--azul2);background:#fff;color:var(--azul2);cursor:pointer;padding:0;line-height:14px;margin-left:3px}
 .q:hover{background:var(--azul2);color:#fff}
@@ -254,12 +256,12 @@ function inicio(){
   const lista=B.res&&B.res.ues? B.res.ues : B.idx.ues.map(x=>({ue:x.ue,cedis:x.cedis,tot:x.renglones,r:null}));
   lista.forEach(x=>(grupos[x.cedis]||(grupos[x.cedis]=[])).push(x));
   const NOM={'CEDIS PANAMA':'CEDIS Panamá','CEDIS DIVISA':'CEDIS Divisa','CEDIS CHIRIQUI':'CEDIS Chiriquí'};
-  let h='<div class="panel"><div class="nota" style="margin-bottom:8px">Elija su unidad en la lista de arriba o tóquela aquí. Las unidades están agrupadas por el CEDIS que las abastece y ordenadas por renglones que deben pedir.'+(B.res?'':' (El resumen de estados se está generando; mientras tanto se muestran solo los nombres.)')+'</div><div class="cedcols">';
+  let h='<div class="panel"><div class="nota" style="margin-bottom:8px">Elija su unidad en la lista de arriba o tóquela aquí. Las unidades están agrupadas por el CEDIS que las abastece y ordenadas por renglones que deben pedir.'+(B.res?'':' (El resumen de estados se está generando; mientras tanto se muestran solo los nombres.)')+'</div>'+(B.res?'<div class="leyenda" style="margin:0 0 8px"><span><i style="background:#c0392b"></i>Críticos</span><span><i style="background:#b7791f"></i>Pedir ya</span><span><i style="background:#c9a227"></i>Pedir pronto</span><span><i style="background:#2e7d32"></i>Con cobertura</span><span>· la cifra a la derecha: renglones que deben pedir hoy</span></div>':'')+'<div class="cedcols">';
   Object.keys(grupos).forEach(ce=>{ const g=grupos[ce].sort((x,y)=>((y.r||0)+(y.a||0))-((x.r||0)+(x.a||0))||x.ue.localeCompare(y.ue)); const tr=g.reduce((s,x)=>s+(x.r||0)+(x.a||0),0);
     h+='<div class="cedcol"><h3>'+(NOM[ce]||ce)+'</h3><div class="nota">'+g.length+' unidad'+(g.length===1?'':'es')+(B.res?' · '+fmt(tr)+' renglones por pedir':'')+'</div>'+
       g.map(x=>{ const t=Math.max(1,x.tot||1); return '<button class="uerow" data-u="'+esc(x.ue)+'"><span><b style="color:#1E5A9E">'+esc(x.ue)+'</b></span>'+
         (x.r==null?'<span></span><span></span>':'<span class="mini" title="Críticos '+x.r+' · Pedir ya '+x.a+' · Pronto '+x.p+' · Con cobertura '+x.v+'"><i style="width:'+x.r/t*100+'%;background:#c0392b"></i><i style="width:'+x.a/t*100+'%;background:#b7791f"></i><i style="width:'+x.p/t*100+'%;background:#c9a227"></i><i style="width:'+x.v/t*100+'%;background:#2e7d32"></i></span><span class="num" style="text-align:right;color:#c0392b;font-weight:700">'+(x.r+x.a)+'</span>')+'</button>'; }).join('')+'</div>'; });
-  h+='</div><div class="leyenda" style="margin-top:8px"><span><i style="background:#c0392b"></i>Críticos</span><span><i style="background:#b7791f"></i>Pedir ya</span><span><i style="background:#c9a227"></i>Pedir pronto</span><span><i style="background:#2e7d32"></i>Con cobertura</span><span>· la cifra a la derecha: renglones que deben pedir hoy</span></div></div>';
+  h+='</div></div>';
   $('main').innerHTML=h;
   $('main').querySelectorAll('.uerow').forEach(r=>r.onclick=()=>abrirUE(r.dataset.u));
 }
@@ -275,11 +277,14 @@ function vistaUE(){
   if(st.cod) return vistaRenglon();
   const q=st.q.toLowerCase();
   let f=FILAS.filter(x=>(!st.filtro||x.r.estado===st.filtro)&&(!q||x.c.indexOf(q)>=0||nom(x.c).toLowerCase().indexOf(q)>=0));
-  f.sort((a,b)=>EST[a.r.estado].o-EST[b.r.estado].o || b.r.pedir-a.r.pedir);
+  const S=st.sortUE||{k:'imp',d:1}, val={imp:x=>EST[x.r.estado].o*1e12-x.r.pedir, est:x=>EST[x.r.estado].o, c:x=>x.c, saldo:x=>x.saldo, d:x=>x.b.d||0, diag:x=>DIAG[x.b.diag][0],
+    rop:x=>x.r.ROP||0, dias:x=>x.r.diasAROP==null?1e9:x.r.diasAROP, pend:x=>x.r.pend||0, pedir:x=>x.r.pedir||0}[S.k];
+  f.sort((a,b)=>{ const A=val(a),Bv=val(b); return (A<Bv?-1:A>Bv?1:0)*S.d || EST[a.r.estado].o-EST[b.r.estado].o || b.r.pedir-a.r.pedir; });
+  const th=(k,t,sub,n)=>'<th'+(n?' class="n"':'')+' data-s="'+k+'" title="Ordenar">'+t+(S.k===k?(S.d>0?' ▲':' ▼'):'')+(sub?'<small>'+sub+'</small>':'')+'</th>';
   const cnt={}; FILAS.forEach(x=>cnt[x.r.estado]=(cnt[x.r.estado]||0)+1); const nNuevos=FILAS.filter(x=>x.nuevo).length;
   let h='<div class="kpis">'+['rojo','ambar','pronto','verde','sin'].map(k=>'<button class="kpi'+(st.filtro===k?' on':'')+'" data-k="'+k+'" style="--bg:'+EST[k].bg+'"><span class="v" style="color:'+EST[k].c+'">'+fmt(cnt[k]||0)+'</span><span class="l">'+EST[k].t+' · '+EST[k].l+'</span></button>').join('')+
-    '<button class="btn" id="btnCorreo" style="flex:0 0 auto">Vista previa del correo de hoy'+(nNuevos?' <span class="chip nuevo">'+nNuevos+' nuevos</span>':'')+'</button><button class="btn verde" id="btnPre" style="flex:0 0 auto">Descargar pre-pedido</button></div>';
-  h+='<div class="tw"><table><thead><tr><th>Estado</th><th>Renglón</th><th class="n">Saldo hoy<small>unidades</small></th><th class="n">Demanda / mes<small>unidades · base del cálculo</small></th><th>Calidad de la señal<small>diagnóstico</small></th><th class="n">Línea de pedido<small>unidades</small></th><th class="n">Días para llegar a la línea<small>días</small></th><th class="n">Por recibir<small>F8 recientes, unidades</small></th><th class="n">Pedir<small>unidades</small></th></tr></thead><tbody>';
+    (nNuevos?'<span class="chip nuevo" style="align-self:center" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+nNuevos+' nuevos hoy</span>':'')+'<button class="btn verde" id="btnPre" style="flex:0 0 auto">Descargar pre-pedido</button></div>';
+  h+='<div class="tw"><table><thead><tr>'+th('est','Estado')+th('c','Renglón')+th('saldo','Saldo hoy','unidades',1)+th('d','Demanda / mes','unidades · base del cálculo',1)+th('diag','Calidad de la señal','diagnóstico')+th('rop','Línea de pedido','unidades',1)+th('dias','Días para la línea de pedido','días que faltan',1)+th('pend','Por recibir','F8 recientes, unidades',1)+th('pedir','Pedir','unidades',1)+'</tr></thead><tbody>';
   f.slice(0,400).forEach(x=>{ const e=EST[x.r.estado];
     h+='<tr data-c="'+x.c+'" tabindex="0"><td><span class="tag t-'+x.r.estado+'">'+e.t+'</span>'+(x.nuevo?' <span class="chip nuevo" title="Cruzó la línea desde la carga anterior">nuevo hoy</span>':'')+'</td>'+
       '<td><b class="mono">'+x.c+'</b>'+(vit(x.c)?' <span class="chip vital">VITAL</span>':'')+chipTr(x.c)+'<br><span class="desc">'+esc(nom(x.c).slice(0,70))+'</span></td>'+
@@ -287,11 +292,12 @@ function vistaUE(){
       '<td class="n num">'+(x.b.d?fmt(x.r.ROP):'·')+'</td><td class="n num">'+(x.r.diasAROP==null?'·':x.r.diasAROP<=0?'<b style="color:#c0392b">ya cruzó</b>':Math.round(x.r.diasAROP))+'</td>'+
       '<td class="n num">'+(x.r.pend>0?fmt(x.r.pend):'·')+'</td>'+
       '<td class="n num"'+(x.r.pedir>0?' style="font-weight:700;color:#0C447C"':'')+'>'+((x.r.pedir>0&&(x.r.estado!=='verde'||x.r.aj))?fmt(x.r.pedir):'·')+(x.r.aj?' <span class="chip" title="Cantidad ajustada por el usuario">ajustado</span>':'')+'</td></tr>'; });
-  h+='</tbody></table></div><div class="nota" style="margin-top:4px">'+(f.length>400?'Mostrando 400 de '+fmt(f.length)+'. ':fmt(f.length)+' renglones. ')+'Ordenados por urgencia y, dentro de cada estado, por la cantidad a pedir. Toque un renglón para abrir la calculadora.</div>';
+  h+='</tbody></table></div><div class="nota" style="margin-top:4px">'+(f.length>400?'Mostrando 400 de '+fmt(f.length)+'. ':fmt(f.length)+' renglones. ')+(S.k==='imp'?'Ordenados por urgencia y, dentro de cada estado, por la cantidad a pedir. ':'')+'Toque un encabezado para ordenar y un renglón para abrir la calculadora.</div>';
   $('main').innerHTML='<div class="panel">'+h+'</div>';
   $('main').querySelectorAll('.kpi').forEach(b=>b.onclick=()=>{ st.filtro=st.filtro===b.dataset.k?'':b.dataset.k; vistaUE(); });
   $('main').querySelectorAll('tbody tr').forEach(tr=>{ const go=()=>{ st.cod=tr.dataset.c; vistaUE(); window.scrollTo(0,0); }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
-  $('btnCorreo').onclick=correoPreview; $('btnPre').onclick=()=>prePedido(st.ue);
+  $('btnPre').onclick=()=>prePedido(st.ue);
+  $('main').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{ const k=t.dataset.s, cur=st.sortUE||{k:'imp',d:1}; st.sortUE={k:k,d:cur.k===k?-cur.d:(['saldo','d','rop','pend','pedir'].indexOf(k)>=0?-1:1)}; vistaUE(); });
 }
 let _xls=null;
 function libXLS(){ if(window.ExcelJS) return Promise.resolve(); if(_xls) return _xls; _xls=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=res; s.onerror=()=>{ _xls=null; rej(new Error('no se pudo cargar ExcelJS')); }; document.head.appendChild(s); }); return _xls; }
@@ -327,8 +333,8 @@ function vistaRenglon(){
    '<div class="paso"><h3><span>2</span>Línea de pedido</h3>'+
      ctl('inL','Tiempo de entrega',5,60,1,RX.p.L,'L')+ctl('inC','Días a cubrir',15,90,5,RX.p.cubrir,'C')+ctl('inN','Nivel de servicio',0,4,1,[85,90,95,97.5,99].indexOf(RX.ns),'N')+
      '<div class="res" id="p2"></div></div>'+
-   '<div class="nota">Le surte '+esc(U.cedis)+': hoy tiene <b class="num">'+fmt(ced[ci])+'</b> unidades'+(ci?' · CEDIS Panamá <b class="num">'+fmt(ced[0])+'</b>':'')+'. Los controles solo simulan este renglón.</div>'+
-   '</div><div><div id="graf"></div><div class="leyenda"><span>Pase el cursor sobre la curva para ver cada día ·</span><span><i style="background:#1E5A9E"></i>Saldo</span><span><i style="background:#9aa3ad"></i>Si no pide</span><span><i style="background:#2e7d32"></i>Si pide hoy</span><span><i style="background:#fbe8c8"></i>Zona para pedir</span><span><i style="background:#f6d5d1"></i>Bajo el inventario crítico</span><span><i style="background:#c0392b;width:6px"></i>F8 urgencia</span><span><i style="background:#1E5A9E;width:6px"></i>F8 mensual</span></div></div></div></div>';
+   '<div class="nota">Los controles solo simulan este renglón. Pase el cursor sobre la curva para ver el detalle de cada día.</div>'+
+   '</div><div><div id="graf"></div><div class="leyenda"><span><i style="background:#1E5A9E"></i>Saldo</span><span><i style="background:#9aa3ad"></i>Si no pide</span><span><i style="background:#2e7d32"></i>Si pide hoy</span><span><i style="background:#fbe8c8"></i>Zona para pedir</span><span><i style="background:#f6d5d1"></i>Bajo el inventario crítico</span><span><i style="background:#c0392b;width:6px"></i>F8 urgencia</span><span><i style="background:#1E5A9E;width:6px"></i>F8 mensual</span></div></div></div></div>';
   $('main').innerHTML=h;
   $('btnVolver').onclick=()=>{ st.cod=''; vistaUE(); };
   $('btnImg').onclick=()=>descargarImagen(x.c);
@@ -399,7 +405,10 @@ function actualizar(){
   $('hoyRes').innerHTML='<div class="frase '+(est==='rojo'?'rojo':est==='ambar'?'ambar':'verde')+'">'+frase+'</div><div class="tarj">'+
     (accion? cel('Pedir hoy',fmt(pedir),'unidades','#d7e5f4',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+cel('Llegaría',fC(dLlega),'en '+L+' días')
             : cel('Pedir el',fC(cruza),'hoy no',  '#d6efdc',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+cel('Línea de pedido',fmt(ROP),'unidades'))+
-    cel('Le alcanza hasta',accion?fC(hasta):fC(hoy+Math.round(x.saldo/dd)*DIA),accion?'con pedido':'sin pedir')+pre+'</div>';
+    cel('Le alcanza hasta',accion?fC(hasta):fC(hoy+Math.round(x.saldo/dd)*DIA),accion?'con pedido':'sin pedir')+pre+
+    (function(){ const U=B.ues[st.ue], ci={'CEDIS PANAMA':0,'CEDIS DIVISA':1,'CEDIS CHIRIQUI':2}[U.cedis]||0, cd=B.ced[x.c], nomC={0:'CEDIS Panamá',1:'CEDIS Divisa',2:'CEDIS Chiriquí'}[ci];
+      const v=cd?cd[ci]:null, extra=ci&&cd?' title="CEDIS Panamá tiene '+fmt(cd[0])+' unidades"':'';
+      return '<div class="cel"'+(v===0?' style="--bg:#f6d5d1"':'')+extra+'><span class="l"><span>'+nomC+' tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">unidades</span></span></div>'; })()+'</div>';
   if($('qRec')) $('qRec').onclick=()=>{ AYC.PR=['Por recibir','Lo que ya pidió en Formas 8 en los últimos '+L+' días y todavía no ha entrado a su saldo. Pidió '+fmt(pe.pedido)+'; desde entonces entraron '+fmt(pe.recibido)+'; quedan '+fmt(pe.pend)+' por recibir. Se descuentan del pedido sugerido para no pedir dos veces.']; ayudaCorta('PR'); };
   if($('btnGuardar')) $('btnGuardar').onclick=()=>{ guardarAjuste(st.ue,x.c,{pedir,L,cubrir:RX.p.cubrir,ns,fecha:fC(Date.now())}); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Guardado: su pre-pedido lleva '+fmt(pedir)+' unidades de este renglón.'); };
   if($('btnRest')) $('btnRest').onclick=()=>{ guardarAjuste(st.ue,x.c,null); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Listo: vuelve a la cantidad sugerida.'); };
@@ -495,7 +504,7 @@ function demoUE(){ if(st.ue) return st.ue; const l=(B.res&&B.res.ues)||[]; const
 function demoR(){ const f=FILAS.filter(x=>x.r.estado==='rojo'||x.r.estado==='ambar').sort((a,b)=>b.r.pedir-a.r.pedir)[0]||FILAS[0]; return f?f.c:''; }
 const TOUR=[
  {sel:'.barra',t:'Elija su unidad',x:'Todo empieza aquí. Con la unidad elegida, el buscador de la derecha encuentra un renglón por código o nombre.',prep:()=>{ if(st.ue&&st.cod){ st.cod=''; vistaUE(); } }},
- {sel:'.kpis',t:'Cómo está su unidad hoy',x:'Cada tarjeta cuenta renglones por estado y sirve de filtro: tóquela para ver solo esos. A la derecha, la vista previa del aviso diario y el pre-pedido en Excel.',prep:async()=>{ const u=demoUE(); if(st.ue!==u||!FILAS.length) await abrirUE(u); st.cod=''; vistaUE(); }},
+ {sel:'.kpis',t:'Cómo está su unidad hoy',x:'Cada tarjeta cuenta renglones por estado y sirve de filtro: tóquela para ver solo esos. A la derecha, el pre-pedido en Excel. Toque un encabezado de la tabla para ordenar.',prep:async()=>{ const u=demoUE(); if(st.ue!==u||!FILAS.length) await abrirUE(u); st.cod=''; vistaUE(); }},
  {sel:'.tw',t:'Sus renglones, por urgencia',x:'Primero los críticos, luego los que ya cruzaron la línea de pedido. "Pedir" es la cantidad sugerida. Toque un renglón para abrir su calculadora.'},
  {sel:'#hoyRes',t:'Qué hacer hoy',x:'Lo primero en un renglón: si debe pedir, cuánto, cuándo llegaría y hasta cuándo le alcanza. Si hay una orden de compra en camino a CEDIS Panamá, la etiqueta verde junto al nombre lo indica. Con «Descargar imagen» guarda esta vista tal como la ve.',prep:()=>{ st.cod=demoR(); vistaUE(); }},
  {sel:'#p1',t:'1 · Cuánto consume',x:'Tres señales de demanda. Se usa la mediana para que una señal inflada o truncada no desvíe el cálculo. Los signos ? explican cada una.'},
@@ -536,7 +545,7 @@ window.__rue={st,abrirUE,vistaUE,FILAS:()=>FILAS,iniciarTour,TOUR,B};
     $('frS').textContent=fL(dISO(idx.fechas[idx.fechas.length-1]));
     $('frP').textContent=B.gen?(new Date(B.gen).toLocaleString('es-PA',{timeZone:'America/Panama',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' PTY'):'·';
     // inventario de los CEDIS (para "le surte…"), en segundo plano
-    traer('matriz_snapshot.json',true).then(sn=>{ if(sn&&sn.renglones) sn.renglones.forEach(r=>B.ced[r.c]=[r.iPA||0,r.iDI||0,r.iCH||0]); });
+    traer('matriz_snapshot.json',true).then(sn=>{ if(sn&&sn.renglones) sn.renglones.forEach(r=>B.ced[r.c]=[r.iPA||0,r.iDI||0,r.iCH||0]); if(st.cod&&$('hoyRes')) actualizar(); });
     const q=new URLSearchParams(location.search).get('ue');
     if(q&&idx.ues.some(x=>x.ue===q)) abrirUE(q); else inicio();
   }catch(e){ $('main').innerHTML='<div class="panel">No se pudieron cargar los datos ('+esc(e.message)+'). <button class="btn" onclick="location.reload()">Reintentar</button></div>'; }
