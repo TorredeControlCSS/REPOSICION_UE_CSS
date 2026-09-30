@@ -647,7 +647,9 @@ function filasUE(u){
   const dMap={}; if(DES&&DES.f) DES.f.forEach(x=>{ if(x.u===u) dMap[x.c]=x; });
   return U.serie.map(se=>{
     const c=String(se.c), v=se.v||[];
-    let saldo=0; if(v.length&&v[v.length-1][0]===last) saldo=v[v.length-1][1];
+    // Serie dispersa: solo guarda los días en que el saldo cambió. El saldo de hoy es el ÚLTIMO valor
+    // conocido (last value carried forward), no 0 si hoy no hay punto. (Corregido 30-sep-2026.)
+    const saldo=v.length?v[v.length-1][1]:0;
     let lastNZ=null; for(let j=v.length-1;j>=0;j--){ if(v[j][1]>0){ lastNZ=v[j][0]; break; } }
     let dz=0,tope=false;
     if(saldo<=0){ if(lastNZ==null){ dz=diasEntre(F[0],fUlt); tope=true; } else { dz=diasEntre(F[Math.min(lastNZ+1,last)],fUlt); } }
