@@ -148,8 +148,12 @@ th small{display:block;font-weight:400;font-size:10px;color:var(--gris);white-sp
 .modal .cols h4{break-after:avoid}
 .modal .cols p,.modal .cols ul{break-inside:avoid-column}
 .split.uno > div:first-child{display:none}
-.sim-cab{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
-.sim-cab h3{flex:1;margin:0}
+.sim-cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.sim-cab h3{margin:0}
+.btn-link{margin-left:auto;background:none;border:1px solid transparent;border-radius:3px;color:var(--azul2);font:inherit;font-size:12.5px;cursor:pointer;padding:3px 8px}
+.btn-link:hover{border-color:var(--borde);background:var(--p-gris)}
+input[type=range]{cursor:grab;vertical-align:middle;width:170px}
+input[type=range]:active{cursor:grabbing}
 .res-list th{position:static;background:var(--p-azul);font-size:11px;padding:4px 6px;cursor:default}
 </style>
 </head>
@@ -390,6 +394,7 @@ function renderCed(){
   enlazarOrden($('tblCed'),st.sCed,renderCed);
   $('tblCed').querySelectorAll('tbody tr').forEach(tr=>filaEnter(tr,()=>elegirReng(tr.dataset.c)));
   renderSim();
+  igualarAlturas();
 }
 /* ---------- Simulación: proyectar / mesAgotamiento / svgProyeccion del simulador actual ---------- */
 let tiempoMes=0, playT=null, incluirTransitos=true;
@@ -407,7 +412,7 @@ function proyectar(c){
 }
 function mesAgotamiento(rows){ for(let i=0;i<rows.length;i++){ if(rows[i].conTr<=0) return i; } return 60; }
 function svgProyeccion(rows,inv){
-  const W=760,H=270,ml=54,mr=18,mt=18,mb=40;
+  const W=760,H=SIM_H||270,ml=54,mr=18,mt=18,mb=40;
   let mAg=rows.length-1; for(let i=0;i<rows.length;i++){ const v=incluirTransitos?rows[i].conTr:rows[i].sinTr; if(v<=0){ mAg=i; break; } }
   const maxMes=Math.min(60,Math.max(6,Math.ceil(mAg*1.25)));
   const rv=rows.filter(r=>r.mes<=maxMes);
@@ -432,7 +437,7 @@ function svgProyeccion(rows,inv){
     s+='<line x1="'+cx+'" y1="'+mt+'" x2="'+cx+'" y2="'+(H-mb)+'" stroke="'+col+'" stroke-dasharray="3 3"/><circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" stroke="#fff" stroke-width="2"/><rect x="'+bx+'" y="'+(cy-30)+'" width="135" height="24" fill="#fff" stroke="'+col+'" stroke-width="1.5"/><text x="'+(bx+6)+'" y="'+(cy-13)+'" font-size="11" font-family="Consolas" fill="#1E5A9E" font-weight="'+(ag?'700':'400')+'">mes '+tiempoMes+': '+(ag?'AGOTADO':fmt(val))+'</text>'; }
   return s+'</svg>';
 }
-function pintarGrafico(){ const c=st.cod; if(!c||!$('grafico')) return; const p=proyectar(c); $('grafico').innerHTML=svgProyeccion(p.rows,p.inv); }
+function pintarGrafico(){ const c=st.cod; if(!c||!$('grafico')) return; SIM_H=altoGrafico(); const p=proyectar(c); $('grafico').innerHTML=svgProyeccion(p.rows,p.inv); }
 /* Panel derecho sin renglón elegido: resumen del CEDIS con accesos directos. */
 function resumenCedis(box){
   const filas=filasCed(), tot=filas.length||1, cnt={}; ESCALA.forEach(n=>cnt[n.k]=0); filas.forEach(f=>cnt[f.niv.k]++);
@@ -453,42 +458,77 @@ function resumenCedis(box){
   box.querySelectorAll('tr[data-c]').forEach(tr=>filaEnter(tr,()=>elegirReng(tr.dataset.c)));
 }
 function renderSim(){
-  const box=$('sim'); const c=st.cod;
-  const sp=$('split'); if(sp) sp.classList.toggle('uno', !!(c&&S[c]));
-  if(!c||!S[c]){ resumenCedis(box); renderMesAMes(); return; }
-  const p=proyectar(c), rows=p.rows, mAg=mesAgotamiento(rows); const trs=transitosDe(c); const totTr=trs.reduce((a,x)=>a+x.cant,0);
-  const cob=p.tasa>0?p.inv/p.tasa:(p.inv>0?Infinity:0), niv=nivelDe(cob);
-  const bl=st.base==='req'?'F8 de '+CED_NOM[st.ced]:st.base==='dist'?'Distribuciones de CEDIS Panamá':'consumo reportado de sus UE';
-  const agTxt=p.tasa>0?(mAg>=60?'>60 m':mAg+' m'):'·';
+  const box=$('sim'); const c=st.cod, uno=!!(c&&S[c]);
+  const sp=$('split'); if(sp) sp.classList.toggle('uno', uno);
+  // En la vista de un renglón las tarjetas de nivel no aportan: se ocultan.
+  const kc=$('kpiCed'); if(kc) kc.style.display=uno?'none':'';
+  if(!uno){ resumenCedis(box); renderMesAMes(); return; }
+  const trs=transitosDe(c), totTr=trs.reduce((a,x)=>a+x.cant,0);
   const nAtr=trs.filter(x=>atrasoDias(x.t)).length, prox=trs.slice().sort((a,b)=>String(a.t.fecha).localeCompare(String(b.t.fecha)))[0];
   const etTr=st.ced!=='PA'?'':SIG_EST!=='ok'?'<span class="chip">tránsitos: '+(SIG_EST==='cargando'?'consultando SÍGUELO':'SÍGUELO sin respuesta')+'</span>':
     trs.length?'<span class="chip verde">'+trs.length+' OC en camino · '+fmt(totTr)+' u · próxima '+fechaLarga(prox.t.fecha)+'</span>'+(nAtr?' <span class="chip rojo">'+nAtr+' atrasada'+(nAtr>1?'s':'')+'</span>':''):'<span class="chip">sin OC en camino</span>';
-  let h='<div class="sim-cab"><button class="btn" id="btnVolver" title="Volver a la lista de renglones">‹ Volver a la lista</button><h3>'+c+' · '+esc(desc(c))+'</h3></div><div style="margin:4px 0 6px">'+etTr+'</div><div class="sim-grid"><div>'+
-    '<div class="simk"><div><span class="l">Inventario actual</span><span class="v">'+fmt(p.inv)+'</span><span class="l">en '+CED_NOM[st.ced]+'</span></div>'+
-    '<div><span class="l">Salida mensual (×'+st.factor.toFixed(1)+')</span><span class="v">'+fmt(p.tasa)+'</span><span class="l">'+(st.base==='consumo'?'consumo':'MM '+st.mm+' d')+' × factor</span></div>'+
-    '<div style="background:'+niv.pas+'"><span class="l">Cobertura base</span><span class="v" style="color:'+niv.col+'">'+fmtC(cob)+'</span><span class="l">'+niv.lbl+'</span></div>'+
-    '<div><span class="l">Se agota ('+(incluirTransitos?'con':'sin')+' tránsitos)</span><span class="v">'+agTxt+'</span><span class="l">'+(st.ced!=='PA'?'tránsitos solo en Panamá':SIG_EST!=='ok'?'SÍGUELO '+(SIG_EST==='cargando'?'cargando':'sin respuesta'):(totTr>0?'incluye '+fmt(totTr)+' en camino':'sin OC pendientes'))+'</span></div></div>'+
-    '<div class="ctl"><label>Factor de crecimiento <input type="range" id="inFac" min="1" max="12" step="0.5" value="'+st.factor+'"> <b class="mono">×'+st.factor.toFixed(1)+'</b></label>'+
-    '<button class="btn verde" id="btnPlay">'+(playT?'Pausar':'Reproducir')+'</button><button class="btn" id="btnReset">Reiniciar</button>'+
+  const bl=st.base==='req'?'F8 de '+CED_NOM[st.ced]:st.base==='dist'?'Distribuciones de CEDIS Panamá':'consumo reportado de sus UE';
+  let h='<div class="sim-cab"><h3>'+c+' · '+esc(desc(c))+'</h3>'+etTr+'<button class="btn-link" id="btnVolver" title="Volver a la lista de renglones">‹ Volver a la lista</button></div>'+
+    '<div class="sim-grid"><div id="simIzq">'+
+    '<div class="simk"><div><span class="l">Inventario actual</span><span class="v" id="kInv"></span><span class="l">en '+CED_NOM[st.ced]+'</span></div>'+
+    '<div><span class="l" id="kSalT"></span><span class="v" id="kSal"></span><span class="l">'+(st.base==='consumo'?'consumo':'MM '+st.mm+' d')+' × factor</span></div>'+
+    '<div id="kCobB"><span class="l">Cobertura base</span><span class="v" id="kCob"></span><span class="l" id="kCobL"></span></div>'+
+    '<div><span class="l">Se agota ('+(incluirTransitos?'con':'sin')+' tránsitos)</span><span class="v" id="kAg"></span><span class="l">'+(st.ced!=='PA'?'tránsitos solo en Panamá':SIG_EST!=='ok'?'SÍGUELO '+(SIG_EST==='cargando'?'cargando':'sin respuesta'):(totTr>0?'incluye '+fmt(totTr)+' en camino':'sin OC pendientes'))+'</span></div></div>'+
+    '<div class="ctl"><label>Factor de crecimiento <input type="range" id="inFac" min="1" max="12" step="0.5" value="'+st.factor+'"> <b class="mono" id="facLbl"></b></label>'+
+    '<button class="btn verde" id="btnPlay">'+(playT?'❚❚ Pausar':'▶ Reproducir')+'</button><button class="btn" id="btnReset">Reiniciar</button>'+
     '<button class="btn'+(incluirTransitos?' verde':'')+'" id="btnTrS"'+(st.ced!=='PA'?' disabled title="Los tránsitos solo aplican a CEDIS Panamá"':'')+'>Tránsitos: '+(st.ced!=='PA'?'solo Panamá':incluirTransitos?'ON':'OFF')+'</button></div>'+
-    '<div class="nota">Al factor ×'+st.factor.toFixed(1)+', el inventario '+(p.tasa>0?(mAg>=60?'dura más de 60 meses':'se agota en '+mAg+' meses'):'no tiene salida registrada')+'. Ritmo: '+(st.base==='consumo'?'':'media móvil '+st.mm+' d de ')+bl+'.</div>'+
-    '';
-  const graf='<div><div id="grafico"></div>'+
-    '<div class="leyenda"><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#0C447C" stroke-width="2.5"/></svg> Sin tránsitos</span><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#2e7d32" stroke-width="2.5" stroke-dasharray="5 3"/></svg> Con tránsitos por llegar</span></div></div>';
+    '<div class="nota" id="simNota"></div>';
   if(trs.length){ h+='<h3 style="margin-top:10px">OC pendientes de este renglón</h3><div class="tw" style="max-height:180px"><table><thead><tr><th>OC</th><th>Proveedor</th><th class="n">Cantidad</th><th>Entrega estimada</th><th>Estado</th></tr></thead><tbody>'+
     trs.map(x=>'<tr style="cursor:default"><td class="mono">'+esc(x.t.oc)+'</td><td>'+esc(x.t.prov)+'</td><td class="n num">'+fmt(x.cant)+'</td><td>'+fechaLarga(x.t.fecha)+chipsFecha(x.t)+'</td><td>'+esc(x.t.est)+'</td></tr>').join('')+'</tbody></table></div>'+
     (nAtr?'<div class="nota">Una OC atrasada sigue sumando en la línea verde como si llegara hoy. Si lleva mucho atraso, apague «Tránsitos» para ver el escenario sin ella.</div>':''); }
-  h+='</div>'+graf+'</div>';
-  box.innerHTML=h; pintarGrafico();
+  h+='</div><div id="simDer"><div id="grafico"></div>'+
+    '<div class="leyenda" id="simLey"><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#0C447C" stroke-width="2.5"/></svg> Sin tránsitos</span><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#2e7d32" stroke-width="2.5" stroke-dasharray="5 3"/></svg> Con tránsitos por llegar</span></div></div></div>';
+  box.innerHTML=h;
+  SIM_BL=bl; actualizarSim();
   $('btnVolver').onclick=limpiarReng;
-  $('inFac').oninput=e=>{ st.factor=parseFloat(e.target.value); tiempoMes=0; renderSim(); };
+  // El deslizador solo actualiza cifras y gráfica: no redibuja el panel (así se puede arrastrar).
+  $('inFac').oninput=e=>{ st.factor=parseFloat(e.target.value); tiempoMes=0; if(playT){ clearInterval(playT); playT=null; $('btnPlay').textContent='▶ Reproducir'; } actualizarSim(); };
   $('btnTrS').onclick=()=>{ incluirTransitos=!incluirTransitos; renderSim(); };
-  $('btnReset').onclick=()=>{ clearInterval(playT); playT=null; tiempoMes=0; renderSim(); };
-  $('btnPlay').onclick=()=>{ if(playT){ clearInterval(playT); playT=null; $('btnPlay').textContent='Reproducir'; return; }
-    if(tiempoMes>=mAg) tiempoMes=0; $('btnPlay').textContent='Pausar';
-    playT=setInterval(()=>{ tiempoMes++; pintarGrafico(); if(tiempoMes>=Math.min(mAg,60)){ clearInterval(playT); playT=null; const b=$('btnPlay'); if(b) b.textContent='Reproducir'; } },350); };
+  $('btnReset').onclick=()=>{ clearInterval(playT); playT=null; tiempoMes=0; $('btnPlay').textContent='▶ Reproducir'; actualizarSim(); };
+  $('btnPlay').onclick=()=>{ const mAg=mesAgotamiento(proyectar(c).rows);
+    if(playT){ clearInterval(playT); playT=null; $('btnPlay').textContent='▶ Reproducir'; return; }
+    if(tiempoMes>=mAg) tiempoMes=0; $('btnPlay').textContent='❚❚ Pausar';
+    playT=setInterval(()=>{ tiempoMes++; pintarGrafico(); if(tiempoMes>=Math.min(mAg,60)){ clearInterval(playT); playT=null; const b=$('btnPlay'); if(b) b.textContent='▶ Reproducir'; } },350); };
   renderMesAMes();
 }
+let SIM_BL='';
+/* Actualiza cifras, textos y gráfica de la simulación sin reconstruir el panel. */
+function actualizarSim(){
+  const c=st.cod; if(!c||!$('kInv')) return;
+  const p=proyectar(c), mAg=mesAgotamiento(p.rows);
+  const cob=p.tasa>0?p.inv/p.tasa:(p.inv>0?Infinity:0), niv=nivelDe(cob);
+  $('kInv').textContent=fmt(p.inv);
+  $('kSalT').textContent='Salida mensual (×'+st.factor.toFixed(1)+')'; $('kSal').textContent=fmt(p.tasa);
+  $('kCobB').style.background=niv.pas; $('kCob').textContent=fmtC(cob); $('kCob').style.color=niv.col; $('kCobL').textContent=niv.lbl;
+  $('kAg').textContent=p.tasa>0?(mAg>=60?'>60 m':mAg+' m'):'·';
+  $('facLbl').textContent='×'+st.factor.toFixed(1);
+  $('simNota').textContent='Al factor ×'+st.factor.toFixed(1)+', el inventario '+(p.tasa>0?(mAg>=60?'dura más de 60 meses':'se agota en '+mAg+' meses'):'no tiene salida registrada')+'. Ritmo: '+(st.base==='consumo'?'':'media móvil '+st.mm+' d de ')+SIM_BL+'.';
+  pintarGrafico();
+}
+/* Alto de la gráfica: igual al de la columna izquierda, para no dejar espacio vacío. */
+let SIM_H=270;
+function altoGrafico(){
+  const izq=$('simIzq'), g=$('grafico'), ley=$('simLey');
+  if(!izq||!g||!g.clientWidth||!izq.offsetHeight) return 270;
+  const disp=izq.offsetHeight-(ley?ley.offsetHeight:0)-8;
+  return Math.max(240, Math.min(520, Math.round(760*disp/g.clientWidth)));
+}
+/* Vista general: la lista y el resumen del panel derecho con la misma altura. */
+function igualarAlturas(){
+  const sp=$('split'); if(!sp) return;
+  const tw=sp.querySelector(':scope > div:first-child .tw'), pie=$('pieCed'), sim=$('sim');
+  if(!tw||!sim) return;
+  if(sp.classList.contains('uno')){ tw.style.height=''; tw.style.maxHeight=''; return; }
+  tw.style.height=''; tw.style.maxHeight='';
+  const simH=sim.offsetHeight; if(!simH) return;
+  tw.style.maxHeight='none'; tw.style.height=Math.max(320, simH-(pie?pie.offsetHeight:0)-6)+'px';
+}
+window.addEventListener('resize',()=>{ clearTimeout(igualarAlturas._t); igualarAlturas._t=setTimeout(()=>{ igualarAlturas(); if(st.cod) pintarGrafico(); },150); });
 
 /* ---------- Detalle por UE mes a mes (renderDetalleUE + abrirModalUE del simulador actual) ---------- */
 const mesLbl=m=>{ const p=m.split('-'); const nn=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return nn[+p[1]]+' '+p[0].slice(2); };
