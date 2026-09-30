@@ -156,6 +156,16 @@ th small{display:block;font-weight:400;font-size:10px;color:var(--gris);white-sp
 input[type=range]{cursor:grab;vertical-align:middle;width:170px}
 input[type=range]:active{cursor:grabbing}
 .res-list th{position:static;background:var(--p-azul);font-size:11px;padding:4px 6px;cursor:default}
+.rp-pag{width:794px;max-width:100%;background:#fff;color:#1d2733;padding:20px 24px;margin:0 auto 14px;border:1px solid #d5d9de;font:12px/1.45 "Segoe UI",Calibri,Arial,sans-serif}
+.rp-pdf{position:fixed;left:-10000px;top:0}.rp-pdf .rp-pag{border:0;margin:0}
+.rp-cab{display:flex;gap:12px;align-items:center;background:#0C447C;color:#fff;padding:8px 12px;margin:-20px -24px 12px}.rp-cab img{width:38px;height:38px}
+.rp-t{font-size:15px;font-weight:700}.rp-s{font-size:10.5px;color:#cfe0f2}
+.rp-r{font-size:14px;color:#1E5A9E;margin-bottom:4px}.rp-h{font-weight:700;color:#0C447C;font-size:12.5px;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.3px}
+.rp-tab{width:100%;border-collapse:collapse;font-size:11px}.rp-tab th{background:#1E5A9E;color:#fff;text-align:left;padding:4px 6px;font-weight:600;position:static}.rp-tab th.n,.rp-tab td.n{text-align:right}
+.rp-tab td{padding:4px 6px;border-bottom:1px solid #e3e6ea;vertical-align:top}.rp-tot td{font-weight:700;background:#eef3f9}
+.rp-d{color:#5f6b78;font-size:10.5px}.rp-vit{background:#fdecea;color:#a23224;font-weight:700;font-size:9.5px;padding:0 4px}
+.rp-niv{padding:1px 6px;border-radius:2px;font-weight:600;font-size:10.5px}.rp-p{margin:4px 0;font-size:11.5px}.rp-graf{border:1px solid #e3e6ea;padding:4px}.rp-ley{font-size:10.5px;margin-top:2px}
+.rp-nota{font-size:10px;color:#5f6b78;margin-top:10px}
 </style>
 </head>
 <body>
@@ -187,6 +197,7 @@ input[type=range]:active{cursor:grabbing}
   <button class="tab on" data-t="ced" style="--c:var(--tab1)">Cobertura CEDIS<small>¿Cómo estoy renglón por renglón?</small></button>
   <button class="tab" data-t="ue" style="--c:var(--tab2)">Unidades Ejecutoras<small>¿Qué tiene cada UE y qué le falta?</small></button>
   <button class="tab" data-t="tr" style="--c:var(--tab3)">Tránsitos<small>¿Qué viene en camino de verdad?</small></button>
+  <button class="tab" data-t="rep" style="--c:#5b2c8f">Reporte<small>Estado de renglones en PDF</small></button>
 </div>
 
 <main>
@@ -211,6 +222,7 @@ input[type=range]:active{cursor:grabbing}
     <div class="ctl"><label>Proveedor <select id="selProv"><option value="">Todos los proveedores</option></select></label><button class="btn" id="xlsTr">Descargar Excel</button></div>
     <div class="tw"><table id="tblTr"></table></div>
   </section>
+  <section class="panel" id="p-rep"></section>
 </main>
 
 <div class="modal-bg" id="modal"><div class="modal ancho" role="dialog" aria-modal="true" id="modalAyuda">
@@ -920,6 +932,7 @@ function exportarTr(){ exportarXLSX('TRANSITOS_OC','OC pendientes de llegar a CE
 /* ---------- Recorrido guiado (solo con el botón) ---------- */
 const TOUR=[
   {sel:'#barra',t:'Filtros de todo el tablero',x:'Elige aquí el renglón, la unidad, el CEDIS, la base de salida y la media móvil. Las tres pestañas usan esta misma selección.'},
+  {sel:'.tab[data-t="rep"]',t:'Reporte en PDF',x:'Elija de 1 a 10 renglones y descargue un reporte con su inventario por CEDIS, la fecha estimada de quiebre, la proyección, las OC en camino, las unidades en cero y los traslados sugeridos.'},
   {sel:'#tabs',t:'Tres preguntas, tres pestañas',x:'Cobertura CEDIS para ver cómo está cada renglón en el CEDIS; Unidades Ejecutoras para ver el inventario de cada unidad; Tránsitos para ver las OC que de verdad vienen en camino.',tab:'ced'},
   {sel:'#kpiCed',t:'Niveles de cobertura',x:'Cada tarjeta filtra la tabla. Tócala otra vez para quitar el filtro.',tab:'ced'},
   {sel:'#sim',t:'Resumen y simulación',x:'Sin renglón elegido, este panel resume el CEDIS: cómo se reparte la cobertura, los renglones en desabasto con más salida y las próximas OC. Al tocar un renglón aparece su proyección, con una etiqueta de sus OC en camino (verde) y de las atrasadas (rojo).',tab:'ced'},
@@ -975,7 +988,7 @@ $('segMM').querySelectorAll('button').forEach(b=>b.onclick=()=>{ st.mm=+b.datase
 $('btnLimpiar').onclick=()=>{ st.cod='';st.ue='';st.nivel='todos';st.ueF='todos';st.factor=1;st.prov='';st.sev='';st.diag=''; $('inReng').value=''; $('inUE').value=''; $('selProv').value=''; render(); };
 $('selProv').onchange=e=>{ st.prov=e.target.value; renderTr(); };
 $('xlsTr').onclick=exportarTr;
-function irTab(t){ st.tab=t; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); ['ced','ue','tr'].forEach(x=>$('p-'+x).classList.toggle('on',x===t)); render(); }
+function irTab(t){ st.tab=t; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); ['ced','ue','tr','rep'].forEach(x=>$('p-'+x).classList.toggle('on',x===t)); render(); }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>irTab(b.dataset.t));
 $('btnAyuda').onclick=()=>{ $('modal').classList.add('open'); $('modalAyuda').scrollTop=0; $('btnTour').focus({preventScroll:true}); };
 $('cerrarModal').onclick=()=>$('modal').classList.remove('open');
@@ -983,7 +996,116 @@ $('modal').onclick=e=>{ if(e.target.id==='modal') $('modal').classList.remove('o
 $('modalUE').onclick=e=>{ if(e.target.id==='modalUE') $('modalUE').classList.remove('open'); };
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ $('modal').classList.remove('open'); $('modalUE').classList.remove('open'); tourFin(); } });
 
-function render(){ if(playT){ clearInterval(playT); playT=null; } if(!Object.keys(S).length) return; if(st.tab==='ced') renderCed(); else if(st.tab==='ue') renderUE(); else renderTr(); }
+/* ================= REPORTE DE RENGLONES (PDF) =================
+   Para responder "¿cuánto tenemos y cómo se ve?" de 1 a 10 renglones.
+   Criterio fijo (no depende de los filtros de las otras pestañas): salida = Formas 8,
+   media móvil 90 d, factor ×1, tránsitos a CEDIS Panamá incluidos. */
+st.rep=st.rep||[];
+let REDIS=null;
+function repCargarRedis(){ if(REDIS) return Promise.resolve(REDIS); return fetch(BASE+'redistribucion_cedis.json?t='+Date.now()).then(r=>r.ok?r.json():null).then(j=>(REDIS=j||{f:[]})).catch(()=>(REDIS={f:[]})); }
+const REP_DIA=86400000;
+function repFecha(t){ return fechaLarga(new Date(t).toISOString().slice(0,10)); }
+/* Día de quiebre: simula día a día con la salida mensual y suma las OC en su fecha (las atrasadas, hoy). */
+function repQuiebre(inv,sal,trs){
+  const hoy=new Date(hoyPTY()+'T00:00:00').getTime(), dd=sal/30.4;
+  if(!(dd>0)) return {sin:null,con:null,sinSalida:true};
+  const ent={}; (trs||[]).forEach(t=>{ const f=fechaISO(t.fecha); const d=f?Math.max(0,Math.round((new Date(f+'T00:00:00')-hoy)/REP_DIA)):0; ent[d]=(ent[d]||0)+t.cant; });
+  const sin= inv<=0 ? 'ya' : (inv/dd>1095 ? '>3' : hoy+Math.floor(inv/dd)*REP_DIA);
+  let s=inv, con=null; if(ent[0]) s+=ent[0];
+  if(s<=0) con='ya'; else for(let d=1;d<=1095;d++){ s-=dd; if(ent[d]) s+=ent[d]; if(s<=0){ con=hoy+d*REP_DIA; break; } }
+  if(con===null) con='>3';
+  return {sin,con};
+}
+function repQtxt(q){ return q==='ya'?'<b style="color:#c0392b">En quiebre</b>':q==='>3'?'más de 3 años':q==null?'sin salida':repFecha(q); }
+function repDatos(c){
+  const sv={ced:st.ced,base:st.base,mm:st.mm,factor:st.factor,inc:incluirTransitos,tm:tiempoMes,h:SIM_H};
+  st.base='req'; st.mm=90; st.factor=1; tiempoMes=0;
+  const k=codKey(c), trs=SIG_EST==='ok'?TRANS.filter(t=>t.k===k):[];
+  const ceds=['PA','DI','CH'].map(x=>{ st.ced=x; const inv=invCedis(c,x)||0, sal=salidaCedis(c,x,'req')||0, cob=sal>0?inv/sal:(inv>0?Infinity:0);
+    return {k:x,inv,sal,cob,niv:nivelDe(cob),q:repQuiebre(inv,sal,x==='PA'?trs:[])}; });
+  const invN=ceds.reduce((a,x)=>a+x.inv,0), salN=ceds.reduce((a,x)=>a+x.sal,0), cobN=salN>0?invN/salN:(invN>0?Infinity:0);
+  const qN=repQuiebre(invN,salN,trs);
+  st.ced='PA'; incluirTransitos=true; SIM_H=230; const p=proyectar(c), svg=svgProyeccion(p.rows,p.inv);
+  st.ced=sv.ced; st.base=sv.base; st.mm=sv.mm; st.factor=sv.factor; incluirTransitos=sv.inc; tiempoMes=sv.tm; SIM_H=sv.h;
+  const det=DETR&&DETR[c]?DETR[c].f||[]:null;
+  const ues=det?det.filter(u=>(u.pR||0)>0||(u.co||0)>0):null;
+  const cero=ues?ues.filter(u=>(u.s||0)<=0):null;
+  const top=ues?ues.slice().sort((a,b)=>(b.pR||0)-(a.pR||0)).slice(0,5):null;
+  const tras=(REDIS&&REDIS.f||[]).filter(t=>String(t.cod)===String(c));
+  return {c,nom:desc(c),vital:!!(typeof esVital==='function'&&esVital(c)),ceds,invN,salN,cobN,nivN:nivelDe(cobN),qN,trs,svg,ues,cero,top,tras};
+}
+function repConclusion(d){
+  const peor=d.ceds.filter(x=>x.sal>0).sort((a,b)=>a.cob-b.cob)[0], p=[];
+  p.push('Cobertura nacional de '+fmtC(d.cobN)+' ('+d.nivN.lbl.toLowerCase()+').');
+  const cero=d.ceds.filter(x=>x.inv<=0&&x.sal>0).map(x=>CED_NOM[x.k].replace('CEDIS ','')), bajos=d.ceds.filter(x=>x.inv>0&&x.sal>0&&x.cob<1).map(x=>CED_NOM[x.k]+' con '+fmtC(x.cob));
+  if(cero.length) p.push('CEDIS '+cero.join(cero.length>2?', ':' y ').replace(/, ([^,]*)$/,' y $1')+' en cero.');
+  if(bajos.length) p.push(bajos.join('; ')+'.');
+  if(d.qN.sin==='ya') p.push('Sin inventario en la red.'); else if(d.qN.con&&d.qN.con!=='>3'&&d.qN.con!=='ya') p.push('Quiebre nacional estimado el '+repFecha(d.qN.con)+(d.trs.length?' contando las OC en camino':'')+'.');
+  if(d.trs.length){ const tot=d.trs.reduce((a,t)=>a+t.cant,0), atr=d.trs.filter(t=>atrasoDias(t)).length; p.push(fmt(tot)+' unidades en '+d.trs.length+' OC en camino'+(atr?' ('+atr+' atrasada'+(atr>1?'s':'')+')':'')+'.');
+    const prox=d.trs.map(t=>fechaISO(t.fecha)).filter(Boolean).sort()[0], qP=d.ceds[0].q.sin;
+    if(prox&&qP&&qP!=='>3'&&(qP==='ya'||new Date(prox+'T00:00:00').getTime()>qP)) p.push('<b>CEDIS Panamá se queda sin inventario antes de que llegue la primera OC ('+fechaLarga(prox)+').</b>'); }
+  else p.push('Sin OC en camino.');
+  if(d.cero) p.push(d.cero.length+' de '+d.ues.length+' unidades con demanda están en cero.');
+  if(d.tras.length) p.push(d.tras.length+' traslado'+(d.tras.length>1?'s':'')+' sugerido'+(d.tras.length>1?'s':'')+' entre CEDIS.');
+  return p.join(' ');
+}
+function repHTML(list){
+  const hoyTxt=fechaLarga(hoyPTY()), sal=fechaLarga(HOY_SALDOS), logo=(document.querySelector('header img')||{}).src||'';
+  const cab=(sub)=>'<div class="rp-cab"><img src="'+logo+'" alt=""><div><div class="rp-t">Estado de renglones · Reporte ejecutivo</div><div class="rp-s">Caja de Seguro Social · Dirección Nacional de Logística · Torre de Control · Saldos al '+sal+' · Emitido el '+hoyTxt+(sub?' · '+sub:'')+'</div></div></div>';
+  const D=list.map(repDatos);
+  let h='<div class="rp-pag">'+cab('Resumen')+'<table class="rp-tab"><thead><tr><th>Renglón</th><th class="n">Inventario nacional</th><th class="n">Salida / mes</th><th class="n">Cobertura</th><th>Quiebre sin OC</th><th>Quiebre con OC</th><th class="n">OC en camino</th><th class="n">UE en cero</th></tr></thead><tbody>'+
+    D.map(d=>'<tr><td><b class="mono">'+d.c+'</b>'+(d.vital?' <span class="rp-vit">VITAL</span>':'')+'<br><span class="rp-d">'+esc(d.nom.slice(0,60))+'</span></td><td class="n num">'+fmt(d.invN)+'</td><td class="n num">'+fmt(d.salN)+'</td><td class="n num" style="background:'+d.nivN.pas+';color:'+d.nivN.col+';font-weight:700">'+fmtC(d.cobN)+'</td><td>'+repQtxt(d.qN.sin)+'</td><td>'+repQtxt(d.qN.con)+'</td><td class="n num">'+(d.trs.length?fmt(d.trs.reduce((a,t)=>a+t.cant,0)):'·')+'</td><td class="n num">'+(d.cero?d.cero.length+' / '+d.ues.length:'…')+'</td></tr>').join('')+'</tbody></table>'+
+    '<div class="rp-h">Lectura rápida</div>'+D.map(d=>'<p class="rp-p"><b>'+d.c+' · '+esc(d.nom.slice(0,55))+':</b> '+repConclusion(d)+'</p>').join('')+
+    '<div class="rp-nota">Salida = requisiciones en Formas 8, media móvil de 90 días. Quiebre = día estimado en que el inventario llega a cero a ese ritmo; "con OC" suma las órdenes de compra en camino a CEDIS Panamá en su fecha de entrega (las atrasadas, hoy).</div></div>';
+  D.forEach(d=>{
+    h+='<div class="rp-pag rp-salto">'+cab(d.c)+'<div class="rp-r"><b class="mono">'+d.c+'</b> · '+esc(d.nom)+(d.vital?' <span class="rp-vit">VITAL</span>':'')+'</div>'+
+      '<div class="rp-h">Inventario por CEDIS</div><table class="rp-tab"><thead><tr><th>CEDIS</th><th class="n">Inventario</th><th class="n">Salida / mes</th><th class="n">Cobertura</th><th>Nivel</th><th>Quiebre sin OC</th><th>Quiebre con OC</th></tr></thead><tbody>'+
+      d.ceds.map(x=>'<tr><td>'+CED_NOM[x.k]+'</td><td class="n num">'+fmt(x.inv)+'</td><td class="n num">'+fmt(x.sal)+'</td><td class="n num" style="color:'+x.niv.col+';font-weight:700">'+fmtC(x.cob)+'</td><td><span class="rp-niv" style="background:'+x.niv.pas+';color:'+x.niv.col+'">'+x.niv.lbl+'</span></td><td>'+repQtxt(x.q.sin)+'</td><td>'+(x.k==='PA'?repQtxt(x.q.con):'·')+'</td></tr>').join('')+
+      '<tr class="rp-tot"><td>Nacional</td><td class="n num">'+fmt(d.invN)+'</td><td class="n num">'+fmt(d.salN)+'</td><td class="n num">'+fmtC(d.cobN)+'</td><td><span class="rp-niv" style="background:'+d.nivN.pas+';color:'+d.nivN.col+'">'+d.nivN.lbl+'</span></td><td>'+repQtxt(d.qN.sin)+'</td><td>'+repQtxt(d.qN.con)+'</td></tr></tbody></table>'+
+      '<div class="rp-h">Proyección de inventario en CEDIS Panamá</div><div class="rp-graf">'+d.svg+'</div><div class="rp-ley"><span style="color:#0C447C">━ Sin OC</span> <span style="color:#2e7d32">┅ Con OC en camino</span></div>'+
+      '<div class="rp-h">Órdenes de compra en camino a CEDIS Panamá</div>'+(d.trs.length?'<table class="rp-tab"><thead><tr><th>OC</th><th>Proveedor</th><th class="n">Cantidad</th><th>Entrega</th><th>Estado</th></tr></thead><tbody>'+
+        d.trs.map(t=>'<tr><td class="mono">'+esc(t.oc)+'</td><td>'+esc(t.prov)+'</td><td class="n num">'+fmt(t.cant)+'</td><td>'+fechaLarga(t.fecha)+(t.tent?' · tentativa':'')+(atrasoDias(t)?' · <b style="color:#c0392b">atrasada '+atrasoDias(t)+' d</b>':'')+'</td><td>'+esc(t.est||'')+'</td></tr>').join('')+'</tbody></table>':'<p class="rp-p">'+(SIG_EST==='ok'?'Sin órdenes de compra en camino.':'Tránsitos no disponibles (SÍGUELO sin respuesta).')+'</p>')+
+      '<div class="rp-h">Unidades ejecutoras</div>'+(d.ues?'<p class="rp-p">'+d.cero.length+' de '+d.ues.length+' unidades con demanda están en cero. Las 5 que más piden:</p><table class="rp-tab"><thead><tr><th>Unidad</th><th>CEDIS</th><th class="n">Saldo</th><th class="n">F8 / mes</th><th class="n">Cobertura</th></tr></thead><tbody>'+
+        d.top.map(u=>{ const cb=(u.pR||0)>0?(u.s||0)/u.pR:Infinity, n=nivelDe(cb); return '<tr><td>'+esc(u.u)+'</td><td>'+esc(String(u.x||'').replace('CEDIS ',''))+'</td><td class="n num"'+((u.s||0)<=0?' style="color:#c0392b;font-weight:700"':'')+'>'+fmt(u.s||0)+'</td><td class="n num">'+fmt(u.pR||0)+'</td><td class="n num" style="color:'+n.col+'">'+fmtC(cb)+'</td></tr>'; }).join('')+'</tbody></table>':'<p class="rp-p">Detalle por unidad aún cargando.</p>')+
+      (d.tras.length?'<div class="rp-h">Traslados sugeridos entre CEDIS</div><table class="rp-tab"><thead><tr><th>De</th><th>A</th><th class="n">Unidades</th><th>Prioridad</th></tr></thead><tbody>'+d.tras.map(t=>'<tr><td>'+esc(String(t.origen).replace('CEDIS ',''))+'</td><td>'+esc(String(t.destino).replace('CEDIS ',''))+'</td><td class="n num">'+fmt(t.mover)+'</td><td>'+(t.urgente?'<b style="color:#c0392b">Mover hoy</b>':'Ajuste')+'</td></tr>').join('')+'</tbody></table>':'')+
+      '<div class="rp-h">Conclusión</div><p class="rp-p">'+repConclusion(d)+'</p></div>';
+  });
+  return h;
+}
+function renderRep(){
+  const box=$('p-rep');
+  if(!box.dataset.listo){
+    box.innerHTML='<div class="ctl" style="gap:8px;flex-wrap:wrap;align-items:center"><label for="repIn"><b>Renglones del reporte</b></label><input type="text" id="repIn" list="repLista" placeholder="Código o nombre del renglón" style="width:340px"><datalist id="repLista"></datalist>'+
+      '<button class="btn" id="repAdd">Agregar</button><span id="repChips" style="display:flex;gap:6px;flex-wrap:wrap"></span><span style="margin-left:auto;display:flex;gap:8px"><button class="btn" id="repLimpiar">Quitar todos</button><button class="btn azul" id="repPdf">Descargar PDF</button></span></div>'+
+      '<div class="nota" style="margin:4px 0 10px">Elija de 1 a 10 renglones. El reporte trae un resumen y una página por renglón: inventario por CEDIS, fecha estimada de quiebre, proyección, órdenes de compra en camino, unidades ejecutoras y traslados sugeridos.</div><div id="repPrev"></div>';
+    $('repLista').innerHTML=Object.keys(S).slice(0,4000).map(c=>'<option value="'+c+' · '+esc(desc(c).slice(0,70))+'">').join('');
+    const add=()=>{ const v=$('repIn').value.trim(), c=(v.match(/^\s*(\d+)/)||[])[1]; if(!c||!S[c]){ toast('Elija un renglón de la lista.'); return; } if(st.rep.indexOf(c)<0){ if(st.rep.length>=10){ toast('Máximo 10 renglones por reporte.'); return; } st.rep.push(c); } $('repIn').value=''; renderRep(); };
+    $('repAdd').onclick=add; $('repIn').onkeydown=e=>{ if(e.key==='Enter') add(); }; $('repIn').onchange=()=>{ if(/^\s*\d+\s·/.test($('repIn').value)) add(); };
+    $('repLimpiar').onclick=()=>{ st.rep=[]; renderRep(); }; $('repPdf').onclick=repPdf;
+    box.dataset.listo='1';
+  }
+  $('repChips').innerHTML=st.rep.map(c=>'<span class="chip" style="background:#d7e5f4">'+c+' <a href="#" data-q="'+c+'" style="text-decoration:none;color:#c0392b;font-weight:700">×</a></span>').join('');
+  $('repChips').querySelectorAll('a[data-q]').forEach(a=>a.onclick=e=>{ e.preventDefault(); st.rep=st.rep.filter(x=>x!==a.dataset.q); renderRep(); });
+  $('repPdf').disabled=!st.rep.length;
+  if(!st.rep.length){ $('repPrev').innerHTML='<div class="vacio">Agregue renglones para ver el reporte.</div>'; return; }
+  $('repPrev').innerHTML='<div class="nota">Preparando…</div>';
+  repCargarRedis().then(()=>{ $('repPrev').innerHTML=repHTML(st.rep); });
+}
+let _h2p=null;
+function libPdf(){ if(window.html2pdf) return Promise.resolve(); if(_h2p) return _h2p; _h2p=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'; s.onload=res; s.onerror=()=>{ _h2p=null; rej(new Error('no se pudo cargar')); }; document.head.appendChild(s); }); return _h2p; }
+async function repPdf(){
+  if(!st.rep.length) return; const b=$('repPdf'); b.disabled=true; b.textContent='Generando…';
+  try{ await libPdf(); await repCargarRedis();
+    const cont=document.createElement('div'); cont.className='rp-pdf'; cont.innerHTML=repHTML(st.rep); document.body.appendChild(cont);
+    const nombre='Reporte_renglones_'+HOY_SALDOS+'.pdf';
+    await html2pdf().from(cont).set({margin:[8,8,12,8],filename:nombre,image:{type:'jpeg',quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css'],before:'.rp-salto'}})
+      .toPdf().get('pdf').then(pdf=>{ const n=pdf.internal.getNumberOfPages(); for(let i=1;i<=n;i++){ pdf.setPage(i); pdf.setFontSize(8); pdf.setTextColor(120); pdf.text('CSS · DINALOG · Torre de Control · Página '+i+' de '+n,202,290,{align:'right'}); } }).save();
+    cont.remove();
+  }catch(e){ toast('No se pudo generar el PDF.'); }
+  b.disabled=false; b.textContent='Descargar PDF';
+}
+
+function render(){ if(playT){ clearInterval(playT); playT=null; } if(!Object.keys(S).length) return; if(st.tab==='ced') renderCed(); else if(st.tab==='ue') renderUE(); else if(st.tab==='rep') renderRep(); else renderTr(); }
 
 /* ---------- frescura de cada fuente (hora de Panamá) ---------- */
 let HOY_SALDOS='';
