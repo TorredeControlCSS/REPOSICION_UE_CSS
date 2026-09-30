@@ -150,8 +150,8 @@ th small{display:block;font-weight:400;font-size:10px;color:var(--gris);white-sp
 .split.uno > div:first-child{display:none}
 .sim-cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
 .sim-cab h3{margin:0}
-.btn-link{margin-left:auto;background:none;border:1px solid transparent;border-radius:3px;color:var(--azul2);font:inherit;font-size:12.5px;cursor:pointer;padding:3px 8px}
-.btn-link:hover{border-color:var(--borde);background:var(--p-gris)}
+.btn-link{margin-left:auto;background:#fff;border:1px solid var(--azul2);border-radius:3px;color:var(--azul2);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:3px 10px;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.btn-link:hover{background:var(--azul2);color:#fff}
 input[type=range]{cursor:grab;vertical-align:middle;width:170px}
 input[type=range]:active{cursor:grabbing}
 .res-list th{position:static;background:var(--p-azul);font-size:11px;padding:4px 6px;cursor:default}
@@ -481,6 +481,14 @@ function renderSim(){
   if(trs.length){ h+='<h3 style="margin-top:10px">OC pendientes de este renglón</h3><div class="tw" style="max-height:180px"><table><thead><tr><th>OC</th><th>Proveedor</th><th class="n">Cantidad</th><th>Entrega estimada</th><th>Estado</th></tr></thead><tbody>'+
     trs.map(x=>'<tr style="cursor:default"><td class="mono">'+esc(x.t.oc)+'</td><td>'+esc(x.t.prov)+'</td><td class="n num">'+fmt(x.cant)+'</td><td>'+fechaLarga(x.t.fecha)+chipsFecha(x.t)+'</td><td>'+esc(x.t.est)+'</td></tr>').join('')+'</tbody></table></div>'+
     (nAtr?'<div class="nota">Una OC atrasada sigue sumando en la línea verde como si llegara hoy. Si lleva mucho atraso, apague «Tránsitos» para ver el escenario sin ella.</div>':''); }
+  else if(st.ced==='PA'&&SIG_EST==='ok'){
+    const u=ULT_ENT[codKey(c)];
+    h+='<h3 style="margin-top:10px">Última entrega registrada</h3>'+(u?
+      '<div class="tw"><table><thead><tr><th>OC</th><th>Proveedor</th><th class="n">Cantidad<small>unidades</small></th><th>Fecha<small>hace '+fmt(diasEntre(u.fecha,hoyPTY()))+' días</small></th><th>Estado</th></tr></thead><tbody>'+
+      '<tr style="cursor:default"><td class="mono">'+esc(u.oc)+'</td><td>'+esc(u.prov)+'</td><td class="n num">'+fmt(u.cant)+'</td><td>'+fechaLarga(u.fecha)+'</td><td>'+esc(u.est)+'</td></tr></tbody></table></div>'+
+      '<div class="nota">No hay OC pendientes de este renglón. Esta es la entrega más reciente que registra SÍGUELO.</div>'
+      :'<div class="nota">No hay OC pendientes y SÍGUELO no registra entregas de este renglón.</div>');
+  }
   h+='</div><div id="simDer"><div id="grafico"></div>'+
     '<div class="leyenda" id="simLey"><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#0C447C" stroke-width="2.5"/></svg> Sin tránsitos</span><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#2e7d32" stroke-width="2.5" stroke-dasharray="5 3"/></svg> Con tránsitos por llegar</span></div></div></div>';
   box.innerHTML=h;
@@ -797,10 +805,17 @@ function renderInventarioUE(box){
 // Estados con mercancía aún por llegar. ASISTIO (y sus variantes) = ya entregó:
 // solo cuenta si quedó saldo pendiente (entrega parcial).
 const ESTADOS_VIVOS=['PENDIENTE','SOLICITADA','EN ANALISIS','AGENDADA','DIFERIDA','REPROGRAMADA','REMANENTE','PARCIAL'];
+let ULT_ENT={};   // codKey -> última entrega registrada en SÍGUELO
 function filtrarTransitoVivo(sol){
-  const out=[]; let excl=0;
+  const out=[]; let excl=0; ULT_ENT={};
+  const hoy=hoyPTY();
   sol.forEach(s=>{
     const est=String(s.estado||'').toUpperCase().trim();
+    if(est.indexOf('ASISTIO')===0||est.indexOf('ENTREGADO')===0){
+      const k=codKey(s.cod_abasto), f=String(s.fecha_confirmada||s.fecha_solicitada||'').slice(0,10);
+      if(k&&f&&f<=hoy&&(!ULT_ENT[k]||f>ULT_ENT[k].fecha))
+        ULT_ENT[k]={oc:s.oc||'',prov:(s.empresa||'').trim()||'(sin proveedor)',cant:N(s.cant_unidades),fecha:f,est:est};
+    }
     const pend=N(s.saldo_pendiente);
     let cant=0;
     /* ASISTIO = el proveedor ya entregó. SÍGUELO manda su saldo_pendiente igual a la
