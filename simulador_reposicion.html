@@ -157,7 +157,7 @@ input[type=range]{cursor:grab;vertical-align:middle;width:170px}
 input[type=range]:active{cursor:grabbing}
 .res-list th{position:static;background:var(--p-azul);font-size:11px;padding:4px 6px;cursor:default}
 .rp-pag{width:794px;max-width:100%;background:#fff;color:#1d2733;padding:20px 24px;margin:0 auto 14px;border:1px solid #d5d9de;font:12px/1.45 "Segoe UI",Calibri,Arial,sans-serif}
-.rp-pdf{position:fixed;left:-10000px;top:0}.rp-pdf .rp-pag{border:0;margin:0}
+.rp-pag.imprimiendo{border:0}
 .rp-cab{display:flex;gap:12px;align-items:center;background:#0C447C;color:#fff;padding:8px 12px;margin:-20px -24px 12px}.rp-cab img{width:38px;height:38px}
 .rp-t{font-size:15px;font-weight:700}.rp-s{font-size:10.5px;color:#cfe0f2}
 .rp-r{font-size:14px;color:#1E5A9E;margin-bottom:4px}.rp-h{font-weight:700;color:#0C447C;font-size:12.5px;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.3px}
@@ -1096,11 +1096,15 @@ function libPdf(){ if(window.html2pdf) return Promise.resolve(); if(_h2p) return
 async function repPdf(){
   if(!st.rep.length) return; const b=$('repPdf'); b.disabled=true; b.textContent='Generando…';
   try{ await libPdf(); await repCargarRedis();
-    const cont=document.createElement('div'); cont.className='rp-pdf'; cont.innerHTML=repHTML(st.rep); document.body.appendChild(cont);
+    // Se genera desde la vista previa VISIBLE (un elemento fuera de pantalla sale en blanco).
+    const cont=$('repPrev'); if(!cont.querySelector('.rp-pag')) cont.innerHTML=repHTML(st.rep);
+    const y0=window.scrollY; window.scrollTo(0,0); await new Promise(r=>setTimeout(r,120));
     const nombre='Reporte_renglones_'+HOY_SALDOS+'.pdf';
-    await html2pdf().from(cont).set({margin:[8,8,12,8],filename:nombre,image:{type:'jpeg',quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css'],before:'.rp-salto'}})
+    await html2pdf().from(cont).set({margin:[8,8,12,8],filename:nombre,image:{type:'jpeg',quality:0.95},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,900)},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css'],before:'.rp-salto'}})
       .toPdf().get('pdf').then(pdf=>{ const n=pdf.internal.getNumberOfPages(); for(let i=1;i<=n;i++){ pdf.setPage(i); pdf.setFontSize(8); pdf.setTextColor(120); pdf.text('CSS · DINALOG · Torre de Control · Página '+i+' de '+n,202,290,{align:'right'}); } }).save();
-    cont.remove();
+    window.scrollTo(0,y0);
   }catch(e){ toast('No se pudo generar el PDF.'); }
   b.disabled=false; b.textContent='Descargar PDF';
 }
