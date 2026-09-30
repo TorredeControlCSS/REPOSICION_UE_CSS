@@ -1025,7 +1025,10 @@ function repDatos(c){
     return {k:x,inv,sal,cob,niv:nivelDe(cob),q:repQuiebre(inv,sal,x==='PA'?trs:[])}; });
   const invN=ceds.reduce((a,x)=>a+x.inv,0), salN=ceds.reduce((a,x)=>a+x.sal,0), cobN=salN>0?invN/salN:(invN>0?Infinity:0);
   const qN=repQuiebre(invN,salN,trs);
-  st.ced='PA'; incluirTransitos=true; SIM_H=230; const p=proyectar(c), svg=svgProyeccion(p.rows,p.inv);
+  st.ced='PA'; incluirTransitos=true; SIM_H=230; const p=proyectar(c);
+  // La gráfica va como IMAGEN con tamaño fijo: el SVG en línea sale recortado en el PDF.
+  const svgTxt=svgProyeccion(p.rows,p.inv).replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="760" height="230" ').replace(/fill="currentColor"/g,'fill="#5f6b78"');
+  const svg='<img src="data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgTxt)+'" width="738" height="223" style="display:block;width:100%;height:auto" alt="Proyección de inventario">';
   st.ced=sv.ced; st.base=sv.base; st.mm=sv.mm; st.factor=sv.factor; incluirTransitos=sv.inc; tiempoMes=sv.tm; SIM_H=sv.h;
   const det=DETR&&DETR[c]?DETR[c].f||[]:null;
   const ues=det?det.filter(u=>(u.pR||0)>0||(u.co||0)>0):null;
@@ -1075,12 +1078,22 @@ function repHTML(list){
 function renderRep(){
   const box=$('p-rep');
   if(!box.dataset.listo){
-    box.innerHTML='<div class="ctl" style="gap:8px;flex-wrap:wrap;align-items:center"><label for="repIn"><b>Renglones del reporte</b></label><input type="text" id="repIn" list="repLista" placeholder="Código o nombre del renglón" style="width:340px"><datalist id="repLista"></datalist>'+
-      '<button class="btn" id="repAdd">Agregar</button><span id="repChips" style="display:flex;gap:6px;flex-wrap:wrap"></span><span style="margin-left:auto;display:flex;gap:8px"><button class="btn" id="repLimpiar">Quitar todos</button><button class="btn azul" id="repPdf">Descargar PDF</button></span></div>'+
+    box.innerHTML='<div class="ctl" style="gap:8px;flex-wrap:wrap;align-items:center"><label for="repIn"><b>Renglones del reporte</b></label><div class="combo" style="width:360px"><input type="text" id="repIn" placeholder="Agregar renglón: código o nombre" autocomplete="off"><div class="combo-list" id="repList"></div></div>'+
+      '<span id="repChips" style="display:flex;gap:6px;flex-wrap:wrap"></span><span style="margin-left:auto;display:flex;gap:8px"><button class="btn" id="repLimpiar">Quitar todos</button><button class="btn azul" id="repPdf">Descargar PDF</button></span></div>'+
       '<div class="nota" style="margin:4px 0 10px">Elija de 1 a 10 renglones. El reporte trae un resumen y una página por renglón: inventario por CEDIS, fecha estimada de quiebre, proyección, órdenes de compra en camino, unidades ejecutoras y traslados sugeridos.</div><div id="repPrev"></div>';
-    $('repLista').innerHTML=Object.keys(S).slice(0,4000).map(c=>'<option value="'+c+' · '+esc(desc(c).slice(0,70))+'">').join('');
-    const add=()=>{ const v=$('repIn').value.trim(), c=(v.match(/^\s*(\d+)/)||[])[1]; if(!c||!S[c]){ toast('Elija un renglón de la lista.'); return; } if(st.rep.indexOf(c)<0){ if(st.rep.length>=10){ toast('Máximo 10 renglones por reporte.'); return; } st.rep.push(c); } $('repIn').value=''; renderRep(); };
-    $('repAdd').onclick=add; $('repIn').onkeydown=e=>{ if(e.key==='Enter') add(); }; $('repIn').onchange=()=>{ if(/^\s*\d+\s·/.test($('repIn').value)) add(); };
+    // Mismo buscador que la barra superior (lista propia, flechas y Enter); elegir = agregar.
+    let rF=[], rAct=-1;
+    const add=c=>{ if(st.rep.indexOf(c)<0){ if(st.rep.length>=10){ toast('Máximo 10 renglones por reporte.'); return; } st.rep.push(c); } $('repIn').value=''; $('repList').classList.remove('open'); renderRep(); $('repIn').focus(); };
+    const abrir=q=>{ q=q.toLowerCase().trim(); const L=$('repList'); if(!q){ L.classList.remove('open'); return; }
+      rF=RENG.filter(r=>r.c.indexOf(q)>=0||r.sl.indexOf(q)>=0).slice(0,40); rAct=-1;
+      L.innerHTML=rF.length?rF.map((r,i)=>'<div class="combo-item" data-i="'+i+'"><b class="mono">'+r.c+'</b> '+esc(r.s.slice(0,80))+(st.rep.indexOf(r.c)>=0?' <span class="chip">ya agregado</span>':'')+'</div>').join(''):'<div class="combo-item">Sin coincidencias</div>';
+      L.classList.add('open'); L.querySelectorAll('[data-i]').forEach(e=>e.onmousedown=ev=>{ ev.preventDefault(); add(rF[+e.dataset.i].c); }); };
+    $('repIn').oninput=e=>abrir(e.target.value);
+    $('repIn').onkeydown=e=>{ const L=$('repList'), it=L.querySelectorAll('[data-i]');
+      if(e.key==='ArrowDown') rAct=Math.min(rAct+1,it.length-1); else if(e.key==='ArrowUp') rAct=Math.max(rAct-1,0);
+      else if(e.key==='Enter'){ if(rF.length) add(rF[Math.max(rAct,0)].c); return; } else if(e.key==='Escape'){ L.classList.remove('open'); return; } else return;
+      e.preventDefault(); it.forEach((x,i)=>x.classList.toggle('act',i===rAct)); if(it[rAct]) it[rAct].scrollIntoView({block:'nearest'}); };
+    document.addEventListener('click',e=>{ if(!e.target.closest('#p-rep .combo')) $('repList').classList.remove('open'); });
     $('repLimpiar').onclick=()=>{ st.rep=[]; renderRep(); }; $('repPdf').onclick=repPdf;
     box.dataset.listo='1';
   }
