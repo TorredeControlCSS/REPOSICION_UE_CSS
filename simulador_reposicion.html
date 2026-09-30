@@ -166,6 +166,7 @@ input[type=range]:active{cursor:grabbing}
 .rp-d{color:#5f6b78;font-size:10.5px}.rp-vit{background:#fdecea;color:#a23224;font-weight:700;font-size:9.5px;padding:0 4px}
 .rp-niv{padding:1px 6px;border-radius:2px;font-weight:600;font-size:10.5px}.rp-p{margin:4px 0;font-size:11.5px}.rp-graf{border:1px solid #e3e6ea;padding:4px}.rp-ley{font-size:10.5px;margin-top:2px}
 .rp-nota{font-size:10px;color:#5f6b78;margin-top:10px}
+.rp-ced td{background:#eef3f9}
 </style>
 </head>
 <body>
@@ -966,7 +967,12 @@ function abrirCombo(q){
   L.innerHTML=cF.length?cF.map((r,i)=>'<div class="combo-item" data-i="'+i+'"><b class="mono">'+r.c+'</b> '+esc(r.s.slice(0,80))+'</div>').join(''):'<div class="combo-item">Sin coincidencias</div>';
   L.classList.add('open'); L.querySelectorAll('[data-i]').forEach(e=>e.onmousedown=ev=>{ev.preventDefault(); elegirReng(cF[+e.dataset.i].c);});
 }
-function elegirReng(c){ st.cod=c; tiempoMes=0; $('inReng').value=c+' · '+desc(c); $('comboList').classList.remove('open'); render(); }
+function elegirReng(c){
+  if(st.tab==='rep'){ // en la pestaña Reporte, el buscador de arriba agrega al reporte
+    $('comboList').classList.remove('open'); $('inReng').value=''; $('inReng').blur();
+    if(st.rep.indexOf(c)<0){ if(st.rep.length>=10){ toast('Máximo 10 renglones por reporte.'); return; } st.rep.push(c); toast('Agregado al reporte: '+c); }
+    renderRep(); return; }
+  st.cod=c; tiempoMes=0; $('inReng').value=c+' · '+desc(c); $('comboList').classList.remove('open'); render(); }
 function limpiarReng(){ st.cod=''; $('inReng').value=''; render(); }
 function elegirUE(u){ st.ue=u; st.ueF='todos'; $('inUE').value=u; if(u&&!UEC[u]) cargarUE(u).then(()=>{ if(st.ue===u) render(); }); render(); }
 $('inReng').oninput=e=>{ if(!e.target.value){ if(!e.target.dataset.prev) limpiarReng(); $('comboList').classList.remove('open'); return; } abrirCombo(e.target.value); };
@@ -1010,11 +1016,9 @@ function repQuiebre(inv,sal,trs){
   const hoy=new Date(hoyPTY()+'T00:00:00').getTime(), dd=sal/30.4;
   if(!(dd>0)) return {sin:null,con:null,sinSalida:true};
   const ent={}; (trs||[]).forEach(t=>{ const f=fechaISO(t.fecha); const d=f?Math.max(0,Math.round((new Date(f+'T00:00:00')-hoy)/REP_DIA)):0; ent[d]=(ent[d]||0)+t.cant; });
-  const sin= inv<=0 ? 'ya' : (inv/dd>1095 ? '>3' : hoy+Math.floor(inv/dd)*REP_DIA);
-  let s=inv, con=null; if(ent[0]) s+=ent[0];
-  if(s<=0) con='ya'; else for(let d=1;d<=1095;d++){ s-=dd; if(ent[d]) s+=ent[d]; if(s<=0){ con=hoy+d*REP_DIA; break; } }
-  if(con===null) con='>3';
-  return {sin,con};
+  // Una sola simulación día a día; "con OC" solo difiere en que suma las entradas.
+  const simular=e=>{ let s=inv+(e[0]||0); if(s<=0) return 'ya'; for(let d=1;d<=1095;d++){ s-=dd; if(e[d]) s+=e[d]; if(s<=0) return hoy+d*REP_DIA; } return '>3'; };
+  return {sin:simular({}), con:simular(ent)};
 }
 function repQtxt(q){ return q==='ya'?'<b style="color:#c0392b">En quiebre</b>':q==='>3'?'más de 3 años':q==null?'sin salida':repFecha(q); }
 function repDatos(c){
@@ -1031,7 +1035,8 @@ function repDatos(c){
   const svg='<img src="data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgTxt)+'" width="738" height="223" style="display:block;width:100%;height:auto" alt="Proyección de inventario">';
   st.ced=sv.ced; st.base=sv.base; st.mm=sv.mm; st.factor=sv.factor; incluirTransitos=sv.inc; tiempoMes=sv.tm; SIM_H=sv.h;
   const det=DETR&&DETR[c]?DETR[c].f||[]:null;
-  const ues=det?det.filter(u=>(u.pR||0)>0||(u.co||0)>0):null;
+  // Las filas "↳ CEDIS … (me requisita)" son un CEDIS pidiendo a Panamá, no una unidad: su saldo real va en la tabla de CEDIS.
+  const ues=det?det.filter(u=>!/^\s*↳|^CEDIS\b/i.test(String(u.u||''))&&((u.pR||0)>0||(u.co||0)>0)):null;
   const cero=ues?ues.filter(u=>(u.s||0)<=0):null;
   // Todas las unidades con inventario (de menor a mayor cobertura) y la lista de las que están en cero.
   const con=ues?ues.filter(u=>(u.s||0)>0).sort((a,b)=>((a.s||0)/((a.pR||0)||1e-9))-((b.s||0)/((b.pR||0)||1e-9))):null, top=con;
@@ -1069,9 +1074,20 @@ function repHTML(list){
       '<div class="rp-h">Proyección de inventario en CEDIS Panamá</div><div class="rp-graf">'+d.svg+'</div><div class="rp-ley"><span style="color:#0C447C">━ Sin OC</span> <span style="color:#2e7d32">┅ Con OC en camino</span></div>'+
       '<div class="rp-h">Órdenes de compra en camino a CEDIS Panamá</div>'+(d.trs.length?'<table class="rp-tab"><thead><tr><th>OC</th><th>Proveedor</th><th class="n">Cantidad</th><th>Entrega</th><th>Estado</th></tr></thead><tbody>'+
         d.trs.map(t=>'<tr><td class="mono">'+esc(t.oc)+'</td><td>'+esc(t.prov)+'</td><td class="n num">'+fmt(t.cant)+'</td><td>'+fechaLarga(t.fecha)+(t.tent?' · tentativa':'')+(atrasoDias(t)?' · <b style="color:#c0392b">atrasada '+atrasoDias(t)+' d</b>':'')+'</td><td>'+esc(t.est||'')+'</td></tr>').join('')+'</tbody></table>':'<p class="rp-p">'+(SIG_EST==='ok'?'Sin órdenes de compra en camino.':'Tránsitos no disponibles (SÍGUELO sin respuesta).')+'</p>')+
-      '<div class="rp-h">Unidades ejecutoras</div>'+(d.ues?'<p class="rp-p">'+d.ues.length+' unidades con demanda: <b>'+d.top.length+' con inventario</b> y <b style="color:#c0392b">'+d.cero.length+' en cero</b>.</p>'+(d.top.length?'<table class="rp-tab"><thead><tr><th>Unidad con inventario</th><th>CEDIS</th><th class="n">Saldo</th><th class="n">F8 / mes</th><th class="n">Cobertura</th></tr></thead><tbody>':'')+
-        d.top.map(u=>{ const cb=(u.pR||0)>0?(u.s||0)/u.pR:Infinity, n=nivelDe(cb); return '<tr><td>'+esc(u.u)+'</td><td>'+esc(String(u.x||'').replace('CEDIS ',''))+'</td><td class="n num"'+((u.s||0)<=0?' style="color:#c0392b;font-weight:700"':'')+'>'+fmt(u.s||0)+'</td><td class="n num">'+fmt(u.pR||0)+'</td><td class="n num" style="color:'+n.col+'">'+fmtC(cb)+'</td></tr>'; }).join('')+(d.top.length?'</tbody></table>':'')+
-        (d.cero.length?'<p class="rp-p"><b style="color:#c0392b">En cero ('+d.cero.length+'):</b> '+d.cero.map(u=>esc(u.u)).sort().join(' · ')+'.</p>':''):'<p class="rp-p">Detalle por unidad aún cargando.</p>')+
+      (function(){
+        if(!d.ues) return '<div class="rp-h">Inventario en el país</div><p class="rp-p">Detalle por unidad aún cargando.</p>';
+        const invUE=d.top.reduce((a,u)=>a+(u.s||0),0), cedCon=d.ceds.filter(x=>x.inv>0), cedCero=d.ceds.filter(x=>x.inv<=0);
+        const fila=(nom,ced,s,sal,cb,esCed)=>{ const n=nivelDe(cb); return '<tr'+(esCed?' class="rp-ced"':'')+'><td>'+nom+'</td><td>'+ced+'</td><td class="n num">'+fmt(s)+'</td><td class="n num">'+fmt(sal)+'</td><td class="n num" style="color:'+n.col+';font-weight:700">'+fmtC(cb)+'</td></tr>'; };
+        let t='<div class="rp-h">Inventario en el país</div><p class="rp-p">Total en el país: <b class="num">'+fmt(d.invN+invUE)+'</b> unidades · en CEDIS <b class="num">'+fmt(d.invN)+'</b> · en unidades ejecutoras <b class="num">'+fmt(invUE)+'</b>. '+
+          d.ues.length+' unidades con demanda: <b>'+d.top.length+' con inventario</b> y <b style="color:#c0392b">'+d.cero.length+' en cero</b>.</p>';
+        if(cedCon.length||d.top.length){
+          t+='<table class="rp-tab"><thead><tr><th>Dónde está el inventario</th><th>CEDIS</th><th class="n">Saldo</th><th class="n">Salida o F8 / mes</th><th class="n">Cobertura</th></tr></thead><tbody>'+
+            cedCon.map(x=>fila('<b>'+CED_NOM[x.k]+'</b>','—',x.inv,x.sal,x.cob,true)).join('')+
+            d.top.map(u=>fila(esc(u.u),esc(String(u.x||'').replace('CEDIS ','')),u.s||0,u.pR||0,(u.pR||0)>0?(u.s||0)/u.pR:Infinity,false)).join('')+'</tbody></table>';
+        }
+        const ceros=cedCero.map(x=>'<b>'+CED_NOM[x.k]+'</b>').concat(d.cero.map(u=>esc(u.u)).sort());
+        if(ceros.length) t+='<p class="rp-p"><b style="color:#c0392b">En cero ('+ceros.length+'):</b> '+ceros.join(' · ')+'.</p>';
+        return t; })()+
       (d.tras.length?'<div class="rp-h">Traslados sugeridos entre CEDIS</div><table class="rp-tab"><thead><tr><th>De</th><th>A</th><th class="n">Unidades</th><th>Prioridad</th></tr></thead><tbody>'+d.tras.map(t=>'<tr><td>'+esc(String(t.origen).replace('CEDIS ',''))+'</td><td>'+esc(String(t.destino).replace('CEDIS ',''))+'</td><td class="n num">'+fmt(t.mover)+'</td><td>'+(t.urgente?'<b style="color:#c0392b">Mover hoy</b>':'Ajuste')+'</td></tr>').join('')+'</tbody></table>':'')+
       '<div class="rp-h">Conclusión</div><p class="rp-p">'+repConclusion(d)+'</p></div>';
   });
