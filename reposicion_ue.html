@@ -2,1437 +2,547 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Calculadora de Reposición · CEDIS Panamá</title>
-<link rel="icon" href="favicon.ico">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora de Reposición · CSS</title>
 <style>
-  :root{
-    --azul:#1e5a9e; --azul2:#0C447C; --bg:#ececec; --card:#fff;
-    --bord:#a8a8a8; --sub:#555; --verde:#2e7d32; --ambar:#b8860b; --rojo:#a11;
-  }
-  html,body{margin:0;padding:0;background:var(--bg);font-family:"Segoe UI",Tahoma,sans-serif;color:#222;}
-  .wrap{max-width:1280px;margin:0 auto;padding:0 14px 32px;}
-  .topbar{background:linear-gradient(90deg,var(--azul2),var(--azul));color:#fff;display:flex;align-items:center;gap:12px;padding:11px 16px;}
-  .topbar img{width:42px;height:42px;object-fit:contain;flex-shrink:0;background:transparent;}
-  .topbar .t1{font-size:15px;font-weight:700;line-height:1.2;}
-  .topbar .t2{font-size:11px;opacity:.85;}
-  .topbar .meta{font-size:10.5px;opacity:.9;text-align:right;line-height:1.5;}
-  #btnInicio{margin-left:auto;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.5);
-    border-radius:0;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
-  #btnInicio:hover{background:rgba(255,255,255,.28);}
-  .card{background:var(--card);border:1px solid var(--bord);padding:12px 14px;margin:10px 0;}
-  label{display:block;font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
-  select,input{width:100%;padding:9px 10px;border:1px solid var(--bord);background:#fff;font-size:14px;border-radius:0;box-sizing:border-box;}
-  button{font-family:inherit;border:1px solid var(--bord);border-radius:0;cursor:pointer;padding:8px 14px;font-size:12px;background:#f4f4f4;color:#333;}
-  button:hover{background:#e8e8e8;}
-  .row{display:flex;gap:12px;flex-wrap:wrap;}
-  .row > *{flex:1;min-width:180px;}
-  .aviso{font-size:12px;padding:7px 12px;border:1px solid var(--ambar);background:#fff8e6;color:#7a5a00;margin:8px 0;}
-  .aviso.err{border-color:var(--rojo);background:#fdecec;color:#7a1010;}
-  .aviso.ok{border-color:var(--verde);background:#eef7ee;color:#1a5a1a;}
-  .kicker{font-size:11px;color:var(--azul);font-weight:700;letter-spacing:1px;text-transform:uppercase;}
-
-  /* Vista lista */
-  table.lista{width:100%;border-collapse:collapse;font-size:13px;}
-  table.lista th{background:var(--azul);color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;text-align:left;position:sticky;top:0;cursor:pointer;}
-  table.lista th.num{text-align:right;}
-  table.lista td{padding:8px 10px;border-bottom:1px solid #e4e4e4;}
-  table.lista td.num{text-align:right;font-family:Consolas,monospace;}
-  table.lista tr.clickable{cursor:pointer;}
-  table.lista tr.clickable:hover{background:#f2f7fc;}
-  table.lista tr.vital td:first-child{font-weight:700;}
-  .sem{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:middle;}
-  .sem.r{background:var(--rojo);}
-  .sem.a{background:var(--ambar);}
-  .sem.v{background:var(--verde);}
-  .sem.g{background:#999;}
-  .estado-cell{white-space:nowrap;}
-  .estado-lab{font-size:10px;font-weight:700;letter-spacing:.3px;vertical-align:middle;}
-  .estado-lab.r{color:var(--rojo);}
-  .estado-lab.a{color:var(--ambar);}
-  .estado-lab.v{color:var(--verde);}
-  .estado-lab.g{color:#777;}
-  .ver-curva{font-size:10px;color:var(--azul);border:1px solid var(--azul);padding:1px 6px;border-radius:10px;white-space:nowrap;opacity:0;transition:opacity .1s;}
-  tr.clickable:hover .ver-curva{opacity:1;}
-  .badge-vital{display:inline-block;font-size:9px;background:#fdecea;color:#7a1d12;border:1px solid #e0b4ae;padding:1px 5px;margin-left:6px;vertical-align:middle;}
-  .veredicto{font-size:12px;}
-  .veredicto.r{color:var(--rojo);font-weight:700;}
-  .veredicto.a{color:var(--ambar);}
-  .veredicto.v{color:var(--verde);}
-  .veredicto.g{color:#777;}
-
-  /* KPIs resumen UE */
-  .kpis{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
-  .kpi{flex:1;min-width:120px;border:1px solid var(--bord);padding:7px 10px;background:#f7f9fc;}
-  .kpi .lab{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
-  .kpi .val{font-family:Consolas,monospace;font-size:20px;font-weight:700;color:var(--azul2);line-height:1.1;}
-  .kpi .kpi-desc{font-size:9.5px;color:var(--sub);margin-top:5px;line-height:1.3;text-transform:none;letter-spacing:0;}
-
-  /* Detalle / curva */
-  .detalle{display:none;}
-  .detalle.on{display:block;}
-  .back{font-size:12px;color:var(--azul);cursor:pointer;margin-bottom:8px;display:inline-block;}
-  .btn-volver{background:var(--azul);color:#fff;border:1px solid var(--azul);font-weight:700;
-    font-size:12.5px;padding:8px 16px;cursor:pointer;white-space:nowrap;margin:0;}
-  .btn-volver:hover{background:var(--azul2);}
-  /* Los dos veredictos (estado + abastecimiento) lado a lado */
-  .veredicto-fila{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:stretch;}
-  .veredicto-fila > div{margin:0 !important;}
-  .veredicto-fila .veredicto-box{flex:0 0 auto;min-width:220px;display:flex;align-items:center;}
-  .veredicto-fila .abasto-box{flex:1;min-width:260px;display:flex;align-items:center;}
-  @media(max-width:640px){ .veredicto-fila{flex-direction:column;} }
-  .veredicto-box{padding:12px 14px;font-size:15px;font-weight:700;margin-bottom:10px;border:1px solid;}
-  .veredicto-box.r{background:#fdecec;border-color:var(--rojo);color:#7a1010;}
-  .veredicto-box.a{background:#fff8e6;border-color:var(--ambar);color:#7a5a00;}
-  .veredicto-box.v{background:#eef7ee;border-color:var(--verde);color:#1a5a1a;}
-  .veredicto-box.g{background:#f2f2f2;border-color:#999;color:#555;}
-  /* Veredicto de abastecimiento aguas arriba (2 escalones) */
-  .abasto-box{padding:9px 12px;font-size:12.5px;font-weight:600;margin:-4px 0 10px;border:1px solid;line-height:1.35;}
-  .abasto-box.dist{background:#eef7ee;border-color:var(--verde);color:#1a5a1a;}
-  .abasto-box.reab{background:#fff8e6;border-color:var(--ambar);color:#7a5a00;}
-  .abasto-box.compra{background:#fdecec;border-color:var(--rojo);color:#7a1010;}
-  .params{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:10px 0;}
-  .params > div{flex:1;min-width:130px;}
-  .chart-box{position:relative;height:340px;}
-  .nums{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-  .nums .kpi{min-width:110px;}
-  .hint{font-size:11px;color:var(--sub);margin-top:4px;}
-  /* Combo escribible para cambiar de renglón en el detalle */
-  .combo-list-det{position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;
-    border:1px solid var(--bord);border-top:none;max-height:280px;overflow:auto;display:none;
-    box-shadow:0 4px 10px rgba(0,0,0,.12);}
-  .combo-list-det.on{display:block;}
-  .combo-item{padding:7px 10px;font-size:12.5px;cursor:pointer;border-bottom:1px solid #eee;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;}
-  .combo-item:hover,.combo-item.sel{background:#f2f7fc;}
-  .combo-item .cod{color:#999;font-size:10px;margin-left:6px;}
-  .combo-item .et{font-size:9px;font-weight:700;margin-right:6px;padding:1px 4px;border-radius:2px;}
-  .combo-item .et.r{color:var(--rojo);}
-  .combo-item .et.a{color:var(--ambar);}
-  .combo-item .et.v{color:var(--verde);}
-  .combo-item .et.g{color:#777;}
-  /* Etiqueta con ícono de ayuda (i) y tooltip */
-  .lbl-ayuda{display:flex;align-items:center;gap:5px;}
-  .info-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
-    border-radius:50%;border:1px solid var(--azul);color:var(--azul);font-size:10px;font-weight:700;
-    cursor:help;flex-shrink:0;font-style:normal;line-height:1;position:relative;}
-  .info-i:hover .tip{display:block;}
-  .info-i .tip{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);
-    width:220px;background:#243b53;color:#fff;font-weight:400;font-size:11px;line-height:1.45;
-    padding:8px 10px;border-radius:4px;z-index:60;text-transform:none;letter-spacing:0;text-align:left;
-    box-shadow:0 4px 12px rgba(0,0,0,.25);}
-  .info-i .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
-    border:5px solid transparent;border-top-color:#243b53;}
-  /* Aviso amable para el campo de consumo manual */
-  .campo-nota{font-size:10px;color:var(--sub);margin-top:3px;line-height:1.3;}
-
-  /* Boxes didácticos de la pantalla de inicio */
-  .didac-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0;}
-  @media(max-width:640px){ .didac-row{grid-template-columns:1fr;} }
-  .didac-box{border:1px solid var(--bord);border-top:3px solid var(--bord);background:#fafcfe;
-    padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;}
-  .didac-box.r{border-top-color:var(--rojo);}
-  .didac-box.a{border-top-color:var(--ambar);}
-  .didac-box.v{border-top-color:var(--verde);}
-  .didac-sem{display:inline-flex;flex-direction:column;gap:4px;background:#3a3a3a;padding:6px 5px;
-    border-radius:7px;margin-bottom:8px;box-shadow:inset 0 0 3px rgba(0,0,0,.4);}
-  .didac-sem .luz{width:15px;height:15px;border-radius:50%;background:#1a1a1a;opacity:1;
-    border:1px solid #000;}
-  .didac-sem .luz.r.on{background:radial-gradient(circle at 35% 30%, #ff7b6b, var(--rojo));box-shadow:0 0 8px 2px rgba(192,57,43,.8);}
-  .didac-sem .luz.a.on{background:radial-gradient(circle at 35% 30%, #ffd97a, var(--ambar));box-shadow:0 0 8px 2px rgba(184,134,11,.8);}
-  .didac-sem .luz.v.on{background:radial-gradient(circle at 35% 30%, #86e39a, var(--verde));box-shadow:0 0 8px 2px rgba(46,125,50,.8);}
-  .didac-ico{font-size:26px;line-height:1;margin-bottom:8px;font-weight:700;}
-  .didac-tit{font-size:13px;font-weight:700;margin-bottom:5px;}
-  .didac-txt{font-size:11.5px;color:#555;line-height:1.4;}
-  /* Tablero ejecutivo nacional */
-  #tableroNacional{background:#fff;border:1px solid var(--bord);padding:16px 18px;margin-bottom:14px;}
-  .tn-titulo{font-size:15px;font-weight:700;color:var(--azul2);margin-bottom:12px;
-    border-bottom:2px solid var(--azul);padding-bottom:8px;}
-  .tn-corte{font-weight:400;font-size:12px;color:var(--sub);}
-  .tn-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px;}
-  @media(max-width:900px){ .tn-cards{grid-template-columns:repeat(2,1fr);} }
-  .tn-card{border:1px solid var(--bord);border-top:4px solid #999;padding:12px;background:#fafcfe;}
-  .tn-card.r{border-top-color:var(--rojo);}
-  .tn-card.a{border-top-color:var(--ambar);}
-  .tn-card.v{border-top-color:var(--verde);}
-  .tn-card.azul{border-top-color:var(--azul);}
-  .tn-card.gris{border-top-color:#777;}
-  .tn-num{font-family:Consolas,monospace;font-size:26px;font-weight:700;color:var(--azul2);line-height:1;}
-  .tn-card.r .tn-num{color:var(--rojo);}
-  .tn-card.a .tn-num{color:var(--ambar);}
-  .tn-card.v .tn-num{color:var(--verde);}
-  .tn-lab{font-size:12px;font-weight:700;color:#333;margin:6px 0 4px;}
-  .tn-sub{font-size:10.5px;color:var(--sub);line-height:1.35;}
-  .tn-diag-tit{font-size:13px;font-weight:700;color:#333;margin:6px 0 8px;}
-  .tn-diag{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
-  @media(max-width:640px){ .tn-diag{grid-template-columns:1fr;} }
-  .tn-diag-box{padding:12px;border:1px solid var(--bord);border-left:4px solid #999;background:#fafcfe;}
-  .tn-diag-box.dist{border-left-color:var(--verde);}
-  .tn-diag-box.reab{border-left-color:var(--ambar);}
-  .tn-diag-box.compra{border-left-color:var(--rojo);}
-  .tn-diag-num{font-family:Consolas,monospace;font-size:22px;font-weight:700;color:var(--azul2);}
-  .tn-diag-box.dist .tn-diag-num{color:var(--verde);}
-  .tn-diag-box.reab .tn-diag-num{color:var(--ambar);}
-  .tn-diag-box.compra .tn-diag-num{color:var(--rojo);}
-  .tn-diag-lab{font-size:12.5px;font-weight:700;color:#333;margin:4px 0;}
-  .tn-diag-sub{font-size:10.5px;color:var(--sub);line-height:1.35;}
-  .tn-cedis-row-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  @media(max-width:640px){ .tn-cedis-row-wrap{grid-template-columns:1fr;} }
-  .tn-cedis{border:1px solid var(--bord);padding:12px;background:#fafcfe;}
-  .tn-cedis-tit{font-size:12.5px;font-weight:700;color:var(--azul2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #eee;}
-  .tn-cedis-row{font-size:12px;color:#444;margin:4px 0;display:flex;align-items:center;}
-  .tn-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px;}
-  .tn-dot.r{background:var(--rojo);}
-  .tn-dot.a{background:var(--ambar);}
-  .tn-dot.v{background:var(--verde);}
-  .tn-cedis-pedir{font-size:12px;color:#333;margin-top:8px;padding-top:6px;border-top:1px solid #eee;}
-  .tn-cedis-pedir b{font-family:Consolas,monospace;color:var(--azul2);}
-  /* Tutorial guiado */
-  #tourOverlay{position:fixed;inset:0;z-index:1000;}
-  #tourBackdrop{position:absolute;inset:0;background:rgba(15,25,40,.55);}
-  .tour-spot{position:absolute;border:3px solid var(--azul);border-radius:4px;
-    box-shadow:0 0 0 9999px rgba(15,25,40,.55);z-index:1001;pointer-events:none;transition:all .25s ease;}
-  #tourBox{position:absolute;z-index:1002;background:#fff;border:1px solid var(--bord);
-    max-width:340px;width:calc(100% - 32px);padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.3);}
-  #tourTitulo{font-size:14px;font-weight:700;color:var(--azul2);margin-bottom:6px;}
-  #tourTexto{font-size:12.5px;line-height:1.5;color:#333;}
-  #tourNav{display:flex;align-items:center;gap:8px;margin-top:12px;}
-  #tourPaso{font-size:11px;color:var(--sub);}
-  #tourNav button{font-size:12px;}
-  .btn-plano{background:transparent;border:none;color:var(--sub);text-decoration:underline;padding:6px 4px;}
-  .btn-plano:hover{background:transparent;color:var(--azul);}
-  #tourNext{background:var(--azul);color:#fff;font-weight:700;border-color:var(--azul);padding:7px 14px;}
+:root{--azul:#0C447C;--azul2:#1E5A9E;--fondo:#ececec;--borde:#a8a8a8;--papel:#fff;--tinta:#1d2733;--gris:#5f6b78;
+ --rojo:#c0392b;--ambar:#b7791f;--verde:#2e7d32;
+ --p-rojo:#f6d5d1;--p-ambar:#fbe8c8;--p-pronto:#f5ecc6;--p-verde:#d6efdc;--p-gris:#e2e5e9;--p-azul:#d7e5f4;
+ color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box} html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:13px/1.45 "Segoe UI",Calibri,system-ui,sans-serif}
+.num,.mono{font-family:Consolas,"Cascadia Mono","Courier New",monospace}
+header{background:var(--azul);color:#fff;display:flex;align-items:center;gap:12px;padding:8px 18px;flex-wrap:wrap}
+header img{width:40px;height:40px} header h1{margin:0;font-size:17px;font-weight:600} header .sub{font-size:11.5px;color:#cfe0f2}
+.der{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:3px 8px;font-size:11px;color:#e8f0f9}.fr b{color:#fff}
+.dummy{background:#b8860b;color:#fff;font-size:11px;font-weight:600;padding:3px 8px}
+.hbtn{font:inherit;font-size:12.5px;background:#fff;color:var(--azul);font-weight:700;border:1px solid #fff;padding:5px 12px;cursor:pointer}
+.barra{position:sticky;top:0;z-index:20;background:var(--papel);border-bottom:1px solid var(--borde);padding:7px 18px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.campo{display:flex;flex-direction:column;gap:2px}.campo label{font-size:11px;color:var(--gris)}
+select,input[type=text]{font:inherit;padding:5px 8px;border:1px solid var(--borde);background:#fff;min-height:30px}
+.btn{font:inherit;font-size:12.5px;border:1px solid var(--borde);background:#fff;color:var(--tinta);padding:5px 12px;cursor:pointer;min-height:30px;border-radius:3px}
+.btn.azul{background:var(--azul2);color:#fff;border-color:var(--azul2)} .btn.verde{background:var(--verde);color:#fff;border-color:var(--verde)}
+.btn-volver{margin-left:auto;background:#fff;border:1px solid var(--azul2);border-radius:3px;color:var(--azul2);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:3px 10px}
+.btn-volver:hover{background:var(--azul2);color:#fff}
+button:focus-visible,input:focus-visible,select:focus-visible,tr:focus-visible{outline:2px solid #f0a020;outline-offset:1px}
+main{padding:10px 18px 24px}
+.panel{background:var(--papel);border:1px solid var(--borde);padding:10px 14px}
+.kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.kpi{flex:1 1 0;min-width:120px;border:1px solid transparent;border-radius:4px;padding:4px 10px;cursor:pointer;text-align:left;font:inherit;color:var(--tinta);background:var(--bg)}
+.kpi .v{font-family:Consolas,monospace;font-size:16px;font-weight:700;display:block;line-height:1.2}.kpi .l{font-size:10.5px;display:block;line-height:1.25}
+.kpi.on{border-color:#1d2733;box-shadow:inset 0 0 0 1px #1d2733}
+.tw{overflow:auto;max-height:calc(100vh - 250px);border:1px solid var(--borde)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{position:sticky;top:0;background:var(--p-azul);text-align:left;padding:5px 7px;border-bottom:1px solid var(--borde);font-weight:600;white-space:nowrap;cursor:pointer}
+th small{display:block;font-weight:400;font-size:10px;color:var(--gris)}
+th.n,td.n{text-align:right} td{padding:5px 7px;border-bottom:1px solid #e8e8e8;vertical-align:top}
+tbody tr{cursor:pointer} tbody tr:hover td{background:#f4f7fb}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:2px;color:#fff;white-space:nowrap}
+.t-rojo{background:var(--rojo)}.t-ambar{background:var(--ambar)}.t-pronto{background:#c9a227}.t-verde{background:var(--verde)}.t-sin{background:#8a939d}
+.chip{display:inline-block;font-size:10.5px;padding:0 6px;border-radius:2px;background:var(--p-gris);white-space:nowrap}
+.chip.confiable{background:#e2f3e7;color:#1f6b36}.chip.presion{background:#fdecea;color:#a23224}.chip.truncado{background:#fbe8c8;color:#8a5a1a}
+.chip.divergente{background:#ede7f6;color:#5b2c8f}.chip.una,.chip.sin{background:var(--p-gris);color:var(--gris)}.chip.nuevo{background:#0C447C;color:#fff;font-weight:700}
+.chip.vital{background:#fdecea;color:#a23224;font-weight:700}
+.desc{color:var(--gris);font-size:11.5px}
+.nota{font-size:11.5px;color:var(--gris)}
+/* renglón */
+.cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.cab h2{margin:0;font-size:15px;color:var(--azul2)}
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;align-items:start}
+@media(max-width:1100px){.calc{grid-template-columns:1fr}}
+.paso{border:0;padding:8px 10px;margin-bottom:8px;background:#eef3f9;border-radius:3px}
+.paso h3{margin:0 0 6px;font-size:13.5px;color:var(--azul2)} .paso h3 span{display:inline-block;background:var(--azul2);color:#fff;border-radius:50%;width:19px;height:19px;text-align:center;line-height:19px;font-size:11px;margin-right:6px}
+.sen{display:grid;grid-template-columns:150px 1fr 92px;gap:8px;align-items:center;margin:4px 0;font-size:12px}
+.sen .pista{height:12px;background:#eef0f3;position:relative}.sen .pista i{position:absolute;left:0;top:0;bottom:0;background:#8fb1d6}
+.sen.base .pista i{background:var(--azul2)} .sen .val{font-family:Consolas,monospace;text-align:right}
+.sen .base-lbl{color:var(--azul2);font-weight:700}
+.frase{background:#e6edf5;padding:6px 10px;font-size:12.5px;margin-top:6px;border-radius:3px}
+.frase.rojo{background:#f6d5d1}.frase.ambar{background:#fbe8c8}.frase.verde{background:#d6efdc}
+.ctl{display:grid;grid-template-columns:170px 1fr 70px;gap:8px;align-items:center;margin:5px 0;font-size:12.5px}
+.ctl input[type=range]{width:100%;cursor:grab}.ctl input[type=range]:active{cursor:grabbing}.ctl b{font-family:Consolas,monospace;text-align:right}
+.res{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.res div{background:var(--bg,var(--p-azul));border-radius:3px;padding:4px 8px}.res .l{font-size:10.5px;color:var(--gris);display:block}.res .v{font-family:Consolas,monospace;font-size:15px;font-weight:700;display:block}
+.grande{font-family:Consolas,monospace;font-size:26px;font-weight:700;color:var(--azul2)}
+.leyenda{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--gris);margin-top:4px}.leyenda i{display:inline-block;width:14px;height:9px;margin-right:4px;vertical-align:middle}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50}.modal-bg.open{display:flex}
+.modal{background:#fff;max-width:980px;width:95%;max-height:88vh;overflow:auto;padding:16px 20px;border-radius:4px}
+.modal .top{position:sticky;top:-16px;background:#fff;display:flex;gap:10px;align-items:center;padding:4px 0 10px;border-bottom:1px solid var(--borde);margin-bottom:8px;z-index:2}
+.modal h2{margin:0;font-size:16px;color:var(--azul2);flex:1}
+.modal .cols{columns:2 400px;column-gap:26px}.modal .cols p,.modal .cols ul{break-inside:avoid-column}
+.ues{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+.uecard{background:#fff;border:1px solid var(--borde);border-radius:4px;padding:8px 12px;cursor:pointer;text-align:left;font:inherit}
+.uecard:hover{border-color:var(--azul2)} .uecard b{color:var(--azul2)}
+.hoy{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;margin-bottom:10px;align-items:stretch}
+.hoy .tarj{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch;width:100%}
+.hoy .frase{margin:0;font-size:12.5px;line-height:1.45;padding:5px 10px}
+.hoy .cel{background:var(--bg,#f1f4f8);border-radius:3px;padding:4px 10px;display:flex;flex-direction:column;justify-content:center;min-width:0;min-height:52px}.hoy .cel>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hoy .cel .l{font-size:10.5px;color:var(--gris);display:block}.hoy .cel .v{font-family:Consolas,monospace;font-size:17px;font-weight:700;color:var(--azul2);line-height:1.25}.hoy .cel .u{font-size:11px;color:var(--gris);margin-left:5px}
+@media(max-width:1100px){.hoy{grid-template-columns:1fr}}
+.q{font:inherit;font-size:10.5px;font-weight:700;width:16px;height:16px;border-radius:50%;border:1px solid var(--azul2);background:#fff;color:var(--azul2);cursor:pointer;padding:0;line-height:14px;margin-left:3px}
+.q:hover{background:var(--azul2);color:#fff}
+.sen{grid-template-columns:140px 1fr 80px;margin:3px 0}
+.paso{padding:7px 10px;margin-bottom:7px}
+#graf{position:relative}
+.tip{position:absolute;pointer-events:none;background:rgba(255,255,255,.93);border:1px solid #a8a8a8;border-radius:3px;padding:6px 9px;font-size:11.5px;line-height:1.45;box-shadow:0 2px 6px rgba(0,0,0,.15);display:none;min-width:190px;z-index:5}
+.tip b{font-family:Consolas,monospace}.tip .t{font-weight:700;color:#0C447C;margin-bottom:2px}
+.cedcols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}@media(max-width:1000px){.cedcols{grid-template-columns:1fr}}
+.cedcol{background:#eef3f9;border-radius:4px;padding:8px 10px}.cedcol h3{margin:0 0 2px;font-size:14px;color:#0C447C}
+.uerow{display:grid;grid-template-columns:minmax(0,1fr) 150px 70px;gap:8px;align-items:center;padding:5px 6px;background:#fff;border-radius:3px;margin-top:4px;cursor:pointer;border:1px solid transparent;font:inherit;text-align:left;width:100%}
+.uerow:hover{border-color:#1E5A9E}.mini{display:flex;height:10px;border-radius:2px;overflow:hidden;background:#e2e5e9}.mini i{display:block;height:100%}
+.tour-bg{position:fixed;inset:0;z-index:70;display:none}.tour-bg.open{display:block}
+.tour-hl{position:fixed;border:3px solid #f0a020;border-radius:4px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);transition:all .2s;pointer-events:none}
+.tour-box{position:fixed;background:#fff;border-radius:4px;padding:12px 14px;width:340px;box-shadow:0 4px 18px rgba(0,0,0,.3);font-size:13px}
+.tour-box h4{margin:0 0 4px;color:#0C447C;font-size:14px}.tour-box .pie{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.hoy .cel .l{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.mini-btn{font:inherit;font-size:10.5px;font-weight:700;border:1px solid var(--azul2);background:#fff;color:var(--azul2);border-radius:3px;padding:0 6px;cursor:pointer;line-height:17px}
+.mini-btn:hover{background:var(--azul2);color:#fff}
+.chip.tr{background:#d6efdc;color:#1f6b36;font-weight:600}.chip.tr.atr{background:#fbe8c8;color:#8a5a1a}
 </style>
 </head>
 <body>
-<div class="topbar">
-  <img src="https://raw.githubusercontent.com/TorredeControlCSS/REPOSICION_UE_CSS/main/icons/icon-192.png" alt="CSS" id="logoInicio" style="cursor:pointer;" title="Volver al inicio">
-  <div id="tituloInicio" style="cursor:pointer;" title="Volver al inicio">
-    <div class="t1">Calculadora de Reposición</div>
-    <div class="t2">Caja de Seguro Social · CEDIS Panamá · Torre de Control</div>
-  </div>
-  <button id="btnInicio" title="Volver a la pantalla inicial">⌂ Inicio</button>
-  <div class="meta" id="meta">Cargando…</div>
+<header>
+  <img src="icons/icon-192.png" alt="CSS">
+  <div><h1>Calculadora de Reposición</h1><div class="sub">Caja de Seguro Social · Dirección Nacional de Logística · para las Unidades Ejecutoras</div></div>
+  <div class="der"><span class="fr">Saldos al <b id="frS"></b></span><span class="fr">Publicado <b id="frP"></b></span><button class="hbtn" id="btnAyuda">Ayuda y recorrido guiado</button></div>
+</header>
+<div class="barra">
+  <div class="campo"><label for="selUE">Su Unidad Ejecutora</label><select id="selUE" style="min-width:330px"><option value="">Seleccione su unidad…</option></select></div>
+  <div class="campo" id="campoBus" style="display:none;flex:1;max-width:420px"><label for="bus">Buscar un renglón de su unidad</label><input type="text" id="bus" placeholder="Código o nombre del renglón"></div>
+  <button class="btn" id="btnLimpiar" style="align-self:flex-end">Limpiar filtros</button>
+  <button class="btn-volver" id="btnInicio" style="align-self:flex-end;display:none">‹ Todas las unidades</button>
 </div>
-
-<div class="wrap">
-
-  <!-- Selector de UE -->
-  <div class="card">
-    <label for="selUE">Seleccione su Unidad Ejecutora</label>
-    <select id="selUE"><option value="">— Cargando unidades… —</option></select>
-    <div class="hint">Al entrar verá sus renglones ordenados por urgencia: primero los que están en cero, luego los más próximos al punto de reorden.</div>
-  </div>
-
-  <!-- Panel de bienvenida / resumen de red (se oculta al elegir una UE) -->
-  <div id="panelBienvenida">
-    <div class="kpis" id="kpisRed" style="display:none;"></div>
-
-    <!-- Tablero ejecutivo nacional (para la Directiva) -->
-    <div id="tableroNacional" style="display:none;"></div>
-    <div class="card" id="cardBienvenida">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div class="kicker">Bienvenido a la Calculadora de Reposición</div>
-        <button id="btnTutorial" style="margin-left:auto;background:var(--azul);color:#fff;font-weight:700;">▶ Ver tutorial guiado</button>
-      </div>
-      <div style="font-size:13px;line-height:1.6;color:#333;margin-top:8px;">
-        <p style="margin:6px 0;">Esta herramienta le ayuda a saber, para cada medicamento e insumo de su unidad,
-        <b>si necesita reposición y cuánto pedir</b>, con base en su consumo real de los últimos días.</p>
-        <p style="margin:10px 0 6px;"><b>Para comenzar:</b> seleccione su Unidad Ejecutora en la lista de arriba.
-        Verá sus renglones ordenados por urgencia, con un semáforo de color por estado:</p>
-      </div>
-
-      <!-- Fila didáctica: SEMÁFORO -->
-      <div class="didac-row">
-        <div class="didac-box r">
-          <div class="didac-sem"><span class="luz r on"></span><span class="luz a"></span><span class="luz v"></span></div>
-          <div class="didac-tit" style="color:var(--rojo);">Rojo · Pedir ya</div>
-          <div class="didac-txt">Sin existencia o por debajo del nivel de alerta. Requiere pedido inmediato.</div>
-        </div>
-        <div class="didac-box a">
-          <div class="didac-sem"><span class="luz r"></span><span class="luz a on"></span><span class="luz v"></span></div>
-          <div class="didac-tit" style="color:var(--ambar);">Ámbar · Pedir pronto</div>
-          <div class="didac-txt">Se acerca al punto de reposición (menos de 7 días). Conviene pedir ya mismo.</div>
-        </div>
-        <div class="didac-box v">
-          <div class="didac-sem"><span class="luz r"></span><span class="luz a"></span><span class="luz v on"></span></div>
-          <div class="didac-tit" style="color:var(--verde);">Verde · Con cobertura</div>
-          <div class="didac-txt">Existencia suficiente por ahora. No requiere acción inmediata.</div>
-        </div>
-      </div>
-
-      <div style="font-size:13px;line-height:1.6;color:#333;margin-top:12px;">
-        <p style="margin:6px 0;">Al abrir un renglón verá su <b>curva de existencia</b> día por día y, cuando está en riesgo,
-        un diagnóstico que le dice <b>dónde resolver el problema</b>:</p>
-      </div>
-
-      <!-- Fila didáctica: DIAGNÓSTICOS -->
-      <div class="didac-row">
-        <div class="didac-box v">
-          <div class="didac-ico" style="color:var(--verde);">▼</div>
-          <div class="didac-tit" style="color:var(--verde);">Distribución local</div>
-          <div class="didac-txt">Su CEDIS tiene existencia disponible y debe despacharle. Se resuelve con una Forma 8.</div>
-        </div>
-        <div class="didac-box a">
-          <div class="didac-ico" style="color:var(--ambar);">⇄</div>
-          <div class="didac-tit" style="color:var(--ambar);">Reabasto entre CEDIS</div>
-          <div class="didac-txt">Su CEDIS regional no tiene existencia, pero el central (Panamá) sí. Panamá debe surtir al regional.</div>
-        </div>
-        <div class="didac-box r">
-          <div class="didac-ico" style="color:var(--rojo);">✕</div>
-          <div class="didac-tit" style="color:var(--rojo);">Gestión de compras</div>
-          <div class="didac-txt">Ningún CEDIS de la red tiene existencia. El abastecimiento depende de una compra.</div>
-        </div>
-      </div>
-
-      <div style="font-size:13px;line-height:1.6;color:#333;margin-top:12px;">
-        <p style="margin:6px 0 0;">También puede descargar un <b>pre-pedido en Excel</b> con los renglones que requieren reposición y la cantidad sugerida, listo para tramitar.</p>
-        <p style="margin:10px 0 0;color:var(--azul);cursor:pointer;font-weight:600;" id="linkTutorial">▶ ¿Primera vez? Vea el tutorial guiado paso a paso.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Overlay del tutorial guiado -->
-  <div id="tourOverlay" style="display:none;">
-    <div id="tourBackdrop"></div>
-    <div id="tourBox">
-      <div id="tourTitulo"></div>
-      <div id="tourTexto"></div>
-      <div id="tourNav">
-        <span id="tourPaso"></span>
-        <span style="flex:1;"></span>
-        <button id="tourSkip" class="btn-plano">Saltar</button>
-        <button id="tourPrev" class="btn-plano">◂ Atrás</button>
-        <button id="tourNext">Siguiente ▸</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="avisoGlobal"></div>
-
-  <!-- VISTA LISTA -->
-  <div id="vistaLista">
-    <div class="kpis" id="kpisUE" style="display:none;"></div>
-    <div class="card" id="cardLista" style="display:none;">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div class="kicker">Renglones de la unidad · orden por urgencia</div>
-        <button id="btnExcel" style="margin-left:auto;background:var(--verde);color:#fff;font-weight:700;">⬇ Descargar pre-pedido (Excel)</button>
-      </div>
-      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input id="buscarRenglon" placeholder="Buscar renglón por nombre o código…" autocomplete="off"
-               style="flex:1;min-width:220px;">
-        <span id="contadorRenglones" class="hint" style="margin:0;white-space:nowrap;"></span>
-      </div>
-      <div class="hint" style="margin-top:4px;">El pre-pedido incluye los renglones que requieren reposición (urgentes y por vencer), con la cantidad sugerida.</div>
-      <div style="overflow:auto;max-height:70vh;margin-top:8px;">
-        <table class="lista" id="tablaLista">
-          <thead><tr>
-            <th data-k="estado">Estado</th>
-            <th data-k="nombre">Renglón</th>
-            <th data-k="inv" class="num">Inventario</th>
-            <th data-k="consumo" class="num">Consumo/día</th>
-            <th data-k="dias" class="num">Días a reorden</th>
-            <th data-k="pedir" class="num">Sugerido pedir</th>
-            <th data-k="veredicto">Veredicto</th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- VISTA DETALLE / CURVA -->
-  <div class="detalle" id="vistaDetalle">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
-      <button class="btn-volver" id="btnBack">← Volver a la lista</button>
-      <div style="flex:1;min-width:240px;display:flex;align-items:center;gap:8px;">
-        <label style="margin:0;white-space:nowrap;">Cambiar renglón:</label>
-        <div style="flex:1;min-width:200px;position:relative;">
-          <input id="buscarRenglonDet" placeholder="Escriba nombre o código…" autocomplete="off"
-                 style="width:100%;box-sizing:border-box;">
-          <div id="listaRenglonDet" class="combo-list-det"></div>
-        </div>
-      </div>
-      <span id="navRenglon" style="display:flex;gap:6px;">
-        <button id="btnRengPrev" title="Renglón anterior (por urgencia)">◂ Anterior</button>
-        <button id="btnRengNext" title="Siguiente renglón (por urgencia)">Siguiente ▸</button>
-      </span>
-    </div>
-    <div class="card">
-      <div class="kicker" id="detNombre">—</div>
-      <div id="detVeredicto"></div>
-
-      <div class="params">
-        <div>
-          <label class="lbl-ayuda">Tiempo de entrega (días)
-            <span class="info-i">i<span class="tip">Cuántos días tarda, en promedio, en llegar un pedido desde que se solicita hasta que se recibe en su unidad. Si no está seguro, deje 15.</span></span>
-          </label>
-          <input type="number" id="pLead" value="15" min="1" max="120">
-        </div>
-        <div>
-          <label class="lbl-ayuda">Días que quiere cubrir
-            <span class="info-i">i<span class="tip">Para cuántos días de consumo quiere tener existencia después de reponer. 15 días es lo habitual; suba a 30 si prefiere pedir con más holgura.</span></span>
-          </label>
-          <input type="number" id="pCob" value="15" min="1" max="120">
-        </div>
-        <div>
-          <label class="lbl-ayuda">Reserva de seguridad (días)
-            <span class="info-i">i<span class="tip">Días extra de existencia como colchón, por si un pedido se atrasa o el consumo sube. 5 días es un valor prudente.</span></span>
-          </label>
-          <input type="number" id="pSeg" value="5" min="0" max="60">
-        </div>
-        <div id="campoConsManual">
-          <label class="lbl-ayuda">Consumo mensual (si no hay historial)
-            <span class="info-i">i<span class="tip">Este campo solo se usa cuando el renglón no tiene historial de consumo. En ese caso, escriba cuántas unidades usa su unidad al mes para estimar el pedido. Si ya hay historial, la calculadora usa el consumo real y este campo no hace falta.</span></span>
-          </label>
-          <input type="number" id="pConsManual" value="" min="0" placeholder="Solo si no hay historial">
-        </div>
-      </div>
-
-      <div class="chart-box"><canvas id="curva"></canvas></div>
-
-      <div class="nums" id="detNums"></div>
-      <div class="hint">La curva muestra el saldo real por día. Línea naranja: punto de reorden. Línea roja: piso de seguridad. Línea verde: nivel objetivo. Cuando el saldo cruza el reorden hacia abajo, es momento de pedir. Las <b style="color:#c0392b;">barras rojas</b> (Urgencia) y <b style="color:#1e5a9e;">azules</b> (Mensual) marcan las Formas 8 que la unidad solicitó cada día: permiten ver si pidió reposición a tiempo frente a la caída del saldo.</div>
-    </div>
-  </div>
-
-</div>
-
+<main id="main"></main>
+<div class="tour-bg" id="tour"><div class="tour-hl" id="tourHl"></div><div class="tour-box" id="tourBox"></div></div>
+<div class="modal-bg" id="modal"><div class="modal" role="dialog" aria-modal="true" id="modalC"></div></div>
 <script>
-// ====== CONFIG ======
-var BASE = 'https://torredecontrolcss.github.io/REPOSICION_UE_CSS/';
-var VENTANA_CONSUMO = 30;   // días para calcular consumo diario
-var CEDIS_CENTRAL = 'CEDIS PANAMA';   // nivel-2 constante: Panamá surte a los CEDIS regionales
-
-// ====== ESTADO ======
-var INDICE = null;      // {fechas, ues:[{ue,archivo,cedis,renglones}], cedis_url}
-var UE_DATA = null;     // {ue, cedis, fechas, f:[{c, v:[[fecha,saldo]]}]}
-var CEDIS_DATA = null;  // {fechas, cedis:{'CEDIS X':[{c, v:[[fecha,saldo]]}]}}
-var UE_CEDIS = '';      // CEDIS que abastece a la UE activa (canónico, base sin acento)
-var F8_DATA = null;     // {ue, f:{cod:[[fechaISO,U,M],...]}}  eventos de Forma 8 por renglón
-var CONS_REP = null;    // {ue, c:{cod: consumoMensualReportado}}  declarado por la UE
-var MAESTRO = {};       // cod -> {n:nombre, vit:0|1}
-var chart = null;
-
-// Base sin acentos/símbolos para casar nombres de CEDIS entre índice y archivo
-function baseUp(s){ return String(s==null?'':s).toUpperCase()
-  .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-  .replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
-// Nombre canónico de bodega CEDIS a partir de cualquier grafía
-function cedisCanon(s){ var t=baseUp(s);
-  if(t.indexOf('PANAMA')>=0)   return 'CEDIS PANAMA';
-  if(t.indexOf('DIVISA')>=0)   return 'CEDIS DIVISA';
-  if(t.indexOf('CHIRIQUI')>=0) return 'CEDIS CHIRIQUI';
-  return ''; }
-
-// ====== DICCIONARIO DE RENGLONES ======
-function cargarDiccionario(){
-  return fetch(BASE+'renglones_dic.json?ts='+Date.now())
-    .then(function(r){ return r.ok? r.json() : null; })
-    .then(function(d){ if(d && d.r) MAESTRO = d.r; })
-    .catch(function(){ /* si falla, se muestran códigos */ });
-}
-function nombreDe(cod){ var e=MAESTRO[cod]; return (e && e.n)? e.n : cod; }
-function esVital(cod){ var e=MAESTRO[cod]; return !!(e && e.vit); }
-
-// ====== UTILIDADES ======
-function fmt(n){ n=Math.round(Number(n)||0); return n.toLocaleString('es-PA'); }
-function el(id){ return document.getElementById(id); }
-function aviso(cont, msg, tipo){ cont.innerHTML = msg ? '<div class="aviso '+(tipo||'')+'">'+msg+'</div>' : ''; }
-
-// Expande la serie dispersa a saldo por cada fecha del eje (last-carried-forward).
-// FORMATO: el backend (MODULO_SERIES_SALDOS) emite [[índiceDeFecha, saldo], ...]
-// donde índiceDeFecha es la posición entera dentro del arreglo 'fechas', NO la
-// fecha en texto. Se soporta también el formato legado [[fechaISO, saldo]] por
-// si quedaran archivos viejos publicados.
-function expandirSerie(vSparse, fechas){
-  var mapa = {};
-  vSparse.forEach(function(p){
-    var k = p[0];
-    if (typeof k === 'number') { if (k>=0 && k<fechas.length) mapa[fechas[k]] = p[1]; }
-    else { mapa[k] = p[1]; }                 // legado: clave ya es fecha ISO
-  });
-  var out = []; var prev = null;
-  for (var i=0;i<fechas.length;i++){
-    if (mapa[fechas[i]] !== undefined) prev = mapa[fechas[i]];
-    out.push(prev);   // null hasta el primer dato conocido
-  }
-  return out;
-}
-
-// Consumo diario = baja total de inventario en los últimos N días / N
-function consumoDiario(saldos, fechas){
-  // Consumo real = suma de las BAJAS día a día de la curva (ignora las subidas,
-  // que son reabastecimientos, no consumo). Se mide sobre una ventana de los
-  // últimos VENTANA_CONSUMO días CALENDARIO y se divide entre los días reales
-  // que abarca esa ventana — no entre un número fijo — porque las series son
-  // dispersas (los puntos no son diarios) y dividir entre 30 fijo inflaría el
-  // consumo cuando la ventana abarca más días de los que tiene puntos.
-  var pares = [];
-  for (var i=0;i<saldos.length;i++) if (saldos[i]!==null) pares.push({f:fechas[i], s:saldos[i]});
-  if (pares.length < 2) return {cons:0, puntos:pares.length};
-
-  // limitar la ventana a los últimos VENTANA_CONSUMO días calendario
-  var fUlt = new Date(pares[pares.length-1].f);
-  var corte = new Date(fUlt); corte.setDate(corte.getDate() - VENTANA_CONSUMO);
-  var ult = pares.filter(function(p){ return new Date(p.f) >= corte; });
-  if (ult.length < 2){ ult = pares.slice(-2); }   // asegurar al menos 2 puntos
-
-  var baja = 0;
-  for (var j=1;j<ult.length;j++){
-    var d = ult[j-1].s - ult[j].s;
-    if (d > 0) baja += d;   // solo bajas (consumo), ignorar reposiciones
-  }
-  // días calendario reales que abarca la ventana (mínimo 1)
-  var msDia = 86400000;
-  var diasReales = Math.max(1, Math.round((new Date(ult[ult.length-1].f) - new Date(ult[0].f)) / msDia));
-  return {cons: baja/diasReales, puntos: ult.length, dias: diasReales};
-}
-
-function invActual(saldos){
-  for (var i=saldos.length-1;i>=0;i--) if (saldos[i]!==null) return saldos[i];
-  return 0;
-}
-
-// Cálculo de reposición para un renglón
-function calcular(saldos, fechas, params, consManual){
-  var cd = consumoDiario(saldos, fechas);
-  var consumo = cd.cons;
-  var sinHistoria = (consumo<=0);
-  if (sinHistoria && consManual>0) consumo = consManual/30; // consumo mensual tecleado -> diario
-  var inv = invActual(saldos);
-  var seg = consumo * params.seg;
-  var reorden = consumo * (params.lead + params.seg);
-  var objetivo = consumo * (params.lead + params.cob);
-  var pedir = Math.max(objetivo - inv, 0);
-  var pedirTransito = Math.max(objetivo - inv - (params.transito||0), 0);
-  var diasReorden = consumo>0 ? (inv - reorden)/consumo : null;
-
-  var estado, veredicto;
-  if (consumo<=0){
-    estado='g'; veredicto='Sin historial de consumo — no se puede calcular el pedido';
-  } else if (inv<=0){
-    estado='r'; veredicto='Desabastecido — pedir urgente '+fmt(pedirTransito||pedir);
-  } else if (inv<=reorden){
-    estado='r'; veredicto='Pedir ahora '+fmt(pedirTransito||pedir);
-  } else if (diasReorden!==null && diasReorden<=7){
-    estado='a'; veredicto='Pedir pronto (~'+Math.round(diasReorden)+' días) · '+fmt(pedirTransito||pedir);
-  } else {
-    estado='v';
-    var fecha = fechaReorden(fechas, inv, reorden, consumo);
-    veredicto='Cobertura ok' + (fecha? ' — reponer aprox. '+fecha : '');
-  }
-  return {consumo:consumo, inv:inv, seg:seg, reorden:reorden, objetivo:objetivo,
-          pedir:pedir, pedirTransito:pedirTransito, diasReorden:diasReorden,
-          estado:estado, veredicto:veredicto, sinHistoria:sinHistoria, puntos:cd.puntos};
-}
-
-// ====== VEREDICTO AGUAS ARRIBA (2 escalones) ======
-// Decide si un cero/quiebre en la UE es distribución local, reabasto
-// inter-CEDIS o compras, según el saldo actual de su CEDIS regional y de
-// CEDIS Panamá (central). Sólo aplica cuando la UE está en riesgo.
-function veredictoAbasto(cod, invUE, consumoDia){
-  // Nivel 1: el CEDIS que la surte directo
-  var esCentral = (UE_CEDIS===CEDIS_CENTRAL || !UE_CEDIS);
-  var n1cedis = UE_CEDIS || CEDIS_CENTRAL;
-  var s1 = ultimoSaldo(serieCedis(n1cedis, cod));
-  // Nivel 2: CEDIS Panamá (sólo si la UE es regional)
-  var s2 = esCentral ? null : ultimoSaldo(serieCedis(CEDIS_CENTRAL, cod));
-
-  // NOTA: NO se convierte el inventario del CEDIS a "meses de cobertura" contra
-  // el consumo de esta UE. Sería engañoso: el stock del CEDIS abastece a TODA
-  // su red (decenas de unidades), no a esta sola. Se muestra la cantidad cruda
-  // como hecho de disponibilidad.
-  var clase, texto;
-  if (s1!=null && s1>0){
-    clase='dist';
-    texto = 'Distribución local · '+n1cedis+' tiene '+fmt(s1)+' unidades en existencia — debe despachar a la unidad.';
-  } else if (!esCentral && s2!=null && s2>0){
-    clase='reab';
-    texto = 'Reabasto entre CEDIS · '+n1cedis+' no tiene existencia disponible, pero CEDIS Panamá tiene '+fmt(s2)+
-            ' unidades — corresponde que Panamá surta al CEDIS regional.';
-  } else {
-    clase='compra';
-    texto = 'Gestión de compras · sin existencia en '+n1cedis+(esCentral?'':' ni en CEDIS Panamá')+
-            '. No es un asunto de distribución: el abastecimiento depende de una compra.';
-  }
-  return { clase:clase, texto:texto, n1cedis:n1cedis, s1:s1, s2:s2, esCentral:esCentral };
-}
-
-function fechaReorden(fechas, inv, reorden, consumo){
-  if (consumo<=0) return null;
-  var dias = (inv - reorden)/consumo;
-  if (dias<=0) return 'ahora';
-  var base = new Date(fechas[fechas.length-1]+'T00:00:00');
-  base.setDate(base.getDate()+Math.round(dias));
-  var dd=String(base.getDate()).padStart(2,'0');
-  var mm=String(base.getMonth()+1).padStart(2,'0');
-  return dd+'/'+mm+'/'+base.getFullYear();
-}
-
-// ====== CARGA INICIAL ======
-function cargarIndice(){
-  fetch(BASE+'series_saldos_index.json?ts='+Date.now())
-    .then(function(r){ if(!r.ok) throw new Error('No se pudo cargar el índice ('+r.status+')'); return r.json(); })
-    .then(function(idx){
-      INDICE = idx;
-      el('meta').textContent = idx.ues.length+' unidades · '+idx.fechas.length+' días · corte '+idx.fechas[idx.fechas.length-1];
-      var sel = el('selUE');
-      sel.innerHTML = '<option value="">— Seleccione una unidad —</option>';
-      idx.ues.slice().sort(function(a,b){ return a.ue.localeCompare(b.ue); })
-        .forEach(function(u){
-          var o = document.createElement('option');
-          o.value = u.archivo; o.textContent = u.ue+'  ('+u.renglones+' renglones)';
-          o.setAttribute('data-cedis', u.cedis||'');   // CEDIS que la abastece
-          sel.appendChild(o);
-        });
-      // Precargar en segundo plano las curvas de los CEDIS (no bloquea la lista)
-      cargarCedis(idx.cedis_url || 'series_saldos_CEDIS.json');
-      // Resumen de red para el panel de bienvenida (llena el espacio vacío)
-      pintarResumenRed(idx);
-      // Tablero ejecutivo nacional (pre-calculado en el backend)
-      cargarResumenNacional();
-    })
-    .catch(function(e){ aviso(el('avisoGlobal'), 'Error cargando el índice: '+e.message+'. Verifique que series_saldos_index.json esté publicado.', 'err'); });
-}
-
-// Resumen de la red a partir del índice: total UEs, renglones cubiertos, y
-// reparto por CEDIS. Da contexto antes de elegir una unidad.
-function pintarResumenRed(idx){
-  var kp = el('kpisRed'); if(!kp) return;
-  var totUE = idx.ues.length;
-  var totReng = idx.ues.reduce(function(a,u){ return a + (u.renglones||0); }, 0);
-  var porCedis = {};
-  idx.ues.forEach(function(u){ var c=u.cedis||'—'; porCedis[c]=(porCedis[c]||0)+1; });
-  var pa = porCedis['CEDIS PANAMA']||0, di = porCedis['CEDIS DIVISA']||0, ch = porCedis['CEDIS CHIRIQUI']||0;
-  kp.style.display='flex';
-  kp.innerHTML =
-    kpi('Unidades Ejecutoras', totUE, 'var(--azul2)', 'Policlínicas y hospitales con datos en el sistema.') +
-    kpi('Renglones monitoreados', totReng, 'var(--azul2)', 'Medicamentos e insumos con seguimiento de saldo.') +
-    kpi('Unidades que abastece Panamá', pa, 'var(--azul)', 'Reciben sus medicamentos del CEDIS central (Panamá).') +
-    kpi('Unidades que abastece Divisa', di, 'var(--azul)', 'Reciben del CEDIS Divisa: Herrera, Los Santos, Coclé, Veraguas.') +
-    kpi('Unidades que abastece Chiriquí', ch, 'var(--azul)', 'Reciben del CEDIS Chiriquí: Chiriquí y Bocas del Toro.');
-}
-
-// ====== TABLERO EJECUTIVO NACIONAL ======
-// Carga el resumen pre-calculado en el backend (resumen_nacional.json) y lo
-// pinta como un panel de métricas nacionales para la Directiva. Si no existe
-// (aún no publicado), el panel simplemente no aparece.
-function cargarResumenNacional(){
-  fetch(BASE+'resumen_nacional.json?ts='+Date.now())
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(data){
-      if(data && data.nacional) pintarTableroNacional(data);
-    })
-    .catch(function(){ /* sin resumen: no se muestra el tablero */ });
-}
-
-function pintarTableroNacional(data){
-  var t = el('tableroNacional'); if(!t) return;
-  var n = data.nacional;
-  var accionables = (n.rojo||0) + (n.ambar||0);   // renglones que requieren pedido
-  var pc = data.por_cedis || {};
-
-  function tarjetaCedis(nombre, etiqueta){
-    var c = pc[nombre] || {rojo:0,ambar:0,verde:0,pedirTotal:0};
-    var acc = (c.rojo||0)+(c.ambar||0);
-    return '<div class="tn-cedis">'+
-      '<div class="tn-cedis-tit">'+etiqueta+'</div>'+
-      '<div class="tn-cedis-row"><span class="tn-dot r"></span>'+fmt(c.rojo||0)+' en rojo</div>'+
-      '<div class="tn-cedis-row"><span class="tn-dot a"></span>'+fmt(c.ambar||0)+' en ámbar</div>'+
-      '<div class="tn-cedis-row"><span class="tn-dot v"></span>'+fmt(c.verde||0)+' con cobertura</div>'+
-      '<div class="tn-cedis-pedir">A pedir: <b>'+fmt(Math.round(c.pedirTotal||0))+'</b></div>'+
-    '</div>';
-  }
-
-  t.style.display='block';
-  t.innerHTML =
-    '<div class="tn-titulo">Panorama nacional de abastecimiento'+
-      (data.corte?' <span class="tn-corte">· corte '+data.corte+'</span>':'')+'</div>'+
-
-    // Fila 1: los grandes números nacionales
-    '<div class="tn-cards">'+
-      '<div class="tn-card r"><div class="tn-num">'+fmt(n.rojo||0)+'</div>'+
-        '<div class="tn-lab">Renglones en rojo</div><div class="tn-sub">Sin existencia o bajo el nivel de alerta, a nivel nacional.</div></div>'+
-      '<div class="tn-card a"><div class="tn-num">'+fmt(n.ambar||0)+'</div>'+
-        '<div class="tn-lab">Renglones en ámbar</div><div class="tn-sub">Próximos al punto de reposición.</div></div>'+
-      '<div class="tn-card v"><div class="tn-num">'+fmt(n.verde||0)+'</div>'+
-        '<div class="tn-lab">Renglones con cobertura</div><div class="tn-sub">Existencia suficiente por ahora.</div></div>'+
-      '<div class="tn-card azul"><div class="tn-num">'+fmt(Math.round(n.pedirTotal||0))+'</div>'+
-        '<div class="tn-lab">Total a pedir</div><div class="tn-sub">Suma de cantidades sugeridas en todos los renglones accionables.</div></div>'+
-      '<div class="tn-card gris"><div class="tn-num">'+fmt(n.uesCriticas||0)+'</div>'+
-        '<div class="tn-lab">Unidades críticas</div><div class="tn-sub">Con 20 o más renglones en rojo.</div></div>'+
-    '</div>'+
-
-    // Fila 2: desglose por diagnóstico (dónde se resuelve)
-    '<div class="tn-diag-tit">De los '+fmt(accionables)+' renglones que requieren pedido, ¿dónde se resuelve el problema?</div>'+
-    '<div class="tn-diag">'+
-      '<div class="tn-diag-box dist"><div class="tn-diag-num">'+fmt(n.dist||0)+'</div>'+
-        '<div class="tn-diag-lab">Distribución local</div><div class="tn-diag-sub">El CEDIS tiene existencia y debe despachar. Se resuelve con una Forma 8.</div></div>'+
-      '<div class="tn-diag-box reab"><div class="tn-diag-num">'+fmt(n.reab||0)+'</div>'+
-        '<div class="tn-diag-lab">Reabasto entre CEDIS</div><div class="tn-diag-sub">El CEDIS regional no tiene, pero Panamá sí. Panamá debe surtir al regional.</div></div>'+
-      '<div class="tn-diag-box compra"><div class="tn-diag-num">'+fmt(n.compra||0)+'</div>'+
-        '<div class="tn-diag-lab">Gestión de compras</div><div class="tn-diag-sub">Ningún CEDIS tiene existencia. Depende de una compra.</div></div>'+
-    '</div>'+
-
-    // Fila 3: desglose por CEDIS
-    '<div class="tn-diag-tit">Situación por CEDIS de abastecimiento</div>'+
-    '<div class="tn-cedis-row-wrap">'+
-      tarjetaCedis('CEDIS PANAMA','CEDIS Panamá (central)')+
-      tarjetaCedis('CEDIS DIVISA','CEDIS Divisa')+
-      tarjetaCedis('CEDIS CHIRIQUI','CEDIS Chiriquí')+
-    '</div>';
-}
-
-// Carga (una sola vez) las curvas de las tres bodegas CEDIS.
-function cargarCedis(archivo){
-  fetch(BASE+archivo+'?ts='+Date.now())
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(data){
-      if(!data || !data.cedis){ return; }
-      // Reindexar las llaves de CEDIS a forma canónica para casar con UE_CEDIS
-      var idx={};
-      Object.keys(data.cedis).forEach(function(k){
-        var can=cedisCanon(k)||baseUp(k);
-        idx[can]=data.cedis[k];
-      });
-      CEDIS_DATA = { fechas:data.fechas, cedis:idx };
-      // Si ya hay un detalle abierto, refrescar para pintar el overlay
-      if (el('vistaDetalle').classList.contains('on')) renderDetalle();
-    })
-    .catch(function(){ /* sin CEDIS: la curva de UE se muestra igual */ });
-}
-
-// Devuelve la serie expandida (saldo/día) de un CEDIS para un renglón, o null.
-function serieCedis(cedisCan, cod){
-  if(!CEDIS_DATA || !CEDIS_DATA.cedis) return null;
-  var lista = CEDIS_DATA.cedis[cedisCan]; if(!lista) return null;
-  var r = lista.filter(function(x){ return x.c===cod; })[0]; if(!r) return null;
-  // Expandir sobre el eje de fechas de la UE (pueden diferir en longitud;
-  // se mapea por fecha ISO, no por índice, para ser robusto).
-  return expandirPorFecha(r.v, CEDIS_DATA.fechas, UE_DATA.fechas);
-}
-// Expande serie dispersa [[idxFechaCedis,saldo]] al eje de fechas de la UE.
-function expandirPorFecha(vSparse, fechasCedis, fechasUE){
-  var mapa={};
-  vSparse.forEach(function(p){ var f=fechasCedis[p[0]]; if(f!==undefined) mapa[f]=p[1]; });
-  var out=[]; var prev=null;
-  for(var i=0;i<fechasUE.length;i++){
-    if(mapa[fechasUE[i]]!==undefined) prev=mapa[fechasUE[i]];
-    out.push(prev);
-  }
-  return out;
-}
-// Último valor no-nulo de una serie (saldo actual del CEDIS).
-function ultimoSaldo(serie){
-  if(!serie) return null;
-  for(var i=serie.length-1;i>=0;i--) if(serie[i]!==null) return serie[i];
-  return null;
-}
-
-function cargarUE(archivo){
-  aviso(el('avisoGlobal'), 'Cargando unidad…', '');
-  // Capturar el CEDIS que abastece a esta UE desde la opción seleccionada
-  var opt = el('selUE').options[el('selUE').selectedIndex];
-  UE_CEDIS = cedisCanon(opt ? (opt.getAttribute('data-cedis')||'') : '');
-  fetch(BASE+archivo+'?ts='+Date.now())
-    .then(function(r){ if(!r.ok) throw new Error('archivo '+r.status); return r.json(); })
-    .then(function(data){
-      UE_DATA = data;
-      // El archivo de la UE también trae 'cedis'; si el índice no lo tenía, usarlo
-      if(!UE_CEDIS && data.cedis) UE_CEDIS = cedisCanon(data.cedis);
-      var pb=el('panelBienvenida'); if(pb) pb.style.display='none';   // ocultar bienvenida
-      aviso(el('avisoGlobal'),'','');
-      cargarF8(archivo);   // cargar las Formas 8 de esta UE (en paralelo)
-      cargarConsumoReportado(archivo);   // consumo declarado por la UE
-      renderLista();
-    })
-    .catch(function(e){ aviso(el('avisoGlobal'),'Error cargando la unidad: '+e.message,'err'); });
-}
-
-// Carga los eventos de Forma 8 de la UE. El archivo se llama igual pero con
-// prefijo f8_eventos_ en vez de series_saldos_. Si no existe, la curva se
-// muestra sin barras de pedidos (degrada limpio).
-function cargarF8(archivoSaldos){
-  F8_DATA = null;
-  var archivoF8 = archivoSaldos.replace(/^series_saldos_/, 'f8_eventos_');
-  fetch(BASE+archivoF8+'?ts='+Date.now())
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(data){
-      if(data && data.f) F8_DATA = data;
-      if (el('vistaDetalle').classList.contains('on')) renderDetalle();
-    })
-    .catch(function(){ /* sin F8: la curva se muestra igual */ });
-}
-
-// Carga el consumo mensual reportado por la UE (hoja CONSUMOS_UE). Archivo
-// consumo_reportado_<UE>.json. Si no existe, se degrada sin él.
-function cargarConsumoReportado(archivoSaldos){
-  CONS_REP = null;
-  var archivo = archivoSaldos.replace(/^series_saldos_/, 'consumo_reportado_');
-  fetch(BASE+archivo+'?ts='+Date.now())
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(data){
-      if(data && data.c) CONS_REP = data;
-      if (el('vistaDetalle').classList.contains('on')) renderDetalle();
-    })
-    .catch(function(){ /* sin consumo reportado: se muestra igual */ });
-}
-// Devuelve el consumo mensual reportado para un renglón, o null.
-function consumoReportado(cod){
-  if(!CONS_REP || !CONS_REP.c) return null;
-  var v = CONS_REP.c[cod];
-  return (typeof v==='number' && v>0) ? v : null;
-}
-// Construye dos arreglos alineados al eje 'fechas' de la UE con la cantidad
-// pedida por día para el renglón actual: uno Urgencia, uno Mensual.
-function barrasF8(cod, fechas){
-  var U = new Array(fechas.length).fill(0);
-  var M = new Array(fechas.length).fill(0);
-  var hay = false;
-  if (F8_DATA && F8_DATA.f && F8_DATA.f[cod]){
-    var idxDe = {}; fechas.forEach(function(f,i){ idxDe[f]=i; });
-    F8_DATA.f[cod].forEach(function(ev){
-      var i = idxDe[ev[0]];   // ev = [fechaISO, U, M]
-      if (i===undefined) return;   // fuera de la ventana de la curva
-      U[i] += ev[1]||0; M[i] += ev[2]||0;
-      if ((ev[1]||0)>0 || (ev[2]||0)>0) hay = true;
-    });
-  }
-  return { U:U, M:M, hay:hay };
-}
-
-// ====== VISTA LISTA ======
-function paramsActuales(){
-  return {
-    lead: Number(el('pLead').value)||15,
-    cob:  Number(el('pCob').value)||15,
-    seg:  Number(el('pSeg').value)||5,
-    transito: 0
-  };
-}
-
-function filaCalculo(rengln, params){
-  var saldos = expandirSerie(rengln.v, UE_DATA.fechas);
-  var c = calcular(saldos, UE_DATA.fechas, params, 0);
-  return {cod:rengln.c, nombre:nombreDe(rengln.c), vital:esVital(rengln.c), saldos:saldos, c:c};
-}
-
-// Etiqueta de texto por estado (accesible, no solo color)
-function etiquetaEstado(estado){
-  if (estado==='r') return 'URGENTE';
-  if (estado==='a') return 'PRONTO';
-  if (estado==='v') return 'OK';
-  return 'SIN CONSUMO';
-}
-
-function ordenUrgencia(a,b){
-  // en cero primero, luego por días a reorden asc; sin consumo al final
-  var ra = rankEstado(a.c), rb = rankEstado(b.c);
-  if (ra!==rb) return ra-rb;
-  var da = (a.c.diasReorden==null)? 1e9 : a.c.diasReorden;
-  var db = (b.c.diasReorden==null)? 1e9 : b.c.diasReorden;
-  return da-db;
-}
-function rankEstado(c){
-  if (c.consumo<=0) return 4;      // sin consumo, al final
-  if (c.inv<=0) return 0;          // en cero, primero
-  if (c.inv<=c.reorden) return 1;  // pedir ya
-  if (c.diasReorden!=null && c.diasReorden<=7) return 2; // pronto
-  return 3;                         // ok
-}
-
-var FILAS_ACTUALES = [];
-function renderLista(){
-  el('vistaDetalle').classList.remove('on');
-  el('vistaLista').style.display='';
-  var params = paramsActuales();
-  var filas = UE_DATA.f.map(function(r){ return filaCalculo(r, params); });
-  filas.sort(ordenUrgencia);
-  FILAS_ACTUALES = filas;
-
-  // KPIs (siempre sobre el universo completo, no sobre el filtro)
-  var enCero=0, pedirYa=0, pronto=0, ok=0, sinC=0;
-  filas.forEach(function(f){
-    var r=rankEstado(f.c);
-    if (r===0) enCero++; else if(r===1) pedirYa++; else if(r===2) pronto++; else if(r===3) ok++; else sinC++;
-  });
-  var kp = el('kpisUE'); kp.style.display='flex';
-  kp.innerHTML =
-    kpi('En cero', enCero, 'var(--rojo)', 'Sin existencia. Requieren pedido inmediato.') +
-    kpi('Pedir ya', pedirYa, 'var(--rojo)', 'Existencia por debajo del nivel de alerta.') +
-    kpi('Pedir pronto', pronto, 'var(--ambar)', 'Se acercan al nivel de alerta (menos de 7 días).') +
-    kpi('Con cobertura', ok, 'var(--verde)', 'Existencia suficiente por ahora.') +
-    kpi('Sin historial', sinC, '#777', 'No se puede calcular sin datos de consumo.');
-
-  var bus = el('buscarRenglon'); if(bus) bus.value='';   // limpiar búsqueda al cambiar de UE
-  pintarTabla();
-  el('cardLista').style.display='';
-}
-
-// Pinta la tabla aplicando el filtro de búsqueda (por nombre o código de renglón).
-function pintarTabla(){
-  var q = (el('buscarRenglon') ? el('buscarRenglon').value : '').trim().toUpperCase();
-  var visibles = FILAS_ACTUALES.filter(function(f){
-    if(!q) return true;
-    return (String(f.nombre||'').toUpperCase().indexOf(q) >= 0) ||
-           (String(f.cod||'').toUpperCase().indexOf(q) >= 0);
-  });
-
-  var cont = el('contadorRenglones');
-  if(cont) cont.textContent = q
-    ? (visibles.length+' de '+FILAS_ACTUALES.length+' renglones')
-    : (FILAS_ACTUALES.length+' renglones');
-
-  var tb = el('tablaLista').querySelector('tbody');
-  tb.innerHTML = '';
-  if(!visibles.length){
-    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#777;padding:16px;">'+
-                   'No hay renglones que coincidan con «'+escapeHtml(q)+'».</td></tr>';
-    return;
-  }
-  visibles.forEach(function(f, i){
-    var c=f.c;
-    var tr=document.createElement('tr');
-    tr.className='clickable'+(f.vital?' vital':'');
-    var semClass = c.estado;
-    var dias = (c.diasReorden==null)?'—':(c.diasReorden<=0?'0':Math.round(c.diasReorden));
-    var pedir = (c.consumo<=0)?'—':fmt(c.pedirTransito||c.pedir);
-    var vitalBadge = f.vital?'<span class="badge-vital">VITAL</span>':'';
-    tr.innerHTML =
-      '<td><span class="estado-cell"><span class="sem '+semClass+'"></span>'+
-        '<span class="estado-lab '+semClass+'">'+etiquetaEstado(c.estado)+'</span></span></td>'+
-      '<td>'+escapeHtml(f.nombre)+vitalBadge+
-        ' <span style="color:#999;font-size:10px;">'+f.cod+'</span>'+
-        ' <span class="ver-curva">ver curva ▸</span></td>'+
-      '<td class="num">'+fmt(c.inv)+'</td>'+
-      '<td class="num">'+(c.consumo>0?c.consumo.toFixed(1):'—')+'</td>'+
-      '<td class="num">'+dias+'</td>'+
-      '<td class="num">'+pedir+'</td>'+
-      '<td class="veredicto '+c.estado+'">'+escapeHtml(c.veredicto)+'</td>';
-    tr.addEventListener('click', function(){ abrirDetalle(f.cod); });
-    tb.appendChild(tr);
-  });
-}
-
-function kpi(lab,val,color,desc){
-  var shown = (typeof val==='number') ? fmt(val) : val;
-  return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val" style="color:'+color+'">'+shown+'</div>'+
-         (desc?'<div class="kpi-desc">'+desc+'</div>':'')+'</div>';
-}
-function escapeHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// ====== VISTA DETALLE ======
-var COD_ACTUAL = null;
-function abrirDetalle(cod){
-  COD_ACTUAL = cod;
-  el('vistaLista').style.display='none';
-  el('vistaDetalle').classList.add('on');
-  el('kpisUE').style.display='none';
-  el('pConsManual').value = '';
-  sincronizarComboRenglon();
-  renderDetalle();
-}
-
-// Pone el nombre del renglón actual en el buscador y cierra la lista.
-function sincronizarComboRenglon(){
-  var inp = el('buscarRenglonDet');
-  if(inp) inp.value = nombreDe(COD_ACTUAL)+' · '+COD_ACTUAL;
-  cerrarListaRenglon();
-}
-// Cierra el desplegable de autocompletado.
-function cerrarListaRenglon(){
-  var lst = el('listaRenglonDet');
-  if(lst){ lst.classList.remove('on'); lst.innerHTML=''; }
-}
-// Filtra FILAS_ACTUALES por texto y pinta el desplegable de autocompletado.
-var COMBO_SEL = -1;   // índice resaltado con teclado
-function renderComboRenglon(q){
-  var lst = el('listaRenglonDet'); if(!lst) return;
-  q = (q||'').trim().toUpperCase();
-  // si el texto es exactamente el renglón actual (sincronizado), mostrar todo
-  var base = FILAS_ACTUALES;
-  var res = q ? base.filter(function(f){
-    return String(f.nombre||'').toUpperCase().indexOf(q)>=0 ||
-           String(f.cod||'').toUpperCase().indexOf(q)>=0;
-  }) : base.slice(0, 50);   // sin texto: primeros 50 por urgencia
-  COMBO_SEL = -1;
-  if(!res.length){ lst.innerHTML='<div class="combo-item" style="color:#999;cursor:default;">Sin coincidencias</div>'; lst.classList.add('on'); return; }
-  lst.innerHTML = res.slice(0,80).map(function(f){
-    var cls = f.c.estado;
-    return '<div class="combo-item" data-cod="'+f.cod+'">'+
-           '<span class="et '+cls+'">'+etiquetaEstado(f.c.estado)+'</span>'+
-           escapeHtml(f.nombre)+'<span class="cod">'+f.cod+'</span></div>';
-  }).join('');
-  lst.classList.add('on');
-  // clic en un item
-  Array.prototype.forEach.call(lst.querySelectorAll('.combo-item[data-cod]'), function(it){
-    it.addEventListener('mousedown', function(e){   // mousedown: antes del blur
-      e.preventDefault();
-      abrirDetalle(it.getAttribute('data-cod'));
-    });
-  });
-}
-// Salta al renglón anterior/siguiente según el orden por urgencia.
-function saltarRenglon(delta){
-  var i = FILAS_ACTUALES.findIndex(function(f){ return f.cod===COD_ACTUAL; });
-  if(i<0) return;
-  var j = i + delta;
-  if(j<0 || j>=FILAS_ACTUALES.length) return;
-  abrirDetalle(FILAS_ACTUALES[j].cod);
-}
-
-function renderDetalle(){
-  var rengln = UE_DATA.f.filter(function(r){ return r.c===COD_ACTUAL; })[0];
-  if (!rengln){ return; }
-  var nombre = nombreDe(COD_ACTUAL);
-  el('detNombre').textContent = nombre+'  ·  '+COD_ACTUAL;
-
-  var params = {
-    lead: Number(el('pLead').value)||15,
-    cob:  Number(el('pCob').value)||15,
-    seg:  Number(el('pSeg').value)||5,
-    transito: 0
-  };
-  var consManual = Number(el('pConsManual').value)||0;
-  var saldos = expandirSerie(rengln.v, UE_DATA.fechas);
-  var c = calcular(saldos, UE_DATA.fechas, params, consManual);
-
-  // El campo de consumo manual SOLO aparece cuando no hay historial (única
-  // situación donde se necesita). Con historial se oculta por completo, así no
-  // ocupa espacio ni confunde.
-  var hayHistorialReal = !c.sinHistoria;
-  var campoCM = el('campoConsManual');
-  if (hayHistorialReal){
-    if (campoCM){ campoCM.style.display='none'; }
-    el('pConsManual').disabled = true;
-  } else {
-    if (campoCM){ campoCM.style.display=''; }
-    el('pConsManual').disabled = false;
-  }
-
-  // Series de CEDIS aguas arriba (para overlay y veredicto)
-  var serieN1 = serieCedis(UE_CEDIS||CEDIS_CENTRAL, COD_ACTUAL);
-  var serieN2 = (UE_CEDIS && UE_CEDIS!==CEDIS_CENTRAL) ? serieCedis(CEDIS_CENTRAL, COD_ACTUAL) : null;
-
-  // Veredicto grande (estado de la UE)
-  var vAbasto = veredictoAbasto(COD_ACTUAL, c.inv, c.consumo);
-  var mostrarAbasto = (c.estado==='r' || c.estado==='a');   // sólo cuando hay riesgo
-  el('detVeredicto').innerHTML =
-    '<div class="veredicto-fila">'+
-      '<div class="veredicto-box '+c.estado+'">'+escapeHtml(c.veredicto)+'</div>' +
-      (mostrarAbasto ? '<div class="abasto-box '+vAbasto.clase+'">'+escapeHtml(vAbasto.texto)+'</div>' : '') +
-    '</div>';
-
-  // Números (tarjetas en una fila; consumo real y reportado lado a lado)
-  var consDia = c.consumo;
-  var consMesReal = consDia>0 ? Math.round(consDia*30) : 0;
-  var consRep = consumoReportado(COD_ACTUAL);
-  // color del reportado: si difiere mucho del real, se resalta en ámbar
-  var colRep = 'var(--azul2)';
-  if (consRep!=null && consMesReal>0){
-    var ratio = consRep / consMesReal;
-    if (ratio>=1.5 || ratio<=0.5) colRep = 'var(--ambar)';
-  }
-  el('detNums').innerHTML =
-    kpi('Existencia hoy', c.inv, 'var(--azul2)') +
-    kpi('Consumo real / mes', consMesReal, 'var(--azul2)', 'Movimiento real de existencia (últimos '+VENTANA_CONSUMO+' días).') +
-    kpi('Consumo reportado / mes', (consRep!=null?consRep:'—'), colRep, 'Lo que la unidad declara consumir al mes.') +
-    kpi('Nivel de alerta', c.reorden, 'var(--ambar)') +
-    kpi('Existencia ideal', c.objetivo, 'var(--verde)') +
-    kpi('Cantidad a pedir', c.pedir, 'var(--rojo)');
-
-  if (c.sinHistoria && consManual<=0){
-    aviso(el('avisoGlobal'), 'Este renglón no tiene historial de consumo, por lo que no se puede calcular cuánto pedir. Si su unidad maneja este medicamento, escriba en el campo "Consumo mensual" (a la derecha) cuántas unidades usa al mes.', '');
-  } else { aviso(el('avisoGlobal'),'',''); }
-
-  dibujarCurva(saldos, UE_DATA.fechas, c, serieN1, serieN2, vAbasto);
-}
-
-function dibujarCurva(saldos, fechas, c, serieN1, serieN2, vAbasto){
-  var ctx = el('curva').getContext('2d');
-  if (chart) chart.destroy();
-  var n = fechas.length;
-  var ds = [
-    { label:'Saldo en la unidad', data:saldos, borderColor:'#1e5a9e', backgroundColor:'rgba(30,90,158,.08)',
-      borderWidth:2, pointRadius:0, tension:.15, fill:true, spanGaps:true, yAxisID:'y' },
-    { label:'Punto de reorden', data:new Array(n).fill(Math.round(c.reorden)),
-      borderColor:'#b8860b', borderWidth:1.5, borderDash:[6,4], pointRadius:0, yAxisID:'y' },
-    { label:'Piso de seguridad', data:new Array(n).fill(Math.round(c.seg)),
-      borderColor:'#a11', borderWidth:1.5, borderDash:[3,3], pointRadius:0, yAxisID:'y' },
-    { label:'Nivel objetivo', data:new Array(n).fill(Math.round(c.objetivo)),
-      borderColor:'#2e7d32', borderWidth:1.5, borderDash:[6,4], pointRadius:0, yAxisID:'y' }
-  ];
-  // Overlay aguas arriba: CEDIS regional (nivel 1) y CEDIS Panamá (nivel 2).
-  // Van en un segundo eje 'y2' porque las magnitudes del CEDIS suelen ser
-  // órdenes mayores que las de la UE; así ambas curvas se leen bien.
-  var hayCedis = false;
-  if (serieN1 && serieN1.some(function(x){ return x!==null; })){
-    hayCedis = true;
-    var lblN1 = (vAbasto && vAbasto.n1cedis) ? vAbasto.n1cedis : 'CEDIS que abastece';
-    ds.push({ label:'Inventario '+lblN1, data:serieN1, borderColor:'#7b3fa0',
-      borderWidth:2, pointRadius:0, tension:.15, spanGaps:true, borderDash:[5,3], yAxisID:'y2' });
-  }
-  if (serieN2 && serieN2.some(function(x){ return x!==null; })){
-    hayCedis = true;
-    ds.push({ label:'Inventario '+CEDIS_CENTRAL+' (central)', data:serieN2, borderColor:'#4a2570',
-      borderWidth:2, pointRadius:0, tension:.15, spanGaps:true, borderDash:[10,4], yAxisID:'y2' });
-  }
-
-  // Barras de Formas 8 (pedidos) por día para este renglón, separadas por tipo.
-  // Urgencia en rojo, Mensual en azul. Van en su propio eje 'yF8' a la derecha.
-  var f8 = barrasF8(COD_ACTUAL, fechas);
-  var hayF8 = f8.hay;
-  if (hayF8){
-    ds.push({ type:'bar', label:'F8 Urgencia', data:f8.U,
-      backgroundColor:'rgba(192,57,43,.75)', borderColor:'#c0392b', borderWidth:0,
-      yAxisID:'yF8', order:1, barPercentage:0.9, categoryPercentage:0.8, stack:'f8' });
-    ds.push({ type:'bar', label:'F8 Mensual', data:f8.M,
-      backgroundColor:'rgba(30,90,158,.6)', borderColor:'#1e5a9e', borderWidth:0,
-      yAxisID:'yF8', order:1, barPercentage:0.9, categoryPercentage:0.8, stack:'f8' });
-  }
-
-  var scales = {
-    x:{ ticks:{maxTicksLimit:10, font:{size:10}} },
-    y:{ beginAtZero:true, position:'left', ticks:{font:{size:10}},
-        title:{display:true, text:'Saldo unidad', font:{size:10}} }
-  };
-  if (hayCedis){
-    scales.y2 = { beginAtZero:true, position:'right', grid:{drawOnChartArea:false},
-                  ticks:{font:{size:10}}, title:{display:true, text:'Inventario CEDIS', font:{size:10}} };
-  }
-  if (hayF8){
-    // Eje de barras F8: oculto para no saturar, pero acotado para que las barras
-    // no tapen la curva. Se dibuja en la mitad inferior del área.
-    scales.yF8 = { beginAtZero:true, position:'right', display:false,
-                   grid:{drawOnChartArea:false}, stacked:true,
-                   // techo generoso para que las barras queden en la franja baja
-                   suggestedMax: _maxF8(f8) * 2.2 };
-  }
-  chart = new Chart(ctx, {
-    type:'line',
-    data:{ labels: fechas, datasets: ds },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'index', intersect:false},
-      plugins:{ legend:{labels:{font:{size:11},boxWidth:18}},
-        tooltip:{ callbacks:{ label:function(ctx){
-          var v=ctx.parsed.y;
-          if(ctx.dataset.label && ctx.dataset.label.indexOf('F8')===0){
-            if(!v) return null;   // no mostrar F8 en 0
-            return ctx.dataset.label+': '+fmt(v)+' solicitado';
-          }
-          return ctx.dataset.label+': '+fmt(v);
-        } } }
-      },
-      scales: scales
-    }
-  });
-}
-
-// Techo de las barras F8 (máximo total por día) para acotar su eje.
-function _maxF8(f8){
-  var m=0;
-  for(var i=0;i<f8.U.length;i++){ var t=(f8.U[i]||0)+(f8.M[i]||0); if(t>m) m=t; }
-  return m||1;
-}
-
-// ====== EVENTOS ======
-el('selUE').addEventListener('change', function(){
-  var a=this.value; if(a) cargarUE(a);
-});
-el('btnBack').addEventListener('click', renderLista);
-
-// Navegación de renglón dentro del detalle (sin volver a la lista)
 (function(){
-  var inp = el('buscarRenglonDet');
-  if(inp){
-    // al enfocar: seleccionar todo el texto y mostrar sugerencias
-    inp.addEventListener('focus', function(){ this.select(); renderComboRenglon(''); });
-    // al escribir: filtrar
-    inp.addEventListener('input', function(){
-      clearTimeout(window._brdt);
-      window._brdt = setTimeout(function(){ renderComboRenglon(inp.value); }, 100);
-    });
-    // teclado: flechas para navegar, Enter para elegir, Esc para cerrar
-    inp.addEventListener('keydown', function(e){
-      var lst = el('listaRenglonDet');
-      var items = lst ? lst.querySelectorAll('.combo-item[data-cod]') : [];
-      if(e.key==='ArrowDown'){ e.preventDefault(); COMBO_SEL=Math.min(COMBO_SEL+1, items.length-1); marcarComboSel(items); }
-      else if(e.key==='ArrowUp'){ e.preventDefault(); COMBO_SEL=Math.max(COMBO_SEL-1, 0); marcarComboSel(items); }
-      else if(e.key==='Enter'){ e.preventDefault();
-        var pick = (COMBO_SEL>=0 && items[COMBO_SEL]) ? items[COMBO_SEL] : items[0];
-        if(pick) abrirDetalle(pick.getAttribute('data-cod'));
-      }
-      else if(e.key==='Escape'){ sincronizarComboRenglon(); inp.blur(); }
-    });
-    // al perder foco: cerrar (con pequeño delay para permitir el clic)
-    inp.addEventListener('blur', function(){ setTimeout(cerrarListaRenglon, 150); });
+'use strict';
+const BASE='https://torredecontrolcss.github.io/REPOSICION_UE_CSS/';
+/* B: mismo formato que usó el dummy aprobado. Se llena por partes:
+   al abrir → índice, resumen (73 unidades), catálogo y tránsitos; al elegir unidad → sus 3 archivos. */
+const B={ues:{},dic:{},ced:{},tr:{},gen:'',idx:null,res:null,f8idx:{}};
+async function traer(f,opcional){ try{ const r=await fetch(BASE+f+'?t='+Date.now()); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json(); }catch(e){ if(opcional) return null; throw new Error(f+': '+e.message); } }
+async function cargarUEDatos(u){
+  if(B.ues[u]) return B.ues[u];
+  const meta=B.idx.ues.find(x=>x.ue===u); if(!meta) throw new Error('Unidad sin datos publicados');
+  const [s,f8,co]=await Promise.all([traer(meta.archivo),B.f8idx[u]?traer(B.f8idx[u],true):null,traer(meta.archivo.replace(/^series_saldos_/,'consumo_reportado_'),true)]);
+  B.ues[u]={cedis:s.cedis||meta.cedis,fechas:s.fechas,f:(s.f||[]).map(x=>[String(x.c),x.v||[]]),cons:co&&co.c?co.c:null,f8:(f8&&f8.f)||{}};
+  return B.ues[u];
+}
+/* ===== Modelo de reposición (acordado 30-sep-2026, alineado con la Evaluación Técnica del P-240) =====
+   d  = mediana de las señales disponibles: consumo observado (bajas del saldo ÷ días CON existencia),
+        consumo reportado, requisición F8 (90 d). Consumo observado truncado (>50% del periodo en cero)
+        se descarta. Con 2 señales: promedio, salvo efecto presión (F8/otra > 1.5) → se usa la otra.
+   L  = 20 días (todo pedido es mensual; norma 15, medido 24).
+   SS = Z · σ_d · √L   (Z = 1.65 vitales 95%; 1.28 resto 90%)
+   ROP = d·L + SS  (línea amarilla)      Objetivo = d·(L + días a cubrir) + SS            */
+const MODELO={L:20, L_NORMA:15, L_MEDIDO:24, CUBRIR:30, VENT:90, Z_VIT:1.65, Z_RES:1.28, PRESION:1.5, CV_DEF:0.5};
+const DIA=86400000, dISO=s=>new Date(s+'T00:00:00').getTime();
+function senales(serie, fechas, consRep, f8ev, hoyISO){
+  const fin=dISO(fechas[fechas.length-1]), ini=fin-MODELO.VENT*DIA;
+  const pts=serie.map(([i,v])=>[dISO(fechas[i]),v]);
+  const prev=pts.filter(p=>p[0]<ini), w=(prev.length?[prev[prev.length-1]]:[]).concat(pts.filter(p=>p[0]>=ini));
+  let baja=0, diasCon=0, diasTot=0; const sem={};
+  for(let j=1;j<w.length;j++){
+    const dt=Math.round((w[j][0]-Math.max(w[j-1][0],ini))/DIA); if(dt<=0) continue;
+    diasTot+=dt; if(w[j-1][1]>0) diasCon+=dt;
+    const b=Math.max(0,w[j-1][1]-w[j][1]); baja+=b;
+    const k=Math.floor((w[j][0]-ini)/(7*DIA)); if(w[j-1][1]>0) sem[k]=(sem[k]||0)+b;
   }
-  var prev = el('btnRengPrev'), next = el('btnRengNext');
-  if(prev) prev.addEventListener('click', function(){ saltarRenglon(-1); });
-  if(next) next.addEventListener('click', function(){ saltarRenglon(1); });
-})();
-
-function marcarComboSel(items){
-  Array.prototype.forEach.call(items, function(it,i){ it.classList.toggle('sel', i===COMBO_SEL); });
-  if(COMBO_SEL>=0 && items[COMBO_SEL]) items[COMBO_SEL].scrollIntoView({block:'nearest'});
+  // si la serie termina antes de "fin", el último tramo cuenta hasta fin
+  if(w.length){ const ult=w[w.length-1]; const dt=Math.round((fin-Math.max(ult[0],ini))/DIA); if(dt>0){ diasTot+=dt; if(ult[1]>0) diasCon+=dt; } }
+  const truncado = diasTot>0 && (diasTot-diasCon)/diasTot>0.5;
+  const dObs = diasCon>=15 ? baja/diasCon*30 : null;
+  const dRep = consRep>0 ? consRep : null;
+  let tf8=0; (f8ev||[]).forEach(([f,u,m])=>{ if(dISO(f)>=ini) tf8+=(u||0)+(m||0); });
+  const dReq = tf8>0 ? tf8/(MODELO.VENT/30) : null;
+  // variabilidad semanal
+  const ws=Object.values(sem); let cv=null;
+  if(ws.length>=4){ const mu=ws.reduce((a,b)=>a+b,0)/ws.length; if(mu>0){ const sd=Math.sqrt(ws.reduce((a,b)=>a+(b-mu)*(b-mu),0)/(ws.length-1)); cv=sd/mu; } }
+  return {dObs,dRep,dReq,truncado,cv,diasCon,diasTot};
+}
+function demandaBase(s){
+  const obs=(s.dObs&&!s.truncado)?s.dObs:null;
+  const L=[['obs',obs],['rep',s.dRep],['req',s.dReq]].filter(x=>x[1]>0);
+  let d=null, usa='', diag='';
+  const presion = s.dReq && (obs||s.dRep) ? s.dReq/(obs||s.dRep) : null;
+  if(L.length===3){ const v=L.map(x=>x[1]).sort((a,b)=>a-b); d=v[1]; usa='mediana de las tres señales'; }
+  else if(L.length===2){
+    if(presion&&presion>MODELO.PRESION){ const o=L.find(x=>x[0]!=='req'); d=o[1]; usa='la otra señal (el F8 está inflado)'; }
+    else { d=(L[0][1]+L[1][1])/2; usa='promedio de las dos señales disponibles'; }
+  } else if(L.length===1){ d=L[0][1]; usa='la única señal disponible'; }
+  const vals=L.map(x=>x[1]);
+  if(!L.length) diag='sin';
+  else if(s.truncado) diag='truncado';
+  else if(presion&&presion>MODELO.PRESION) diag='presion';
+  else if(L.length>=2 && Math.max(...vals)/Math.min(...vals)<=1.5) diag='confiable';
+  else if(L.length>=2) diag='divergente';
+  else diag='una';
+  return {d, usa, diag, presion};
+}
+/* Por recibir = Formas 8 de los últimos L días − lo que ya entró al saldo desde la primera de ellas.
+   La subida del saldo es la evidencia de entrega. */
+function pendienteF8(serie, fechas, f8ev, L){
+  const fin=dISO(fechas[fechas.length-1]), desde=fin-L*DIA;
+  const rec=(f8ev||[]).filter(e=>dISO(e[0])>desde); if(!rec.length) return {pend:0,pedido:0,recibido:0,desde:null};
+  const pedido=rec.reduce((s,e)=>s+(e[1]||0)+(e[2]||0),0), t0=Math.min(...rec.map(e=>dISO(e[0])));
+  let recibido=0; for(let j=1;j<serie.length;j++){ const t=dISO(fechas[serie[j][0]]); if(t>=t0){ const d=serie[j][1]-serie[j-1][1]; if(d>0) recibido+=d; } }
+  return {pend:Math.max(0,pedido-recibido),pedido,recibido,desde:t0};
+}
+function calcularRenglon(saldo, dMes, vital, cv, p){
+  const L=p.L, dd=dMes/30, Z=vital?MODELO.Z_VIT:MODELO.Z_RES, cvu=(cv!=null?cv:MODELO.CV_DEF);
+  const sdDia=(cvu*7*dd)/Math.sqrt(7);   // σ semanal = cv·(7·d) → σ diario = σ semanal / √7
+  const SS=Z*sdDia*Math.sqrt(L), ROP=dd*L+SS, OBJ=dd*(L+p.cubrir)+SS;
+  const pedir=Math.max(0,Math.ceil(OBJ-saldo-(p.enCamino||0)));
+  let estado;
+  if(!(dd>0)) estado='sin';
+  else if(saldo<=SS) estado='rojo';
+  else if(saldo<=ROP) estado='ambar';
+  else if((saldo-ROP)/dd<=7) estado='pronto';
+  else estado='verde';
+  const diasAROP = dd>0 ? (saldo-ROP)/dd : null;
+  return {dd,Z,cv:cvu,cvEst:cv==null,SS,ROP,OBJ,pedir,estado,diasAROP};
 }
 
-// Buscador de renglones (filtra la tabla en vivo, con pequeño debounce)
-(function(){
-  var b = el('buscarRenglon');
-  if(b) b.addEventListener('input', function(){
-    clearTimeout(window._brt);
-    window._brt = setTimeout(pintarTabla, 120);
+
+const $=id=>document.getElementById(id);
+const fmt=v=>v==null||isNaN(v)?'·':Math.round(v).toLocaleString('en-US');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const fL=t=>{ const d=new Date(t); return d.getDate()+'-'+MES[d.getMonth()]+'-'+d.getFullYear(); };
+const fC=t=>{ const d=new Date(t); return d.getDate()+'-'+MES[d.getMonth()]; };
+const nom=c=>(B.dic[c]&&B.dic[c][0])||c, vit=c=>!!(B.dic[c]&&B.dic[c][1]);
+const trn=c=>B.tr&&B.tr[c]?{q:B.tr[c][0],f:B.tr[c][1]}:null;
+const chipTr=(c,largo)=>{ const t=trn(c); if(!t) return ''; const hoy=Date.now(), atr=t.f&&dISO(t.f)<hoy; return ' <span class="chip tr'+(atr?' atr':'')+'" title="Orden de compra en camino a CEDIS Panamá'+(t.f?' · entrega '+t.f:'')+'">'+(largo?'OC en camino a CEDIS Panamá · '+fmt(t.q)+' u'+(t.f?' · entrega '+fC(dISO(t.f))+(atr?' (atrasada)':''):''):'OC en camino')+'</span>'; };
+const EST={rojo:{t:'Crítico',l:'Bajo el inventario crítico',bg:'#f6d5d1',c:'#c0392b',o:0},ambar:{t:'Pedir ya',l:'Cruzó la línea de pedido',bg:'#fbe8c8',c:'#b7791f',o:1},
+  pronto:{t:'Pedir pronto',l:'Llega a la línea en 7 días o menos',bg:'#f5ecc6',c:'#8a6d0b',o:2},verde:{t:'Con cobertura',l:'Sobre la línea de pedido',bg:'#d6efdc',c:'#2e7d32',o:3},sin:{t:'Sin datos',l:'Sin consumo, reporte ni F8',bg:'#e2e5e9',c:'#5f6b78',o:4}};
+const DIAG={confiable:['Señal confiable','Las tres señales coinciden: la demanda es clara.'],presion:['Efecto presión','Se pide más de lo que se consume (F8 > 1.5 × consumo). El F8 está inflado y no se usa solo.'],
+  truncado:['Consumo truncado','El renglón estuvo en cero más de la mitad del periodo: lo que bajó el saldo no refleja la demanda real, se usan las otras señales.'],
+  divergente:['Señales divergentes','Las señales no coinciden: se usa la mediana para no depender de una sola.'],una:['Una sola señal','Solo hay una fuente de demanda: úsela con cautela.'],sin:['Sin datos','No hay consumo, reporte ni F8 en 90 días.']};
+const st={ue:'',q:'',filtro:'',cod:'',p:{L:MODELO.L,cubrir:MODELO.CUBRIR,ns:null},sort:'impacto'};
+let FILAS=[];
+
+/* ---------- cálculo de una unidad ---------- */
+function calcUE(u,p){
+  const U=B.ues[u], F=U.fechas, last=F.length-1, fin=dISO(F[last]);
+  return U.f.map(([c,v])=>{
+    // Serie dispersa: solo guarda los días en que el saldo cambió → último valor conocido.
+    const saldo=v.length?v[v.length-1][1]:0;
+    let prevSaldo=null; for(let j=v.length-1;j>=0;j--){ if(v[j][0]<=last-1){ prevSaldo=v[j][1]; break; } }
+    const s=senales(v,F,U.cons?U.cons[c]:null,U.f8[c]), b=demandaBase(s);
+    const pe=pendienteF8(v,F,U.f8[c],p.L);
+    const pp={L:p.L,cubrir:p.cubrir,enCamino:pe.pend}, r=b.d?calcularRenglon(saldo,b.d,vit(c),s.cv,pp):{estado:'sin',pedir:0,ROP:0,SS:0,diasAROP:null};
+    r.pend=pe.pend; const aj=ajusteDe(u,c); if(aj){ r.pedirSug=r.pedir; r.pedir=aj.pedir; r.aj=aj; }
+    if(p.ns&&b.d){ const Z=zDe(p.ns); const dd=b.d/30, sd=((s.cv!=null?s.cv:MODELO.CV_DEF)*7*dd)/Math.sqrt(7); r.SS=Z*sd*Math.sqrt(p.L); r.ROP=dd*p.L+r.SS; r.OBJ=dd*(p.L+p.cubrir)+r.SS; r.pedir=Math.max(0,Math.ceil(r.OBJ-saldo)); r.Z=Z;
+      r.estado=saldo<=r.SS?'rojo':saldo<=r.ROP?'ambar':(saldo-r.ROP)/dd<=7?'pronto':'verde'; r.diasAROP=(saldo-r.ROP)/dd; }
+    // Nuevo: hoy cambió el saldo y con eso cruzó la línea de pedido.
+    const nuevo = (r.estado==='rojo'||r.estado==='ambar') && v.length && v[v.length-1][0]===last && prevSaldo!=null && prevSaldo>r.ROP;
+    return {c,v,saldo,prevSaldo,s,b,r,nuevo};
   });
-})();
-
-// Exportar pre-pedido a Excel (solo renglones que requieren reposición)
-// Excel institucional con logo, encabezado formateado y filas por color de estado.
-// Usa ExcelJS (soporta imágenes y estilos). El logo se toma del mismo que usa
-// el topbar de la app.
-var LOGO_URL = 'https://raw.githubusercontent.com/TorredeControlCSS/REPOSICION_UE_CSS/main/icons/icon-192.png';
-
-function exportarPrePedido(){
-  if (!UE_DATA || !FILAS_ACTUALES.length){ return; }
-  if (typeof ExcelJS === 'undefined'){ aviso(el('avisoGlobal'),'No se pudo cargar el generador de Excel. Revise su conexión e intente de nuevo.','err'); return; }
-  var ueNom = UE_DATA.ue || 'UE';
-  var corte = (INDICE && INDICE.fechas.length)? INDICE.fechas[INDICE.fechas.length-1] : '';
-
-  // filas que requieren acción (urgente o pronto)
-  var filas = FILAS_ACTUALES.filter(function(f){ return f.c.estado==='r' || f.c.estado==='a'; });
-  if (!filas.length){ aviso(el('avisoGlobal'),'No hay renglones que requieran reposición en esta unidad.','ok'); return; }
-
-  var AZUL='FF0C447C', AZUL2='FF1E5A9E', ROJO='FFC0392B', AMBAR='FFB8860B', GRIS='FFECECEC';
-  var wb = new ExcelJS.Workbook();
-  wb.creator='Torre de Control · CEDIS Panamá';
-  wb.created=new Date();
-  var ws = wb.addWorksheet('Pre-pedido', { views:[{showGridLines:false, state:'frozen', ySplit:8}] });
-
-  ws.columns = [
-    {width:11},{width:13},{width:50},{width:9},{width:12},{width:12},{width:14},{width:13},{width:22}
-  ];
-
-  // --- Encabezado institucional ---
-  ws.mergeCells('A1:B4');           // espacio para el logo
-  ws.mergeCells('C1:I1'); ws.getCell('C1').value='CAJA DE SEGURO SOCIAL';
-  ws.mergeCells('C2:I2'); ws.getCell('C2').value='Dirección Nacional de Logística · CEDIS Panamá · Torre de Control';
-  ws.mergeCells('C3:I3'); ws.getCell('C3').value='PRE-PEDIDO DE REPOSICIÓN';
-  ws.getCell('C1').font={bold:true,size:13,color:{argb:AZUL}};
-  ws.getCell('C2').font={size:9,color:{argb:'FF555555'}};
-  ws.getCell('C3').font={bold:true,size:12,color:{argb:AZUL2}};
-
-  ws.mergeCells('C4:I4');
-  ws.getCell('C4').value='Unidad Ejecutora: '+ueNom+'    ·    Corte: '+corte+'    ·    Generado: '+new Date().toLocaleString('es-PA');
-  ws.getCell('C4').font={size:9,italic:true,color:{argb:'FF555555'}};
-
-  // nota explicativa
-  ws.mergeCells('A6:I6');
-  ws.getCell('A6').value='Incluye los renglones que requieren reposición (en cero, por debajo del nivel de alerta o próximos a él), con la cantidad sugerida a pedir según el consumo de los últimos días. "Consumo real" es el movimiento de existencia medido; "Consumo reportado" es el que la unidad declara.';
-  ws.getCell('A6').font={size:9,color:{argb:'FF555555'}};
-  ws.getRow(6).height=32;
-  ws.getCell('A6').alignment={wrapText:true,vertical:'middle'};
-
-  // --- Cabecera de tabla (fila 8) ---
-  var H=['Estado','Código','Renglón','Vital','Existencia','Consumo real/mes','Consumo report./mes','Días a alerta','Cantidad a pedir'];
-  var hr=ws.getRow(8); H.forEach(function(t,i){ hr.getCell(i+1).value=t; });
-  hr.eachCell(function(cell){
-    cell.font={bold:true,size:10,color:{argb:'FFFFFFFF'}};
-    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:AZUL2}};
-    cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};
-    cell.border={bottom:{style:'thin',color:{argb:'FFA8A8A8'}}};
-  });
-  hr.height=26;
-
-  // --- Filas de datos ---
-  var r=9;
-  filas.forEach(function(f){
-    var c=f.c;
-    var esRojo = c.estado==='r';
-    var row=ws.getRow(r);
-    row.getCell(1).value = etiquetaEstado(c.estado);
-    row.getCell(2).value = f.cod;
-    row.getCell(3).value = f.nombre;
-    row.getCell(4).value = f.vital?'VITAL':'';
-    row.getCell(5).value = Math.round(c.inv);
-    row.getCell(6).value = c.consumo>0 ? Math.round(c.consumo*30) : 0;
-    var cr = consumoReportado(f.cod);
-    row.getCell(7).value = (cr!=null ? cr : '');
-    row.getCell(8).value = (c.diasReorden==null?'':Math.round(c.diasReorden));
-    row.getCell(9).value = Math.round(c.pedir);
-    // estilos
-    row.getCell(1).font={bold:true,size:9,color:{argb:esRojo?ROJO:AMBAR}};
-    row.getCell(4).font={bold:true,size:8,color:{argb:ROJO}};
-    row.getCell(4).alignment={horizontal:'center'};
-    [5,6,7,8,9].forEach(function(ci){ row.getCell(ci).alignment={horizontal:'right'}; row.getCell(ci).font={name:'Consolas',size:10}; });
-    row.getCell(9).font={name:'Consolas',size:10,bold:true,color:{argb:esRojo?ROJO:AMBAR}};
-    row.getCell(3).font={size:10};
-    // sombreado tenue por urgencia
-    if (esRojo){ row.eachCell(function(cell){ cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFDECEC'}}; }); }
-    row.eachCell(function(cell){ cell.border={bottom:{style:'hair',color:{argb:'FFDDDDDD'}}}; });
-    r++;
-  });
-
-  // total
-  ws.mergeCells('A'+(r+1)+':H'+(r+1));
-  ws.getCell('A'+(r+1)).value='Total de renglones a pedir:';
-  ws.getCell('A'+(r+1)).font={bold:true,size:10}; ws.getCell('A'+(r+1)).alignment={horizontal:'right'};
-  ws.getCell('I'+(r+1)).value=filas.length;
-  ws.getCell('I'+(r+1)).font={bold:true,size:11,color:{argb:AZUL2}}; ws.getCell('I'+(r+1)).alignment={horizontal:'right'};
-
-  var slug = ueNom.replace(/[^A-Za-z0-9]+/g,'_').slice(0,40);
-  var nombreArchivo = 'Pre-pedido_'+slug+'_'+corte+'.xlsx';
-
-  // intentar incrustar el logo; si falla, se genera igual sin él
-  var finalizar = function(){
-    wb.xlsx.writeBuffer().then(function(buf){
-      var blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-      var url=URL.createObjectURL(blob);
-      var a=document.createElement('a'); a.href=url; a.download=nombreArchivo;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
-  };
-  fetch(LOGO_URL).then(function(r){ return r.ok? r.arrayBuffer() : Promise.reject(); })
-    .then(function(ab){
-      var imgId=wb.addImage({ buffer:ab, extension:'png' });
-      ws.addImage(imgId, { tl:{col:0.3,row:0.3}, ext:{width:70,height:70} });
-      finalizar();
-    })
-    .catch(function(){ finalizar(); });   // sin logo si no carga
 }
-el('btnExcel').addEventListener('click', exportarPrePedido);
-['pLead','pCob','pSeg','pConsManual'].forEach(function(id){
-  el(id).addEventListener('input', function(){
-    if (el('vistaDetalle').classList.contains('on')) renderDetalle();
-  });
-});
+/* Ajustes del usuario al pre-pedido (se guardan en su navegador). */
+const AJK='rue_ajustes_v1';
+function ajustes(){ try{ return JSON.parse(localStorage.getItem(AJK)||'{}'); }catch(e){ return {}; } }
+function ajusteDe(u,c){ const a=ajustes(); return a[u]&&a[u][c]||null; }
+function guardarAjuste(u,c,aj){ const a=ajustes(); a[u]=a[u]||{}; if(aj) a[u][c]=aj; else delete a[u][c]; try{ localStorage.setItem(AJK,JSON.stringify(a)); }catch(e){} }
+function zDe(ns){ return {85:1.04,90:1.28,95:1.65,97.5:1.96,99:2.33}[ns]||1.28; }
 
-// ====== TUTORIAL GUIADO ======
-// Pasos: cada uno resalta un elemento y muestra una explicación. Algunos
-// requieren tener una UE abierta y un renglón en detalle; el tour los prepara.
-var TOUR_STEPS = [
-  { sel:'#selUE', tit:'1. Elija su unidad', txt:'Aquí selecciona su Unidad Ejecutora (su policlínica u hospital). Al elegirla, la calculadora carga todos sus medicamentos e insumos.' },
-  { sel:'#kpisUE', tit:'2. Resumen de su unidad', txt:'Estas tarjetas le dicen, de un vistazo, cuántos renglones están en cero, cuántos debe pedir ya, cuántos pronto, y cuántos tienen cobertura suficiente.', prep:'lista' },
-  { sel:'#buscarRenglon', tit:'3. Busque un renglón', txt:'Escriba el nombre o el código de un medicamento para encontrarlo rápido, sin recorrer toda la lista.', prep:'lista' },
-  { sel:'#tablaLista', tit:'4. La lista por urgencia', txt:'Sus renglones aparecen ordenados por urgencia: primero los que están en cero. El semáforo de color y el veredicto le dicen qué hacer con cada uno. Haga clic en cualquier fila para ver su detalle.', prep:'lista' },
-  { sel:'#detVeredicto', tit:'5. El diagnóstico', txt:'Al abrir un renglón, esta franja le dice si necesita pedir y —cuando está en riesgo— dónde está el problema: si su CEDIS debe despacharle, si el central debe surtir al regional, o si es asunto de compras.', prep:'detalle' },
-  { sel:'.params', tit:'6. Ajustes (opcional)', txt:'Estos valores ya vienen con un cálculo prudente. Solo cámbielos si conoce datos específicos de su unidad. Pase el mouse sobre la (i) de cada uno para saber qué significa.', prep:'detalle' },
-  { sel:'.chart-box', tit:'7. La curva de existencia', txt:'Muestra cómo bajó su existencia día por día. La línea morada es lo que tiene su CEDIS. Las barras marcan las Formas 8 que su unidad solicitó: así ve si pidió a tiempo frente a la caída.', prep:'detalle' },
-  { sel:'#btnExcel', tit:'8. Descargue su pre-pedido', txt:'Genera un Excel con los renglones que requieren reposición y la cantidad sugerida, listo para tramitar su pedido.', prep:'lista' }
+/* ---------- inicio (sin unidad) ---------- */
+function inicio(){
+  $('campoBus').style.display='none'; $('btnInicio').style.display='none';
+  try{ history.replaceState(null,'',location.pathname); }catch(e){}
+  const grupos={'CEDIS PANAMA':[],'CEDIS DIVISA':[],'CEDIS CHIRIQUI':[]};
+  const lista=B.res&&B.res.ues? B.res.ues : B.idx.ues.map(x=>({ue:x.ue,cedis:x.cedis,tot:x.renglones,r:null}));
+  lista.forEach(x=>(grupos[x.cedis]||(grupos[x.cedis]=[])).push(x));
+  const NOM={'CEDIS PANAMA':'CEDIS Panamá','CEDIS DIVISA':'CEDIS Divisa','CEDIS CHIRIQUI':'CEDIS Chiriquí'};
+  let h='<div class="panel"><div class="nota" style="margin-bottom:8px">Elija su unidad en la lista de arriba o tóquela aquí. Las unidades están agrupadas por el CEDIS que las abastece y ordenadas por renglones que deben pedir.'+(B.res?'':' (El resumen de estados se está generando; mientras tanto se muestran solo los nombres.)')+'</div><div class="cedcols">';
+  Object.keys(grupos).forEach(ce=>{ const g=grupos[ce].sort((x,y)=>((y.r||0)+(y.a||0))-((x.r||0)+(x.a||0))||x.ue.localeCompare(y.ue)); const tr=g.reduce((s,x)=>s+(x.r||0)+(x.a||0),0);
+    h+='<div class="cedcol"><h3>'+(NOM[ce]||ce)+'</h3><div class="nota">'+g.length+' unidad'+(g.length===1?'':'es')+(B.res?' · '+fmt(tr)+' renglones por pedir':'')+'</div>'+
+      g.map(x=>{ const t=Math.max(1,x.tot||1); return '<button class="uerow" data-u="'+esc(x.ue)+'"><span><b style="color:#1E5A9E">'+esc(x.ue)+'</b></span>'+
+        (x.r==null?'<span></span><span></span>':'<span class="mini" title="Críticos '+x.r+' · Pedir ya '+x.a+' · Pronto '+x.p+' · Con cobertura '+x.v+'"><i style="width:'+x.r/t*100+'%;background:#c0392b"></i><i style="width:'+x.a/t*100+'%;background:#b7791f"></i><i style="width:'+x.p/t*100+'%;background:#c9a227"></i><i style="width:'+x.v/t*100+'%;background:#2e7d32"></i></span><span class="num" style="text-align:right;color:#c0392b;font-weight:700">'+(x.r+x.a)+'</span>')+'</button>'; }).join('')+'</div>'; });
+  h+='</div><div class="leyenda" style="margin-top:8px"><span><i style="background:#c0392b"></i>Críticos</span><span><i style="background:#b7791f"></i>Pedir ya</span><span><i style="background:#c9a227"></i>Pedir pronto</span><span><i style="background:#2e7d32"></i>Con cobertura</span><span>· la cifra a la derecha: renglones que deben pedir hoy</span></div></div>';
+  $('main').innerHTML=h;
+  $('main').querySelectorAll('.uerow').forEach(r=>r.onclick=()=>abrirUE(r.dataset.u));
+}
+/* ---------- vista de la unidad ---------- */
+async function abrirUE(u,cod){
+  st.ue=u; st.cod=''; st.filtro=''; $('campoBus').style.display=''; $('btnInicio').style.display=''; $('selUE').value=u;
+  $('main').innerHTML='<div class="panel nota">Cargando los datos de '+esc(u)+'…</div>';
+  try{ await cargarUEDatos(u); }catch(e){ $('main').innerHTML='<div class="panel">No se pudieron cargar los datos de la unidad ('+esc(e.message)+'). <button class="btn" id="reUE">Reintentar</button></div>'; $('reUE').onclick=()=>abrirUE(u,cod); return; }
+  if(st.ue!==u) return;
+  try{ history.replaceState(null,'','?ue='+encodeURIComponent(u)); }catch(e){}
+  if(cod) st.cod=cod; FILAS=calcUE(u,st.p); vistaUE(); }
+function vistaUE(){
+  if(st.cod) return vistaRenglon();
+  const q=st.q.toLowerCase();
+  let f=FILAS.filter(x=>(!st.filtro||x.r.estado===st.filtro)&&(!q||x.c.indexOf(q)>=0||nom(x.c).toLowerCase().indexOf(q)>=0));
+  f.sort((a,b)=>EST[a.r.estado].o-EST[b.r.estado].o || b.r.pedir-a.r.pedir);
+  const cnt={}; FILAS.forEach(x=>cnt[x.r.estado]=(cnt[x.r.estado]||0)+1); const nNuevos=FILAS.filter(x=>x.nuevo).length;
+  let h='<div class="kpis">'+['rojo','ambar','pronto','verde','sin'].map(k=>'<button class="kpi'+(st.filtro===k?' on':'')+'" data-k="'+k+'" style="--bg:'+EST[k].bg+'"><span class="v" style="color:'+EST[k].c+'">'+fmt(cnt[k]||0)+'</span><span class="l">'+EST[k].t+' · '+EST[k].l+'</span></button>').join('')+
+    '<button class="btn" id="btnCorreo" style="flex:0 0 auto">Vista previa del correo de hoy'+(nNuevos?' <span class="chip nuevo">'+nNuevos+' nuevos</span>':'')+'</button><button class="btn verde" id="btnPre" style="flex:0 0 auto">Descargar pre-pedido</button></div>';
+  h+='<div class="tw"><table><thead><tr><th>Estado</th><th>Renglón</th><th class="n">Saldo hoy<small>unidades</small></th><th class="n">Demanda / mes<small>unidades · base del cálculo</small></th><th>Calidad de la señal<small>diagnóstico</small></th><th class="n">Línea de pedido<small>unidades</small></th><th class="n">Días para llegar a la línea<small>días</small></th><th class="n">Por recibir<small>F8 recientes, unidades</small></th><th class="n">Pedir<small>unidades</small></th></tr></thead><tbody>';
+  f.slice(0,400).forEach(x=>{ const e=EST[x.r.estado];
+    h+='<tr data-c="'+x.c+'" tabindex="0"><td><span class="tag t-'+x.r.estado+'">'+e.t+'</span>'+(x.nuevo?' <span class="chip nuevo" title="Cruzó la línea desde la carga anterior">nuevo hoy</span>':'')+'</td>'+
+      '<td><b class="mono">'+x.c+'</b>'+(vit(x.c)?' <span class="chip vital">VITAL</span>':'')+chipTr(x.c)+'<br><span class="desc">'+esc(nom(x.c).slice(0,70))+'</span></td>'+
+      '<td class="n num">'+fmt(x.saldo)+'</td><td class="n num">'+(x.b.d?fmt(x.b.d):'·')+'</td><td><span class="chip '+x.b.diag+'">'+DIAG[x.b.diag][0]+'</span></td>'+
+      '<td class="n num">'+(x.b.d?fmt(x.r.ROP):'·')+'</td><td class="n num">'+(x.r.diasAROP==null?'·':x.r.diasAROP<=0?'<b style="color:#c0392b">ya cruzó</b>':Math.round(x.r.diasAROP))+'</td>'+
+      '<td class="n num">'+(x.r.pend>0?fmt(x.r.pend):'·')+'</td>'+
+      '<td class="n num"'+(x.r.pedir>0?' style="font-weight:700;color:#0C447C"':'')+'>'+((x.r.pedir>0&&(x.r.estado!=='verde'||x.r.aj))?fmt(x.r.pedir):'·')+(x.r.aj?' <span class="chip" title="Cantidad ajustada por el usuario">ajustado</span>':'')+'</td></tr>'; });
+  h+='</tbody></table></div><div class="nota" style="margin-top:4px">'+(f.length>400?'Mostrando 400 de '+fmt(f.length)+'. ':fmt(f.length)+' renglones. ')+'Ordenados por urgencia y, dentro de cada estado, por la cantidad a pedir. Toque un renglón para abrir la calculadora.</div>';
+  $('main').innerHTML='<div class="panel">'+h+'</div>';
+  $('main').querySelectorAll('.kpi').forEach(b=>b.onclick=()=>{ st.filtro=st.filtro===b.dataset.k?'':b.dataset.k; vistaUE(); });
+  $('main').querySelectorAll('tbody tr').forEach(tr=>{ const go=()=>{ st.cod=tr.dataset.c; vistaUE(); window.scrollTo(0,0); }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
+  $('btnCorreo').onclick=correoPreview; $('btnPre').onclick=()=>prePedido(st.ue);
+}
+let _xls=null;
+function libXLS(){ if(window.ExcelJS) return Promise.resolve(); if(_xls) return _xls; _xls=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=res; s.onerror=()=>{ _xls=null; rej(new Error('no se pudo cargar ExcelJS')); }; document.head.appendChild(s); }); return _xls; }
+function filasPre(u){ return (u===st.ue?FILAS:calcUE(u,st.p)).filter(x=>(['rojo','ambar','pronto'].indexOf(x.r.estado)>=0||x.r.aj)&&x.r.pedir>0).sort((a,b)=>EST[a.r.estado].o-EST[b.r.estado].o||b.r.pedir-a.r.pedir); }
+async function prePedido(u){
+  try{ await libXLS(); }catch(e){ aviso('No se pudo cargar el generador de Excel.'); return; }
+  const f=filasPre(u), fecha=B.ues[u].fechas.slice(-1)[0];
+  const wb=new ExcelJS.Workbook(), ws=wb.addWorksheet('Pre-pedido');
+  ws.mergeCells('A1:J1'); ws.getCell('A1').value='CAJA DE SEGURO SOCIAL · PRE-PEDIDO DE REPOSICIÓN'; ws.getCell('A1').font={bold:true,size:13,color:{argb:'FF0C447C'}};
+  const nAj=f.filter(x=>x.r.aj).length;
+  ws.mergeCells('A2:J2'); ws.getCell('A2').value=u+' · saldos al '+fecha+' · sugerido con 20 días de entrega y 30 de cobertura'+(nAj?' · incluye '+nAj+' cantidades ajustadas por el usuario':''); ws.getCell('A2').font={size:10,color:{argb:'FF555555'}};
+  const cab=['Renglón','Descripción','Vital','Estado','Saldo','Demanda / mes','Línea de pedido','Por recibir (F8 recientes)','Cantidad a pedir','Origen de la cantidad'];
+  ws.addRow([]); const hr=ws.addRow(cab); hr.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A9E'}}; c.alignment={wrapText:true,vertical:'middle'}; });
+  f.forEach(x=>ws.addRow([x.c,nom(x.c),vit(x.c)?'Sí':'',EST[x.r.estado].t,Math.round(x.saldo),Math.round(x.b.d),Math.round(x.r.ROP),Math.round(x.r.pend||0),x.r.pedir,x.r.aj?'Ajustado por el usuario ('+x.r.aj.L+' d entrega · '+x.r.aj.cubrir+' d · '+x.r.aj.ns+'%) el '+x.r.aj.fecha:'Sugerido']));
+  [12,55,7,14,12,14,14,16,14,40].forEach((w,i)=>ws.getColumn(i+1).width=w); [5,6,7,8,9].forEach(i=>ws.getColumn(i).numFmt='#,##0');
+  ws.views=[{state:'frozen',ySplit:4}]; ws.autoFilter={from:'A4',to:'J4'};
+  const buf=await wb.xlsx.writeBuffer(), a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+  a.download='PrePedido_'+u.replace(/[^A-Za-z0-9]+/g,'_')+'_'+fecha+'.xlsx'; document.body.appendChild(a); a.click(); a.remove();
+}
+function aviso(m){ const d=document.createElement('div'); d.textContent=m; d.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#263238;color:#fff;padding:8px 14px;font-size:12px;z-index:60'; document.body.appendChild(d); setTimeout(()=>d.remove(),3200); }
+/* ---------- calculadora de un renglón ---------- */
+let RX=null;
+function vistaRenglon(){
+  const x=FILAS.find(f=>f.c===st.cod); if(!x){ st.cod=''; return vistaUE(); }
+  RX=x; RX.p={L:MODELO.L,cubrir:MODELO.CUBRIR};   // simulación local: no cambia la lista ni el correo
+  const U=B.ues[st.ue];
+  const nsDef=vit(x.c)?95:90; if(!RX.ns) RX.ns=nsDef;
+  const ced=B.ced[x.c]||[null,null,null], ci={'CEDIS PANAMA':0,'CEDIS DIVISA':1,'CEDIS CHIRIQUI':2}[U.cedis]||0;
+  let h='<div class="panel"><div class="cab"><h2><span class="mono">'+x.c+'</span> · '+esc(nom(x.c))+'</h2>'+(vit(x.c)?'<span class="chip vital">VITAL</span>':'')+'<span id="rxTag"></span>'+chipTr(x.c,true)+'<button class="btn" id="btnImg" style="margin-left:auto;min-height:26px;padding:2px 10px">Descargar imagen</button><button class="btn-volver" id="btnVolver" style="margin-left:0">‹ Volver a la lista</button></div>'+
+   '<div class="hoy" id="hoyRes"></div>'+
+   '<div class="calc"><div id="colIzq">'+
+   '<div class="paso"><h3><span>1</span>Consumo mensual de su unidad</h3><div id="p1"></div></div>'+
+   '<div class="paso"><h3><span>2</span>Línea de pedido</h3>'+
+     ctl('inL','Tiempo de entrega',5,60,1,RX.p.L,'L')+ctl('inC','Días a cubrir',15,90,5,RX.p.cubrir,'C')+ctl('inN','Nivel de servicio',0,4,1,[85,90,95,97.5,99].indexOf(RX.ns),'N')+
+     '<div class="res" id="p2"></div></div>'+
+   '<div class="nota">Le surte '+esc(U.cedis)+': hoy tiene <b class="num">'+fmt(ced[ci])+'</b> unidades'+(ci?' · CEDIS Panamá <b class="num">'+fmt(ced[0])+'</b>':'')+'. Los controles solo simulan este renglón.</div>'+
+   '</div><div><div id="graf"></div><div class="leyenda"><span>Pase el cursor sobre la curva para ver cada día ·</span><span><i style="background:#1E5A9E"></i>Saldo</span><span><i style="background:#9aa3ad"></i>Si no pide</span><span><i style="background:#2e7d32"></i>Si pide hoy</span><span><i style="background:#fbe8c8"></i>Zona para pedir</span><span><i style="background:#f6d5d1"></i>Bajo el inventario crítico</span><span><i style="background:#c0392b;width:6px"></i>F8 urgencia</span><span><i style="background:#1E5A9E;width:6px"></i>F8 mensual</span></div></div></div></div>';
+  $('main').innerHTML=h;
+  $('btnVolver').onclick=()=>{ st.cod=''; vistaUE(); };
+  $('btnImg').onclick=()=>descargarImagen(x.c);
+  $('main').querySelectorAll('.q').forEach(q=>q.onclick=()=>ayudaCorta(q.dataset.h));
+  ['inL','inC','inN'].forEach(id=>$(id).oninput=()=>{ RX.p.L=+$('inL').value; RX.p.cubrir=+$('inC').value; RX.ns=[85,90,95,97.5,99][+$('inN').value]; actualizar(); });
+  actualizar();
+}
+const AYC={L:['Tiempo de entrega','Días que tarda en llegar un pedido desde que se solicita. Por defecto, 20 días.'],
+  C:['Días a cubrir','Días de consumo que quiere tener cubiertos después de recibir el pedido. Por defecto, 30 días.'],
+  O:['Consumo observado','Lo que bajó el saldo de su unidad en los últimos 90 días, contando solo los días en que tuvo existencia. Si estuvo en cero más de la mitad del periodo, no se usa (consumo truncado).'],
+  R:['Consumo reportado','Lo que su unidad declara consumir al mes en el reporte de consumos.'],
+  F:['Formas 8','Lo que su unidad pidió en Formas 8 (urgencia y mensual), promedio mensual de los últimos 90 días.'],
+  D:['Demanda usada','La mediana de las señales disponibles: si una está inflada o truncada, no arrastra el resultado. Con esta demanda se calcula la línea de pedido.'],
+  N:['Nivel de servicio','Probabilidad de no quedarse sin inventario mientras llega el pedido. A mayor nivel, más inventario crítico. Por defecto: 95% para vitales, 90% para el resto.']};
+function ctl(id,lbl,mn,mx,stp,val,k){ return '<div class="ctl"><label for="'+id+'">'+lbl+' <button class="q" data-h="'+k+'" aria-label="Qué es '+lbl+'">?</button></label><input type="range" id="'+id+'" min="'+mn+'" max="'+mx+'" step="'+stp+'" value="'+val+'"><b id="v'+id.slice(2)+'"></b></div>'; }
+function ayudaCorta(k){ $('modalC').innerHTML='<div class="top"><h2>'+AYC[k][0]+'</h2><button class="btn" id="cerrarM">Cerrar</button></div><p style="font-size:13.5px;max-width:520px">'+AYC[k][1]+'</p>'; $('modalC').style.maxWidth='560px'; $('modal').classList.add('open'); $('cerrarM').onclick=()=>{ $('modal').classList.remove('open'); $('modalC').style.maxWidth=''; }; }
+let _h2c=null;
+function libImg(){ if(window.html2canvas) return Promise.resolve(); if(_h2c) return _h2c; _h2c=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=res; s.onerror=()=>{ _h2c=null; rej(new Error('no se pudo cargar')); }; document.head.appendChild(s); }); return _h2c; }
+/* Toma la vista del renglón tal como se ve (con la simulación del usuario) y la descarga en PNG. */
+async function descargarImagen(cod){
+  const btn=$('btnImg'); btn.disabled=true; btn.textContent='Preparando…';
+  try{ await libImg();
+    const panel=$('main').querySelector('.panel'), tip=$('gTip'); if(tip) tip.style.display='none';
+    const pie=document.createElement('div'); pie.className='nota'; pie.style.cssText='margin-top:6px;text-align:right';
+    pie.textContent=st.ue+' · saldos al '+fL(dISO(B.ues[st.ue].fechas.slice(-1)[0]))+' · Calculadora de Reposición · CSS / DINALOG';
+    panel.appendChild(pie);
+    const cv=await html2canvas(panel,{scale:2,backgroundColor:'#ffffff',ignoreElements:el=>el.id==='btnImg'||el.id==='btnVolver'||el.classList&&el.classList.contains('mini-btn')});
+    pie.remove();
+    const a=document.createElement('a'); a.href=cv.toDataURL('image/png'); a.download='Calculadora_'+cod+'_'+st.ue.replace(/[^A-Za-z0-9]+/g,'_')+'.png'; document.body.appendChild(a); a.click(); a.remove();
+  }catch(e){ aviso('No se pudo generar la imagen.'); }
+  btn.disabled=false; btn.textContent='Descargar imagen';
+}
+function actualizar(){
+  const x=RX, s=x.s, b=x.b, ns=RX.ns;
+  $('vL').textContent=RX.p.L+' d'; $('vC').textContent=RX.p.cubrir+' d'; $('vN').textContent=ns+'%';
+  // paso 1: las tres señales
+  const vals=[['Consumo observado'+(s.truncado?' (truncado)':''),s.truncado?null:s.dObs,'O'],['Consumo reportado',s.dRep,'R'],['Formas 8',s.dReq,'F']];
+  const mx=Math.max(1,...vals.map(v=>v[1]||0),b.d||0);
+  let h1=vals.map(v=>'<div class="sen"><span>'+v[0]+' <button class="q" data-h="'+v[2]+'" aria-label="Qué es '+v[0]+'">?</button></span><div class="pista">'+(v[1]?'<i style="width:'+(v[1]/mx*100)+'%"></i>':'')+'</div><span class="val">'+(v[1]?fmt(v[1]):'sin dato')+'</span></div>').join('');
+  h1+='<div class="sen base"><span class="base-lbl">Demanda usada <button class="q" data-h="D" aria-label="Qué es la demanda usada">?</button></span><div class="pista"><i style="width:'+((b.d||0)/mx*100)+'%"></i></div><span class="val base-lbl">'+(b.d?fmt(b.d):'·')+'</span></div>';
+  h1+='<div class="nota" style="margin-top:4px"><span class="chip '+b.diag+'">'+DIAG[b.diag][0]+'</span> '+DIAG[b.diag][1]+'</div>';
+  $('p1').innerHTML=h1; $('p1').querySelectorAll('.q').forEach(q=>q.onclick=()=>ayudaCorta(q.dataset.h));
+  if(!b.d){ $('p2').innerHTML=''; $('hoyRes').innerHTML='<div class="frase" style="grid-column:1/-1">Sin demanda registrada no se puede calcular un pedido.</div>'; $('graf').innerHTML=''; $('rxTag').innerHTML='<span class="tag t-sin">Sin datos</span>'; return; }
+  const dd=b.d/30, Z=zDe(ns), cvu=s.cv!=null?s.cv:MODELO.CV_DEF, sd=(cvu*7*dd)/Math.sqrt(7), L=RX.p.L;
+  const pe=pendienteF8(x.v,B.ues[st.ue].fechas,B.ues[st.ue].f8[x.c],L);
+  const SS=Z*sd*Math.sqrt(L), ROP=dd*L+SS, OBJ=dd*(L+RX.p.cubrir)+SS, pedir=Math.max(0,Math.ceil(OBJ-x.saldo-pe.pend));
+  RX.calc={L,cubrir:RX.p.cubrir,ns,pedir};
+  const est=x.saldo<=SS?'rojo':x.saldo<=ROP?'ambar':(x.saldo-ROP)/dd<=7?'pronto':'verde';
+  $('rxTag').innerHTML='<span class="tag t-'+est+'">'+EST[est].t+'</span>';
+  $('p2').innerHTML='<div style="--bg:#fbe8c8"><span class="l">Línea de pedido</span><span class="v">'+fmt(ROP)+'</span><span class="l">demanda × '+L+' d + inventario crítico</span></div>'+
+    '<div style="--bg:#f6d5d1"><span class="l">Inventario crítico</span><span class="v">'+fmt(SS)+'</span><span class="l">Z '+Z.toFixed(2)+' · variabilidad '+(s.cv!=null?'CV '+s.cv.toFixed(2):'estimada')+'</span></div>'+
+    '<div style="--bg:#d6efdc"><span class="l">Nivel objetivo</span><span class="v">'+fmt(OBJ)+'</span><span class="l">cubre '+L+' + '+RX.p.cubrir+' días</span></div>';
+  const p2res=$('p2').innerHTML;
+  const hoy=dISO(B.ues[st.ue].fechas.slice(-1)[0]), dLlega=hoy+L*DIA;
+  const alLlegar=x.saldo-dd*L, diasCero=alLlegar<0?Math.round(-alLlegar/dd):0;
+  const cruza=x.saldo>ROP?hoy+Math.round((x.saldo-ROP)/dd)*DIA:null;
+  const hasta=pedir>0? hoy+Math.round((Math.max(0,alLlegar)+pedir)/dd)*DIA+L*DIA : null;
+  const accion=(est==='rojo'||est==='ambar');
+  const alcanza=Math.round(x.saldo/dd), sinInv=Math.max(0,L-alcanza);
+  const frase=accion?'Tiene <b class="num">'+fmt(x.saldo)+'</b> unidades en inventario, por debajo de su línea de pedido (<b class="num">'+fmt(ROP)+'</b> unidades): <b>pida hoy</b>.'+(sinInv?' Su inventario alcanza para unos <b>'+alcanza+' días</b> y el pedido tarda '+L+': quedaría unos <b>'+sinInv+' días</b> sin inventario mientras llega.':'')
+    :'Tiene <b class="num">'+fmt(x.saldo)+'</b> unidades en inventario, por encima de su línea de pedido (<b class="num">'+fmt(ROP)+'</b> unidades). La alcanzará alrededor del <b>'+fL(cruza)+'</b>: ese día debe pedir.';
+  const aj=ajusteDe(st.ue,x.c), dist=(L!==MODELO.L||RX.p.cubrir!==MODELO.CUBRIR||ns!==(vit(x.c)?95:90));
+  const puedeGuardar=(dist||aj)&&!(aj&&aj.pedir===pedir);
+  const cel=(lbl,v,u,bg,extra)=>'<div class="cel"'+(bg?' style="--bg:'+bg+'"':'')+'><span class="l"><span>'+lbl+'</span>'+(extra||'')+'</span><span><span class="v">'+v+'</span><span class="u">'+u+'</span></span></div>';
+  const pre=aj? cel('Pre-pedido',fmt(aj.pedir),'ajustado','#d7e5f4','<button class="mini-btn" id="btnRest" title="Ajustado el '+aj.fecha+'. Volver a la cantidad sugerida">Restablecer</button>')
+               : cel('Pre-pedido','Sugerido','',null,'');
+  const guardar=puedeGuardar?'<button class="mini-btn" id="btnGuardar" title="Guardar esta cantidad en su pre-pedido">Guardar</button>':'';
+  $('hoyRes').innerHTML='<div class="frase '+(est==='rojo'?'rojo':est==='ambar'?'ambar':'verde')+'">'+frase+'</div><div class="tarj">'+
+    (accion? cel('Pedir hoy',fmt(pedir),'unidades','#d7e5f4',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+cel('Llegaría',fC(dLlega),'en '+L+' días')
+            : cel('Pedir el',fC(cruza),'hoy no',  '#d6efdc',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+cel('Línea de pedido',fmt(ROP),'unidades'))+
+    cel('Le alcanza hasta',accion?fC(hasta):fC(hoy+Math.round(x.saldo/dd)*DIA),accion?'con pedido':'sin pedir')+pre+'</div>';
+  if($('qRec')) $('qRec').onclick=()=>{ AYC.PR=['Por recibir','Lo que ya pidió en Formas 8 en los últimos '+L+' días y todavía no ha entrado a su saldo. Pidió '+fmt(pe.pedido)+'; desde entonces entraron '+fmt(pe.recibido)+'; quedan '+fmt(pe.pend)+' por recibir. Se descuentan del pedido sugerido para no pedir dos veces.']; ayudaCorta('PR'); };
+  if($('btnGuardar')) $('btnGuardar').onclick=()=>{ guardarAjuste(st.ue,x.c,{pedir,L,cubrir:RX.p.cubrir,ns,fecha:fC(Date.now())}); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Guardado: su pre-pedido lleva '+fmt(pedir)+' unidades de este renglón.'); };
+  if($('btnRest')) $('btnRest').onclick=()=>{ guardarAjuste(st.ue,x.c,null); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Listo: vuelve a la cantidad sugerida.'); };
+  const kk={dd,SS,ROP,OBJ,pedir,L,hoy,est};
+  $('graf').innerHTML=grafico(x,kk); activarVentana();
+  // Alto de la curva = alto de la columna izquierda (sin espacio vacío).
+  const izq=$('colIzq'), g=$('graf'), ley=g&&g.nextElementSibling;
+  if(izq&&g&&g.clientWidth&&izq.offsetHeight){ const nh=Math.max(300,Math.min(640,Math.round(760*(izq.offsetHeight-(ley?ley.offsetHeight:0)-6)/g.clientWidth)));
+    if(Math.abs(nh-GH)>6){ GH=nh; $('graf').innerHTML=grafico(x,kk); activarVentana(); } }
+}
+let GX=null, GH=380;
+function grafico(x,k){
+  const U=B.ues[st.ue], F=U.fechas, W=760,H=GH,ml=60,mr=16,mt=16,mb=34;
+  const t0=dISO(F[0]), t1=k.hoy+75*DIA;
+  const pts=x.v.map(([i,v])=>[dISO(F[i]),v]);
+  const proySin=[], proyCon=[], conPedido=k.pedir>0&&k.est!=='verde';
+  for(let d=0;d<=75;d++){ const t=k.hoy+d*DIA; proySin.push([t,Math.max(0,x.saldo-k.dd*d)]); let vv=x.saldo-k.dd*d; if(d>=k.L&&conPedido) vv+=k.pedir; proyCon.push([t,Math.max(0,vv)]); }
+  const ev=(U.f8[x.c]||[]).filter(e=>dISO(e[0])>=t0);
+  // Una sola escala: el saldo y lo pedido en Formas 8 en las mismas unidades.
+  const ymax=Math.max(k.OBJ,...pts.map(p=>p[1]),...proyCon.map(p=>p[1]),...ev.map(e=>(e[1]||0)+(e[2]||0)))*1.08||1;
+  const X=t=>ml+(t-t0)/(t1-t0)*(W-ml-mr), Y=v=>mt+(1-v/ymax)*(H-mt-mb), Y2=Y;
+  const path=(a,step)=>a.map((p,i)=>(i?(step?'H'+X(p[0]).toFixed(1)+' V':'L'+X(p[0]).toFixed(1)+' '):'M'+X(p[0]).toFixed(1)+' ')+Y(p[1]).toFixed(1)).join(' ');
+  const k1=v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?Math.round(v/1e3)+'k':Math.round(v);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="Curva de inventario" id="svgG">';
+  s+='<rect x="'+ml+'" y="'+Y(ymax)+'" width="'+(W-ml-mr)+'" height="'+(Y(k.ROP)-Y(ymax))+'" fill="#d6efdc" opacity=".45"/>';
+  s+='<rect x="'+ml+'" y="'+Y(k.ROP)+'" width="'+(W-ml-mr)+'" height="'+(Y(k.SS)-Y(k.ROP))+'" fill="#fbe8c8" opacity=".8"/>';
+  s+='<rect x="'+ml+'" y="'+Y(k.SS)+'" width="'+(W-ml-mr)+'" height="'+(Y(0)-Y(k.SS))+'" fill="#f6d5d1" opacity=".8"/>';
+  [0,.25,.5,.75,1].forEach(f=>{ s+='<text x="'+(ml-6)+'" y="'+(Y(ymax*f)+4)+'" text-anchor="end" font-size="10.5" font-family="Consolas" fill="#1E5A9E">'+k1(ymax*f)+'</text>';
+  });
+  s+='<text x="14" y="'+(mt+(H-mt-mb)/2)+'" transform="rotate(-90 14 '+(mt+(H-mt-mb)/2)+')" text-anchor="middle" font-size="10.5" fill="#1E5A9E">Unidades</text>';
+  for(let t=t0;t<=t1;t+=15*DIA){ s+='<text x="'+X(t)+'" y="'+(H-12)+'" text-anchor="middle" font-size="10.5" fill="#5f6b78">'+fC(t)+'</text>'; }
+  ev.forEach(([f,u,m])=>{ const t=dISO(f), xx=X(t);
+    if(u) s+='<rect x="'+(xx-3)+'" y="'+Y2(u)+'" width="6" height="'+(Y2(0)-Y2(u))+'" fill="#c0392b" opacity=".75"/>';
+    if(m) s+='<rect x="'+(xx-3)+'" y="'+Y2((u||0)+m)+'" width="6" height="'+(Y2(0)-Y2(m))+'" fill="#1E5A9E" opacity=".6"/>'; });
+  const linea=(v,col,dash,lbl)=>'<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="'+col+'" stroke-width="1.6" '+(dash?'stroke-dasharray="6 4"':'')+'/><text x="'+(W-mr-4)+'" y="'+(Y(v)-4)+'" text-anchor="end" font-size="11" font-weight="700" fill="'+col+'" paint-order="stroke" stroke="#fff" stroke-width="3">'+lbl+' '+fmt(v)+'</text>';
+  s+=linea(k.OBJ,'#2e7d32',true,'Nivel objetivo')+linea(k.ROP,'#b7791f',false,'Línea de pedido')+linea(k.SS,'#c0392b',true,'Inventario crítico');
+  s+='<path d="'+path(pts,true)+'" fill="none" stroke="#1E5A9E" stroke-width="2.4"/>';
+  s+='<path d="'+path(proySin)+'" fill="none" stroke="#9aa3ad" stroke-width="2" stroke-dasharray="5 4"/>';
+  if(conPedido) s+='<path d="'+path(proyCon)+'" fill="none" stroke="#2e7d32" stroke-width="2.2" stroke-dasharray="7 3"/><circle cx="'+X(k.hoy+k.L*DIA)+'" cy="'+Y(proyCon[k.L][1])+'" r="4.5" fill="#2e7d32"/><text x="'+(X(k.hoy+k.L*DIA)+6)+'" y="'+(Y(proyCon[k.L][1])-6)+'" font-size="11" fill="#2e7d32" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">llega el pedido</text>';
+  s+='<line x1="'+X(k.hoy)+'" x2="'+X(k.hoy)+'" y1="'+mt+'" y2="'+Y(0)+'" stroke="#0C447C" stroke-width="1.4"/><text x="'+(X(k.hoy)+4)+'" y="'+(mt+11)+'" font-size="11" fill="#0C447C" font-weight="700">Hoy</text>';
+  s+='<line id="gCur" x1="0" x2="0" y1="'+mt+'" y2="'+Y(0)+'" stroke="#0C447C" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>';
+  s+='<rect id="gHit" x="'+ml+'" y="'+mt+'" width="'+(W-ml-mr)+'" height="'+(H-mt-mb)+'" fill="transparent" style="cursor:crosshair"/></svg><div class="tip" id="gTip"></div>';
+  GX={x,k,t0,t1,W,ml,mr,pts,proySin,proyCon,conPedido,ev,X};
+  return s;
+}
+function saldoEn(t){ let v=null; for(const p of GX.pts){ if(p[0]<=t) v=p[1]; else break; } return v; }
+function activarVentana(){
+  const svg=$('svgG'), hit=$('gHit'), tip=$('gTip'), cur=$('gCur'); if(!svg) return;
+  const mover=e=>{ const r=svg.getBoundingClientRect(); if(!r.width) return; const vx=(e.clientX-r.left)/r.width*GX.W;
+    const t=GX.t0+(vx-GX.ml)/(GX.W-GX.ml-GX.mr)*(GX.t1-GX.t0), dia=Math.round((t-GX.t0)/DIA)*DIA+GX.t0;
+    if(dia<GX.t0||dia>GX.t1){ tip.style.display='none'; cur.setAttribute('visibility','hidden'); return; }
+    cur.setAttribute('x1',GX.X(dia)); cur.setAttribute('x2',GX.X(dia)); cur.setAttribute('visibility','visible');
+    const iso=new Date(dia).toISOString().slice(0,10), k=GX.k, fut=dia>k.hoy;
+    let h='<div class="t">'+fL(dia)+(fut?' · proyección':'')+'</div>';
+    if(!fut){ const v=saldoEn(dia); h+='Saldo: <b>'+(v==null?'sin registro':fmt(v))+'</b><br>'; }
+    else { const d=Math.round((dia-k.hoy)/DIA); h+='Si no pide: <b>'+fmt(GX.proySin[Math.min(d,75)][1])+'</b><br>'+(GX.conPedido?'Si pide hoy: <b>'+fmt(GX.proyCon[Math.min(d,75)][1])+'</b><br>':''); }
+    const e8=GX.ev.find(e=>e[0]===iso); if(e8) h+='Forma 8: <b>'+fmt((e8[1]||0)+(e8[2]||0))+'</b>'+(e8[1]?' (urgencia '+fmt(e8[1])+')':'')+(e8[2]?' (mensual '+fmt(e8[2])+')':'')+'<br>';
+    h+='<span class="nota">Línea de pedido '+fmt(k.ROP)+' · Inv. crítico '+fmt(k.SS)+'</span>';
+    tip.innerHTML=h; tip.style.display='block';
+    const g=$('graf').getBoundingClientRect(), px=e.clientX-g.left, py=e.clientY-g.top;
+    tip.style.left=(px+tip.offsetWidth+16>g.width? px-tip.offsetWidth-12 : px+12)+'px'; tip.style.top=Math.max(0,py-20)+'px'; };
+  hit.addEventListener('mousemove',mover); hit.addEventListener('mouseleave',()=>{ tip.style.display='none'; cur.setAttribute('visibility','hidden'); });
+}
+/* ---------- vista previa del correo diario de la unidad ---------- */
+function correoPreview(){
+  const u=st.ue, U=B.ues[u], bajo=FILAS.filter(x=>x.r.estado==='rojo'||x.r.estado==='ambar'), nuevos=bajo.filter(x=>x.nuevo);
+  const top=bajo.slice().sort((a,b)=>(b.nuevo-a.nuevo)||(vit(b.c)-vit(a.c))||(b.r.pedir-a.r.pedir)).slice(0,25);
+  const fecha=fL(dISO(U.fechas.slice(-1)[0]));
+  const td='padding:5px 8px;border-bottom:1px solid #e3e6ea;font:12px Segoe UI,Arial,sans-serif;vertical-align:top;', tdn=td+'text-align:right;font-family:Consolas,monospace;', th='padding:6px 8px;background:#1E5A9E;color:#fff;font:bold 11px Segoe UI,Arial,sans-serif;text-align:left;';
+  let m='<div style="max-width:820px;margin:0 auto;border:1px solid #a8a8a8;background:#fff">'+
+   '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0C447C"><tr><td style="padding:12px 0 12px 16px;width:52px"><img src="'+document.querySelector('header img').src+'" width="44" height="44" alt="CSS"></td><td style="padding:12px 16px;color:#fff;font:14px Segoe UI,Arial,sans-serif"><div style="font-size:17px;font-weight:bold">Aviso de reposición · '+esc(u)+'</div><div style="color:#cfe0f2;font-size:12px">Caja de Seguro Social · Dirección Nacional de Logística · Saldos al '+fecha+'</div></td></tr></table>'+
+   '<div style="padding:12px 16px;font:13px Segoe UI,Arial,sans-serif;color:#333"><p style="margin:0 0 10px">Hoy su unidad tiene <b>'+bajo.length+' renglones</b> por debajo de su línea de pedido'+(nuevos.length?', de los cuales <b>'+nuevos.length+' la cruzaron desde la última carga de saldos</b>':'')+'. Estos son los más urgentes; adjuntamos su pre-pedido en Excel con la cantidad sugerida de cada renglón.</p>'+
+   '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><th style="'+th+'">Renglón</th><th style="'+th+'">Estado</th><th style="'+th+'text-align:right">Saldo</th><th style="'+th+'text-align:right">Línea de pedido</th><th style="'+th+'text-align:right">Pedir</th></tr>'+
+   top.map(x=>'<tr><td style="'+td+'"><b style="color:#1E5A9E;font-family:Consolas,monospace">'+x.c+'</b> '+esc(nom(x.c).slice(0,55))+(vit(x.c)?' <b style="color:#a23224">VITAL</b>':'')+(trn(x.c)?' <span style="background:#d6efdc;color:#1f6b36;font-size:10px;padding:0 4px">OC EN CAMINO</span>':'')+(x.nuevo?' <span style="background:#0C447C;color:#fff;font-size:10px;padding:0 4px">NUEVO</span>':'')+'</td><td style="'+td+'color:'+EST[x.r.estado].c+';font-weight:bold">'+EST[x.r.estado].t+'</td><td style="'+tdn+'">'+fmt(x.saldo)+'</td><td style="'+tdn+'">'+fmt(x.r.ROP)+'</td><td style="'+tdn+'font-weight:bold">'+fmt(x.r.pedir)+'</td></tr>').join('')+'</table>'+
+   (bajo.length>25?'<p style="color:#5f6b78;font-size:11.5px">Y '+(bajo.length-25)+' renglones más en su calculadora.</p>':'')+
+   '<p style="text-align:center;margin:16px 0"><a href="#" style="background:#0C447C;color:#fff;padding:9px 18px;text-decoration:none;font-weight:bold">Abrir mi calculadora de reposición</a></p>'+
+   '<p style="color:#5f6b78;font-size:11px">Línea de pedido = demanda de su unidad × 20 días de entrega + inventario crítico. Recibe un solo aviso por día, cuando se cargan los saldos, y solo si tiene renglones bajo la línea.</p></div></div>';
+  $('modalC').innerHTML='<div class="top"><h2>Vista previa del correo diario · '+esc(u)+'</h2><button class="btn" id="cerrarM">Cerrar</button></div><div class="nota" style="margin-bottom:8px">Para: los correos de la unidad en DIRECTORIO_UE · un correo por unidad y por día · en producción lo envía el GAS al cargar los saldos.</div><div style="margin-bottom:8px;font-size:12.5px">📎 Adjunto: <a href="#" id="adjPre"><b>PrePedido_'+esc(u.replace(/[^A-Za-z0-9]+/g,'_'))+'_'+U.fechas.slice(-1)[0]+'.xlsx</b></a> · '+filasPre(u).length+' renglones con la cantidad sugerida</div>'+m;
+  $('modal').classList.add('open'); $('cerrarM').onclick=()=>$('modal').classList.remove('open'); $('adjPre').onclick=e=>{ e.preventDefault(); prePedido(u); };
+}
+function ayuda(){
+  $('modalC').innerHTML='<div class="top"><h2>Cómo funciona la calculadora</h2><button class="btn azul" id="btnTour">▶ Iniciar recorrido guiado</button><button class="btn" id="cerrarM">Cerrar</button></div><div class="cols">'+
+  '<h4>La idea</h4><p>Cada renglón tiene una <b>línea de pedido</b>: la cantidad que su unidad consume mientras llega un pedido, más un <b>inventario crítico</b> de protección. Cuando su saldo baja de esa línea, es momento de pedir.</p>'+
+  '<h4>1. ¿Cuánto consume?</h4><p>Se miran tres señales: lo que bajó su saldo (sin contar los días en cero), lo que reporta consumir y lo que pide en Formas 8. Ninguna es perfecta, así que se usa la <b>mediana</b> de las tres. Si pide mucho más de lo que consume (<b>efecto presión</b>) o estuvo en cero mucho tiempo (<b>consumo truncado</b>), se le avisa.</p>'+
+  '<h4>2. ¿Cuándo pedir?</h4><p>Línea de pedido = demanda diaria × tiempo de entrega + inventario crítico. El tiempo de entrega es <b>20 días</b>: la norma es 15, pero hoy la entrega real tarda 24. El inventario crítico depende de qué tan variable es su consumo y de la criticidad: 95% de nivel de servicio para vitales, 90% para el resto.</p>'+
+  '<h4>3. ¿Cuánto pedir?</h4><p>Lo necesario para llegar al <b>nivel objetivo</b>: lo que consumirá mientras llega el pedido, más los días que quiere cubrir (30 por defecto), más el inventario crítico.</p>'+
+  '<h4>Los colores</h4><ul><li><b style="color:#c0392b">Crítico</b>: bajo el inventario crítico. Pida ya.</li><li><b style="color:#b7791f">Pedir ya</b>: cruzó la línea de pedido.</li><li><b style="color:#8a6d0b">Pedir pronto</b>: la cruzará en 7 días o menos.</li><li><b style="color:#2e7d32">Con cobertura</b>: sobre la línea.</li></ul>'+
+  '<h4>El aviso diario</h4><p>Un solo correo al día por unidad, cuando se cargan los saldos, y solo si tiene renglones bajo la línea de pedido. Marca los que la cruzaron desde la carga anterior.</p></div>';
+  $('modal').classList.add('open'); $('cerrarM').onclick=()=>$('modal').classList.remove('open'); $('btnTour').onclick=()=>{ $('modal').classList.remove('open'); iniciarTour(); };
+}
+/* ---------- recorrido guiado ---------- */
+function demoUE(){ if(st.ue) return st.ue; const l=(B.res&&B.res.ues)||[]; const x=l.slice().sort((a,b)=>(b.r+b.a)-(a.r+a.a))[0]; return x?x.ue:B.idx.ues[0].ue; }
+function demoR(){ const f=FILAS.filter(x=>x.r.estado==='rojo'||x.r.estado==='ambar').sort((a,b)=>b.r.pedir-a.r.pedir)[0]||FILAS[0]; return f?f.c:''; }
+const TOUR=[
+ {sel:'.barra',t:'Elija su unidad',x:'Todo empieza aquí. Con la unidad elegida, el buscador de la derecha encuentra un renglón por código o nombre.',prep:()=>{ if(st.ue&&st.cod){ st.cod=''; vistaUE(); } }},
+ {sel:'.kpis',t:'Cómo está su unidad hoy',x:'Cada tarjeta cuenta renglones por estado y sirve de filtro: tóquela para ver solo esos. A la derecha, la vista previa del aviso diario y el pre-pedido en Excel.',prep:async()=>{ const u=demoUE(); if(st.ue!==u||!FILAS.length) await abrirUE(u); st.cod=''; vistaUE(); }},
+ {sel:'.tw',t:'Sus renglones, por urgencia',x:'Primero los críticos, luego los que ya cruzaron la línea de pedido. "Pedir" es la cantidad sugerida. Toque un renglón para abrir su calculadora.'},
+ {sel:'#hoyRes',t:'Qué hacer hoy',x:'Lo primero en un renglón: si debe pedir, cuánto, cuándo llegaría y hasta cuándo le alcanza. Si hay una orden de compra en camino a CEDIS Panamá, la etiqueta verde junto al nombre lo indica. Con «Descargar imagen» guarda esta vista tal como la ve.',prep:()=>{ st.cod=demoR(); vistaUE(); }},
+ {sel:'#p1',t:'1 · Cuánto consume',x:'Tres señales de demanda. Se usa la mediana para que una señal inflada o truncada no desvíe el cálculo. Los signos ? explican cada una.'},
+ {sel:'#p2',t:'2 · Línea de pedido',x:'Mueva el tiempo de entrega, los días a cubrir o el nivel de servicio y vea cómo cambian la línea de pedido, el inventario crítico y el nivel objetivo. Solo simula: la lista y el aviso usan los valores institucionales.'},
+ {sel:'#graf',t:'La curva',x:'El saldo de su unidad, las franjas verde, amarilla y roja, qué pasa si no pide y si pide hoy, y sus Formas 8 con su propia escala a la derecha. Pase el cursor para ver cada día.'},
+ {sel:'#btnVolver',t:'Volver',x:'Regresa a la lista de renglones de su unidad.'}
 ];
-var TOUR_I = 0;
+let tourI=0;
+function iniciarTour(){ tourI=0; $('tour').classList.add('open'); pasoTour(); }
+async function pasoTour(){ const p=TOUR[tourI]; if(p.prep) await p.prep(); const el=document.querySelector(p.sel); if(!el) return cerrarTour();
+  if(el.scrollIntoView) el.scrollIntoView({block:'center'});
+  setTimeout(()=>{ const r=el.getBoundingClientRect(), hl=$('tourHl'); hl.style.left=(r.left-4)+'px'; hl.style.top=(r.top-4)+'px'; hl.style.width=(r.width+8)+'px'; hl.style.height=(r.height+8)+'px';
+    const bx=$('tourBox'); bx.innerHTML='<h4>'+p.t+'</h4><div>'+p.x+'</div><div class="pie"><span class="nota">'+(tourI+1)+' de '+TOUR.length+'</span><span><button class="btn" id="tAnt"'+(tourI?'':' disabled')+'>Anterior</button> <button class="btn azul" id="tSig">'+(tourI===TOUR.length-1?'Terminar':'Siguiente')+'</button> <button class="btn" id="tFin">Salir</button></span></div>';
+    const bw=340, top=r.bottom+12+190<window.innerHeight? r.bottom+12 : Math.max(10,r.top-200); bx.style.top=top+'px'; bx.style.left=Math.min(window.innerWidth-bw-10,Math.max(10,r.left))+'px';
+    $('tSig').onclick=()=>{ if(tourI===TOUR.length-1) return cerrarTour(); tourI++; pasoTour(); }; $('tAnt').onclick=()=>{ if(tourI){ tourI--; pasoTour(); } }; $('tFin').onclick=cerrarTour; $('tSig').focus(); },60); }
+function cerrarTour(){ $('tour').classList.remove('open'); }
+document.addEventListener('keydown',e=>{ if(!$('tour').classList.contains('open')) return; if(e.key==='Escape') cerrarTour(); if(e.key==='ArrowRight'&&$('tSig')) $('tSig').click(); if(e.key==='ArrowLeft'&&$('tAnt')) $('tAnt').click(); });
+/* ---------- controles ---------- */
 
-function tourElegirDemoUE(){
-  // elige la primera UE del selector para poder mostrar lista y detalle
-  var sel = el('selUE');
-  if (sel && sel.options.length>1 && !sel.value){
-    sel.selectedIndex = 1; sel.value = sel.options[1].value;
-    cargarUE(sel.value);
-  }
-}
-function tourPrepararDetalle(){
-  // abre el primer renglón para los pasos de detalle
-  if (FILAS_ACTUALES && FILAS_ACTUALES.length && !el('vistaDetalle').classList.contains('on')){
-    abrirDetalle(FILAS_ACTUALES[0].cod);
-  }
-}
-function tourVolverLista(){
-  if (el('vistaDetalle').classList.contains('on')) renderLista();
-}
+$('selUE').onchange=e=>{ st.q=''; $('bus').value=''; if(e.target.value) abrirUE(e.target.value); else { st.ue=''; inicio(); } };
+$('bus').oninput=e=>{ st.q=e.target.value.trim(); st.cod=''; vistaUE(); };
+$('btnInicio').onclick=()=>{ st.ue='';st.cod='';st.q='';st.filtro=''; $('selUE').value=''; $('bus').value=''; inicio(); };
+$('btnLimpiar').onclick=()=>{ st.q='';st.filtro='';st.cod=''; $('bus').value=''; if(st.ue) vistaUE(); else inicio(); };
+$('btnAyuda').onclick=ayuda;
+$('modal').onclick=e=>{ if(e.target.id==='modal') $('modal').classList.remove('open'); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('modal').classList.remove('open'); });
 
-function iniciarTour(){
-  TOUR_I = 0;
-  el('panelBienvenida') && (el('panelBienvenida').style.display='none');
-  tourElegirDemoUE();
-  el('tourOverlay').style.display='block';
-  // pequeño respiro para que cargue la UE demo
-  setTimeout(function(){ mostrarPasoTour(); }, 600);
-}
-function cerrarTour(){
-  el('tourOverlay').style.display='none';
-  var sp=document.querySelector('.tour-spot'); if(sp) sp.remove();
-}
-function mostrarPasoTour(){
-  var step = TOUR_STEPS[TOUR_I];
-  if(!step){ cerrarTour(); return; }
-  // preparar el estado necesario para el paso
-  if (step.prep==='detalle') tourPrepararDetalle();
-  else if (step.prep==='lista') tourVolverLista();
-
-  setTimeout(function(){ posicionarTour(step); }, step.prep? 250 : 0);
-}
-function posicionarTour(step){
-  var target = document.querySelector(step.sel);
-  var box = el('tourBox');
-  // spotlight
-  var sp = document.querySelector('.tour-spot');
-  if(!sp){ sp=document.createElement('div'); sp.className='tour-spot'; el('tourOverlay').appendChild(sp); }
-  if (target){
-    target.scrollIntoView({block:'center', behavior:'smooth'});
-    setTimeout(function(){
-      var r = target.getBoundingClientRect();
-      sp.style.top=(r.top-6)+'px'; sp.style.left=(r.left-6)+'px';
-      sp.style.width=(r.width+12)+'px'; sp.style.height=(r.height+12)+'px';
-      sp.style.display='block';
-      // posicionar la caja: debajo si cabe, si no arriba
-      var bh=box.offsetHeight||160, bw=box.offsetWidth||320;
-      var top = r.bottom+14; if (top+bh > window.innerHeight-10) top = Math.max(10, r.top-bh-14);
-      var left = Math.min(Math.max(10, r.left), window.innerWidth-bw-10);
-      box.style.top=top+'px'; box.style.left=left+'px';
-    }, 300);
-  } else {
-    sp.style.display='none';
-    box.style.top='50%'; box.style.left='50%'; box.style.transform='translate(-50%,-50%)';
-  }
-  el('tourTitulo').textContent = step.tit;
-  el('tourTexto').textContent = step.txt;
-  el('tourPaso').textContent = 'Paso '+(TOUR_I+1)+' de '+TOUR_STEPS.length;
-  el('tourPrev').style.visibility = TOUR_I===0 ? 'hidden' : 'visible';
-  el('tourNext').textContent = TOUR_I===TOUR_STEPS.length-1 ? 'Terminar' : 'Siguiente ▸';
-}
-(function(){
-  var b=el('btnTutorial'); if(b) b.addEventListener('click', iniciarTour);
-  var l=el('linkTutorial'); if(l) l.addEventListener('click', iniciarTour);
-  var n=el('tourNext'); if(n) n.addEventListener('click', function(){
-    if(TOUR_I>=TOUR_STEPS.length-1){ cerrarTour(); return; }
-    TOUR_I++; mostrarPasoTour();
-  });
-  var p=el('tourPrev'); if(p) p.addEventListener('click', function(){ if(TOUR_I>0){ TOUR_I--; mostrarPasoTour(); } });
-  var s=el('tourSkip'); if(s) s.addEventListener('click', cerrarTour);
+window.__rue={st,abrirUE,vistaUE,FILAS:()=>FILAS,iniciarTour,TOUR,B};
+(async function arrancar(){
+  $('main').innerHTML='<div class="panel nota">Cargando la calculadora…</div>';
+  try{
+    const [idx,f8i,dic,res]=await Promise.all([traer('series_saldos_index.json'),traer('f8_eventos_index.json',true),traer('renglones_dic.json',true),traer('reposicion_resumen.json',true)]);
+    B.idx=idx; B.res=res; if(f8i&&f8i.ues) f8i.ues.forEach(x=>B.f8idx[x.ue]=x.archivo);
+    if(dic&&dic.r) Object.keys(dic.r).forEach(k=>B.dic[k]=[dic.r[k].n,dic.r[k].vit?1:0]);
+    if(res&&res.tr) B.tr=res.tr;
+    B.gen=(res&&res.generado)||idx.generado||'';
+    idx.ues.slice().sort((x,y)=>x.ue.localeCompare(y.ue)).forEach(u=>{ const o=document.createElement('option'); o.value=u.ue; o.textContent=u.ue+' ('+u.renglones+' renglones)'; $('selUE').appendChild(o); });
+    $('frS').textContent=fL(dISO(idx.fechas[idx.fechas.length-1]));
+    $('frP').textContent=B.gen?(new Date(B.gen).toLocaleString('es-PA',{timeZone:'America/Panama',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' PTY'):'·';
+    // inventario de los CEDIS (para "le surte…"), en segundo plano
+    traer('matriz_snapshot.json',true).then(sn=>{ if(sn&&sn.renglones) sn.renglones.forEach(r=>B.ced[r.c]=[r.iPA||0,r.iDI||0,r.iCH||0]); });
+    const q=new URLSearchParams(location.search).get('ue');
+    if(q&&idx.ues.some(x=>x.ue===q)) abrirUE(q); else inicio();
+  }catch(e){ $('main').innerHTML='<div class="panel">No se pudieron cargar los datos ('+esc(e.message)+'). <button class="btn" onclick="location.reload()">Reintentar</button></div>'; }
+})();
 })();
 
-// ====== VOLVER AL INICIO ======
-// Regresa a la pantalla de bienvenida (resumen de red + tutorial), como al
-// cargar la página, sin recargar. Disponible desde cualquier vista.
-function volverInicio(){
-  cerrarTour();
-  // limpiar selección y estado de UE
-  var sel = el('selUE'); if(sel) sel.value='';
-  UE_DATA = null; F8_DATA = null; UE_CEDIS = '';
-  // ocultar lista, detalle y KPIs de la UE
-  el('vistaDetalle').classList.remove('on');
-  el('vistaLista').style.display='';
-  el('cardLista').style.display='none';
-  el('kpisUE').style.display='none';
-  if (chart){ chart.destroy(); chart=null; }
-  aviso(el('avisoGlobal'),'','');
-  // mostrar la bienvenida de nuevo
-  var pb=el('panelBienvenida'); if(pb) pb.style.display='';
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-(function(){
-  ['btnInicio','logoInicio','tituloInicio'].forEach(function(id){
-    var e=el(id); if(e) e.addEventListener('click', volverInicio);
-  });
-})();
-
-// arranque
-cargarDiccionario().then(cargarIndice);
 </script>
 </body>
 </html>
