@@ -2,672 +2,546 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Redistribución entre CEDIS · CSS</title>
-<link rel="icon" href="favicon.ico">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Redistribución entre CEDIS</title>
 <style>
-  :root{
-    --azul:#1e5a9e; --azul2:#0C447C; --bg:#ececec; --card:#fff;
-    --bord:#a8a8a8; --sub:#555; --verde:#2e7d32; --ambar:#b8860b; --rojo:#a11;
-    --pa:#0C447C; --di:#1e7a4a; --ch:#8a5a1a;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:var(--bg);font-family:"Segoe UI",Tahoma,sans-serif;color:#222;}
-  .topbar{background:linear-gradient(90deg,var(--azul2),var(--azul));color:#fff;display:flex;align-items:center;gap:12px;padding:11px 16px;}
-  .topbar img{width:42px;height:42px;object-fit:contain;flex-shrink:0;background:transparent;}
-  .topbar .t1{font-size:15px;font-weight:700;line-height:1.2;}
-  .topbar .t2{font-size:11px;opacity:.85;}
-  .topbar .spacer{flex:1;}
-  .topbar .meta{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;color:#fff;font-size:11px;}
-  .topbar .meta .fr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:3px 8px;color:#e8f0f9;}
-  .topbar .meta .fr b{color:#fff;}
-  .topbar .meta .fr.alerta{background:#8a3b2e;border-color:#c46a5a;}
-  .wrap{max-width:1880px;margin:0 auto;padding:12px 26px;}
-  .lado{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;align-items:start;}
-  .lado>.card{margin-bottom:0;}
-  #panelSankey{position:sticky;top:8px;}
-  @media(max-width:1200px){ .lado{grid-template-columns:1fr;} .lado>.card{margin-bottom:10px;} #panelSankey{position:static;} }
-  .card{background:var(--card);border:1px solid var(--bord);padding:12px 14px;margin-bottom:10px;}
-  .intro{font-size:12.5px;color:#444;line-height:1.5;}
-  .intro b{color:var(--azul2);}
-  label{display:block;font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
-  select,input{width:100%;padding:9px 10px;border:1px solid var(--bord);background:#fff;font-size:14px;border-radius:0;}
-  .row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;}
-  .row>div{flex:1;min-width:170px;}
-  button{font-family:inherit;border:1px solid var(--bord);border-radius:0;cursor:pointer;padding:8px 14px;font-size:12px;}
-  .btn-sec{background:#f4f4f4;color:#333;}
-  .btn-sec:hover{background:#e8e8e8;}
-  /* KPIs nacionales */
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
-  @media(max-width:900px){ .kpis{grid-template-columns:repeat(2,1fr);} }
-  .kpi{border:1px solid #d8e0ea;border-radius:8px;padding:12px 14px;background:#eef4fb;}
-  .kpi .lab{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
-  .kpi .val{font-family:Consolas,monospace;font-size:22px;font-weight:700;color:var(--azul2);line-height:1.1;}
-  .kpi .sub{font-size:10.5px;color:var(--sub);margin-top:3px;}
-  .kpi.cero{background:#fdeeee;border-color:#f0d0d0;}
-  .kpi.cero .val{color:var(--rojo);}
-  /* Balance por CEDIS */
-  .balance{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}
-  @media(max-width:760px){ .balance{grid-template-columns:1fr;} }
-  .ced-box{border:1px solid #d8e0ea;border-radius:8px;padding:12px 14px;background:#eef4fb;}
-  .ced-box.pa{background:#eaf1fb;border-color:#cfddf2;}
-  .ced-box.di{background:#eaf6ef;border-color:#cfe8d8;}
-  .ced-box.ch{background:#f8f2e6;border-color:#ecdfc4;}
-  .ced-tit{font-size:12.5px;font-weight:700;color:var(--azul2);margin-bottom:6px;}
-  .ced-row{font-size:11.5px;color:#444;margin:3px 0;display:flex;justify-content:space-between;}
-  .ced-row b{font-family:Consolas,monospace;color:#222;}
-  .ced-row.env b{color:var(--verde);}
-  .ced-row.rec b{color:var(--rojo);}
-  /* Filtros */
-  .filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:10px;}
-  .filtros>div{flex:1;min-width:150px;}
-  /* Tabla de órdenes */
-  .tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
-  .tbl th,.tbl td{border:1px solid #ddd;padding:6px 9px;text-align:left;vertical-align:middle;}
-  .tbl th{background:#f4f7fb;color:var(--azul2);font-size:11px;text-transform:uppercase;letter-spacing:.3px;
-    cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0;}
-  .tbl th:hover{background:#e8eff8;}
-  .tbl th .arrow{font-size:9px;opacity:.6;margin-left:3px;}
-  .tbl tbody tr:hover{background:#f6f9fd;}
-  .tbl .num{font-family:Consolas,monospace;text-align:right;}
-  .tbl .cod{font-family:Consolas,monospace;color:var(--azul2);font-weight:700;white-space:nowrap;}
-  .mover{font-family:Consolas,monospace;font-weight:700;color:var(--azul2);}
-  .flujo{white-space:nowrap;font-weight:600;}
-  .badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:3px;color:#fff;}
-  .b-pa{background:var(--pa);}
-  .b-di{background:var(--di);}
-  .b-ch{background:var(--ch);}
-  .arrow-mid{color:#888;margin:0 5px;font-weight:400;}
-  .fila-cero{background:#fdf4f4;}
-  .fila-cero:hover{background:#fbe9e9;}
-  .tag-cero{font-size:10px;font-weight:600;color:#999;border:1px solid #ccc;border-radius:3px;padding:1px 5px;margin-left:6px;}
-  .fila-urgente{background:#fff0f0;box-shadow:inset 3px 0 0 var(--rojo);}
-  .fila-urgente:hover{background:#ffe4e4;}
-  .tag-urgente{font-size:10px;font-weight:700;color:#fff;background:var(--rojo);border-radius:3px;padding:2px 7px;margin-left:6px;letter-spacing:.3px;}
-  .tbl-wrap{max-height:560px;overflow-y:auto;border:1px solid var(--bord);}
-  .aviso{font-size:12px;padding:9px 12px;border:1px solid var(--ambar);background:#fff8e6;color:#7a5a00;margin-bottom:10px;}
-  .aviso.err{border-color:var(--rojo);background:#fdecec;color:#7a1010;}
-  .meta{font-size:11px;color:var(--sub);}
-  .foot{font-size:10px;color:#999;text-align:right;margin-top:10px;}
-  .conteo{font-size:11.5px;color:var(--sub);margin:6px 0;}
-  .leyenda{font-size:11px;color:#666;margin-top:8px;line-height:1.5;}
-  .leyenda b{color:var(--azul2);}
-  /* Gráfica por renglón (panel del solapamiento) */
-  #panelReng{margin-bottom:10px;display:none;}
-  .reng-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;}
-  .reng-tit{font-size:13px;font-weight:700;color:var(--azul2);}
-  .reng-tit .cod{font-family:Consolas,monospace;}
-  .reng-close{cursor:pointer;font-size:12px;color:var(--sub);border:1px solid var(--bord);background:#f4f4f4;padding:4px 10px;}
-  .plot-cedis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
-  @media(max-width:760px){ .plot-cedis{grid-template-columns:1fr;} }
-  .plot-col{text-align:center;}
-  .plot-col .cn{font-size:12px;font-weight:700;margin-bottom:6px;}
-  .plot-col.pa .cn{color:var(--pa);} .plot-col.di .cn{color:var(--di);} .plot-col.ch .cn{color:var(--ch);}
-  .plot-svg{width:100%;height:180px;}
-  .plot-stat{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.5;}
-  .plot-stat b{font-family:Consolas,monospace;color:#222;font-size:13px;}
-  .plot-cero{color:var(--rojo);font-weight:700;}
-  /* Mapa de calor general */
-  #panelHeat .hm-head{font-size:13px;font-weight:700;color:var(--azul2);margin-bottom:4px;}
-  #panelHeat .hm-sub{font-size:11px;color:var(--sub);margin-bottom:10px;}
-  .hm-head{font-size:13px;font-weight:700;color:var(--azul2);margin-bottom:4px;}
-  .hm-sub{font-size:11px;color:var(--sub);margin-bottom:10px;}
-  .sk-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
-  .sk-toggle{display:flex;gap:0;flex-shrink:0;}
-  .sk-btn{font-size:11.5px;padding:6px 12px;border:1px solid var(--bord);background:#f4f4f4;color:#444;cursor:pointer;}
-  .sk-btn.sk-on{background:var(--azul);color:#fff;border-color:var(--azul);}
-  .sk-btn:first-child{border-radius:6px 0 0 6px;}
-  .sk-btn:last-child{border-radius:0 6px 6px 0;border-left:none;}
-  .sk-filtros{display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin:2px 0 6px;}
-  .sk-chip-grp{display:flex;align-items:center;gap:6px;}
-  .sk-chip-lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-right:2px;}
-  .sk-chip{font-size:12px;padding:4px 12px;border:1px solid var(--bord);background:#fff;color:#555;cursor:pointer;border-radius:14px;transition:all .12s;}
-  .sk-chip:hover{border-color:var(--azul2);color:var(--azul2);}
-  .sk-chip-on{background:var(--azul);color:#fff;border-color:var(--azul);}
-  .sk-chip-on:hover{color:#fff;}
-  #sankeyWrap svg{width:100%;height:auto;display:block;}
-  .sk-flow{cursor:pointer;transition:opacity .15s;}
-  .sk-flow:hover{opacity:.75;}
-  .sk-nodo-lbl{font-size:13px;font-weight:700;}
-  .sk-flow-lbl{font-size:11px;fill:#fff;font-weight:700;pointer-events:none;}
-  #sankeyDetalle{margin-top:10px;}
-  .sk-det-head{font-size:12px;font-weight:700;color:var(--azul2);margin:6px 0;}
-  .modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;}
-  .modal-box{background:#fff;border-radius:10px;max-width:820px;width:92%;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3);}
-  .modal-head{background:var(--azul2);color:#fff;padding:12px 16px;font-size:13.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
-  .modal-x{cursor:pointer;font-size:22px;line-height:1;}
-  .modal-body{overflow-y:auto;padding:0;}
-  .modal-body table{width:100%;border-collapse:collapse;font-size:12.5px;}
-  .modal-body th,.modal-body td{border-bottom:1px solid #eee;padding:7px 12px;text-align:left;}
-  .modal-body th{background:#f4f7fb;color:var(--azul2);font-size:11px;text-transform:uppercase;position:sticky;top:0;}
-  .modal-body td.num{text-align:right;font-family:Consolas,monospace;}
-  .modal-body td.cod{font-family:Consolas,monospace;color:var(--azul2);font-weight:700;}
-  .hm-wrap{overflow-x:auto;max-height:460px;overflow-y:auto;border:1px solid var(--bord);}
-  .hm-tbl{border-collapse:collapse;font-size:11.5px;width:100%;}
-  .hm-tbl th,.hm-tbl td{border:1px solid #e4e4e4;padding:5px 8px;text-align:center;white-space:nowrap;}
-  .hm-tbl th{background:#f4f7fb;color:var(--azul2);font-size:10.5px;text-transform:uppercase;position:sticky;top:0;cursor:pointer;}
-  .hm-tbl td.rn{text-align:left;max-width:280px;overflow:hidden;text-overflow:ellipsis;}
-  .hm-tbl td.cd{font-family:Consolas,monospace;color:var(--azul2);font-weight:700;cursor:pointer;}
-  .hm-cell{font-family:Consolas,monospace;font-weight:600;cursor:pointer;}
-  .hm-legend{display:flex;gap:14px;align-items:center;margin-top:8px;font-size:11px;color:#666;flex-wrap:wrap;}
-  .hm-sw{display:inline-block;width:16px;height:12px;border:1px solid #ccc;margin-right:4px;vertical-align:middle;}
+:root{--azul:#0C447C;--azul2:#1E5A9E;--fondo:#ececec;--borde:#a8a8a8;--papel:#fff;--tinta:#1d2733;--gris:#5f6b78;
+ --pa:#0C447C;--di:#1f7a45;--ch:#8a5a1a;--rojo:#c0392b;--p-rojo:#fbe4e1;--p-azul:#e3edf8;--p-gris:#eef0f3;--p-amar:#fbf3d6;--p-verde:#e2f3e7;
+ color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:13px/1.4 "Segoe UI",Calibri,system-ui,sans-serif}
+.num,.mono{font-family:Consolas,"Cascadia Mono","Courier New",monospace}
+header{background:var(--azul);color:#fff;display:flex;align-items:center;gap:12px;padding:7px 16px;flex-wrap:wrap}
+header img{width:36px;height:36px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header .sub{font-size:11px;color:#cfe0f2}
+.der{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:3px 8px;font-size:11px;color:#e8f0f9}
+.fr b{color:#fff}
+.hbtn{font:inherit;font-size:12px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);padding:4px 10px;cursor:pointer}
+.dummy{background:#b8860b;color:#fff;font-size:11px;font-weight:600;padding:3px 8px}
+/* franja resumen */
+.resumen{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;align-items:stretch}
+.k{background:var(--bg,#eef0f3);border:1px solid transparent;padding:6px 12px;display:flex;flex-direction:column;justify-content:center;min-width:130px;font:inherit;text-align:left;color:inherit}
+button.k{cursor:pointer}
+button.k:hover{filter:brightness(.97)}
+button.k.on{border-color:#1d2733;box-shadow:inset 0 0 0 1px #1d2733}
+.k .v{font-family:Consolas,monospace;font-size:17px;font-weight:700;line-height:1.15}
+.k .l{font-size:11px;color:var(--gris)}
+.ced{display:flex;gap:10px;align-items:center}
+.ced .n{font-weight:700;font-size:12px}
+.ced span{font-size:11px;color:var(--gris)}
+/* cuerpo */
+.cuerpo{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(430px,1fr);gap:8px;padding:0 16px 12px;align-items:start}
+@media(max-width:1100px){.cuerpo{grid-template-columns:1fr}}
+.panel{background:var(--papel);border:1px solid var(--borde)}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;padding:8px 10px;border-bottom:1px solid var(--borde)}
+.campo{display:flex;flex-direction:column;gap:2px}
+.campo label{font-size:10.5px;color:var(--gris)}
+select,input[type=text]{font:inherit;padding:4px 7px;border:1px solid var(--borde);background:#fff;min-height:28px}
+.seg{display:flex;border:1px solid var(--borde)}
+.seg button{font:inherit;font-size:12px;border:0;border-right:1px solid var(--borde);background:#fff;padding:4px 9px;cursor:pointer;min-height:26px}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--azul2);color:#fff}
+.btn{font:inherit;font-size:12px;border:1px solid var(--borde);background:#f6f6f6;padding:4px 10px;cursor:pointer;min-height:28px}
+button:focus-visible,input:focus-visible,select:focus-visible,tr:focus-visible{outline:2px solid #f0a020;outline-offset:1px}
+.conteo{font-size:11.5px;color:var(--gris);padding:4px 10px}
+.tw{overflow:auto;max-height:calc(100vh - 230px);min-height:320px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th{position:sticky;top:0;z-index:2;background:var(--p-azul);text-align:left;padding:5px 6px;border-bottom:1px solid var(--borde);font-weight:600;white-space:nowrap;cursor:pointer;font-size:11.5px}
+th.grp{text-align:center;cursor:default;border-left:2px solid #b9c7d8}
+thead tr:nth-child(2) th{top:25px}
+th.n,td.n{text-align:right}
+td{padding:4px 6px;border-bottom:1px solid #e6e6e6;vertical-align:top}
+td.bl{border-left:2px solid #d5dde8}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:#f4f7fb}
+tr.urg td{background:#fff5f4}
+tr.sel td{background:#fdf1c9!important}
+.cod{font-weight:700;color:var(--azul2)}
+.desc{color:var(--gris);font-size:11.5px}
+.tag{display:inline-block;font-size:10px;font-weight:700;color:#fff;padding:0 5px;margin-left:4px}
+.cb{display:inline-block;color:#fff;font-size:10.5px;font-weight:600;padding:0 5px}
+.flecha{color:var(--gris);margin:0 3px}
+.antes{color:var(--gris)}
+.desp{font-weight:700}
+.alerta{color:var(--rojo);font-weight:700}
+.chip{display:inline-block;background:#fdecea;color:var(--rojo);font-size:10px;font-weight:600;padding:0 5px;border:1px solid #f1b8b1}
+/* lateral */
+.lat{position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto;background:transparent;border:0;display:flex;flex-direction:column;gap:8px}
+.lat>.panel{background:var(--papel);border:1px solid var(--borde)}
+.sec{font-size:10.5px;font-weight:700;letter-spacing:.4px;color:var(--gris);margin:12px 0 4px;text-transform:uppercase}
+.tbl-det td .rol{display:block;font-size:10.5px;color:var(--gris);font-weight:400;margin-top:1px}
+.cob{margin:2px 0 4px}
+.cb2{margin:6px 0 10px;border:1px solid #e3e6ea}
+.cb2 .ced-h{display:flex;justify-content:space-between;align-items:baseline;padding:5px 8px;background:#f6f7f9;border-bottom:1px solid #e3e6ea;font-size:12px}
+.cb2 .ced-h b{font-size:12.5px}
+.cb2 .r{display:grid;grid-template-columns:62px 1fr 64px;gap:8px;align-items:center;padding:4px 8px}
+.cb2 .r .et{font-size:11px;color:var(--gris)}
+.cb2 .r .pista{position:relative;height:12px;background:#f1f2f4}
+.cb2 .r .pista i{position:absolute;left:0;top:0;bottom:0}
+.cb2 .r .pista .rm{position:absolute;top:-3px;bottom:-3px;border-left:2px dashed var(--rojo)}
+.cb2 .r .val{font-family:Consolas,monospace;font-size:12px;text-align:right;font-weight:700}
+.cb2 .r .val.hoy{font-weight:400;color:var(--gris)}
+.lin2{display:block;font-size:11px;color:var(--gris);font-weight:400;margin-top:1px}
+.lin2 b{color:var(--tinta)}
+.cob .fila{display:grid;grid-template-columns:70px 1fr;gap:8px;align-items:center;margin:6px 0}
+.cob .nom{font-size:12px;font-weight:700}
+.cob .area{position:relative;height:26px}
+.cob .b{position:absolute;left:0;height:10px;display:flex;align-items:center}
+.cob .b.h{top:1px;opacity:.38}
+.cob .b.d{top:14px}
+.cob .t{position:absolute;font-size:10.5px;font-family:Consolas,monospace;white-space:nowrap;color:var(--tinta)}
+.cob .res{position:absolute;top:-4px;bottom:-4px;border-left:2px dashed var(--rojo)}
+.cob .eje{display:grid;grid-template-columns:70px 1fr;gap:8px;font-size:10px;color:var(--gris)}
+.cob .eje div{position:relative;height:12px}
+.cob .eje span{position:absolute;transform:translateX(-50%)}
+#tourOverlay{position:fixed;inset:0;z-index:1000}
+#tourBackdrop{position:absolute;inset:0;background:rgba(15,25,40,.55)}
+.tour-spot{position:absolute;border:3px solid var(--azul);border-radius:4px;box-shadow:0 0 0 9999px rgba(15,25,40,.55);z-index:1001;pointer-events:none;transition:all .25s ease}
+#tourBox{position:absolute;z-index:1002;background:#fff;border:1px solid var(--borde);max-width:340px;width:calc(100% - 32px);padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+#tourTitulo{font-size:14px;font-weight:700;color:var(--azul2);margin-bottom:6px}
+#tourTexto{font-size:12.5px;line-height:1.5;color:#333}
+#tourNav{display:flex;align-items:center;gap:8px;margin-top:12px}
+#tourPaso{font-size:11px;color:var(--gris)}
+.btn-plano{background:transparent;border:none;color:var(--gris);text-decoration:underline;padding:6px 4px;cursor:pointer;font:inherit;font-size:12px}
+#tourNext{background:var(--azul);color:#fff;font-weight:700;border:1px solid var(--azul);padding:7px 14px;cursor:pointer;font:inherit;font-size:12px}
+@media (prefers-reduced-motion: reduce){.tour-spot{transition:none}}
+.lat h3{margin:0;font-size:13.5px;color:var(--azul2)}
+.lat .cab{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--borde);gap:8px;flex-wrap:wrap}
+.lat .cont{padding:8px 10px}
+.nota{font-size:11.5px;color:var(--gris)}
+.tbl-det{width:100%;border-collapse:collapse;font-size:12px;margin:4px 0 8px}
+.tbl-det th{position:static;background:var(--p-gris);cursor:default;font-size:11px}
+.tbl-det td{border-bottom:1px solid #e6e6e6;padding:7px 6px;cursor:default;font-size:12.5px}
+.tbl-det tr:hover td{background:none}
+.ver{list-style:none;margin:0;padding:0}
+.ver li{padding:5px 8px 5px 10px;margin:4px 0;font-size:12px;border-left:4px solid var(--vc,#a8a8a8);background:var(--vb,#f4f5f7)}
+.ver li.ok{--vc:#2e7d32;--vb:#e8f4ea}
+.ver li.mal{--vc:#c0392b;--vb:#fdecea}
+.ver li.inf{--vc:#1E5A9E;--vb:#e9f0f8}
+.ver li b{font-family:Consolas,monospace}
+.mover-big{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin:2px 0 8px}
+.mover-big .u{font-family:Consolas,monospace;font-size:20px;font-weight:700}
+.frase{background:var(--p-gris);border-left:3px solid var(--azul2);padding:7px 9px;font-size:12.5px;margin:6px 0 10px}
+.fila-ced{display:grid;grid-template-columns:76px 1fr;gap:8px;align-items:center;margin:8px 0}
+.fila-ced .nom{font-weight:700;font-size:12px}
+.barra{position:relative;height:30px;background:#f2f2f2;border:1px solid #ddd}
+.barra .a{position:absolute;left:0;top:3px;height:10px;opacity:.35}
+.barra .d{position:absolute;left:0;bottom:3px;height:10px}
+.barra .min{position:absolute;top:0;bottom:0;border-left:2px dashed var(--rojo)}
+.cifras{font-size:11px;color:var(--gris);margin-top:2px}
+.cifras b{color:var(--tinta);font-family:Consolas,monospace}
+.leyenda{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--gris);margin-top:6px}
+.leyenda i{display:inline-block;width:14px;height:8px;margin-right:4px;vertical-align:middle}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50}
+.modal-bg.open{display:flex}
+.modal{background:#fff;max-width:640px;width:94%;padding:16px 20px;max-height:86vh;overflow:auto}
+.modal h2{margin:0 0 8px;font-size:16px;color:var(--azul2)}
+.cargando{padding:30px;text-align:center;color:var(--gris)}
+.err{background:var(--p-rojo);border:1px solid var(--rojo);padding:10px 14px;margin:8px 16px}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#263238;color:#fff;padding:8px 14px;font-size:12px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.niv{display:inline-block;font-size:10px;font-weight:700;padding:0 5px;margin-left:4px;color:#fff}
+.niv.ALTO{background:#8e6fb8}.niv.EXCESO{background:#5b2c8f}.niv.SIN_DEMANDA{background:#6a7683}
 </style>
 </head>
 <body>
-<div class="topbar">
-  <img id="logo" src="https://raw.githubusercontent.com/TorredeControlCSS/REPOSICION_UE_CSS/main/icons/icon-192.png" alt="CSS">
-  <div>
-    <div class="t1">Redistribución entre CEDIS</div>
-    <div class="t2">Caja de Seguro Social · Dirección Nacional de Logística · Torre de Control</div>
-  </div>
-  <div class="spacer"></div>
-  <div class="meta" id="meta"></div>
-</div>
+<header>
+  <img src="https://torredecontrolcss.github.io/REPOSICION_UE_CSS/icons/icon-192.png" alt="CSS">
+  <div><h1>Redistribución entre CEDIS</h1><div class="sub">Caja de Seguro Social · Dirección Nacional de Logística · Torre de Control</div></div>
+  <div class="der"><span id="frs"></span><button class="hbtn" id="btnTutorial" style="background:#fff;color:var(--azul);font-weight:700;border-color:#fff">▶ Ver tutorial guiado</button><button class="hbtn" id="btnAyuda">Cómo leer este reporte</button></div>
+</header>
 
-<div class="wrap">
-  <div id="avisoBox"></div>
+<div class="resumen" id="resumen"></div>
 
-  <div class="card">
-    <div class="intro">
-      Este reporte compara la <b>cobertura</b> (días de inventario) de cada renglón en los tres CEDIS y propone
-      <b>traslados diarios</b> para equilibrarlos: mover del CEDIS con exceso al que está bajo o en cero, sin que
-      el que envía baje de su reserva mínima. El objetivo es que ningún CEDIS quede desabastecido mientras otro tiene de sobra.
-    </div>
-  </div>
-
-  <!-- KPIs -->
-  <div class="kpis" id="kpis"></div>
-
-  <!-- Balance por CEDIS -->
-  <div class="balance" id="balance"></div>
-
-  <!-- Gráfica de solapamiento por renglón (se abre al elegir uno) -->
-  <div class="card" id="panelReng">
-    <div class="reng-head">
-      <div class="reng-tit" id="rengTit"></div>
-      <div class="reng-close" id="rengClose">Cerrar gráfica</div>
-    </div>
-    <div class="plot-cedis" id="plotCedis"></div>
-    <div class="leyenda" id="rengLeyenda"></div>
-  </div>
-
-  <div class="lado">
-  <!-- Órdenes de traslado -->
-  <div class="card">
+<div id="errorCarga"></div>
+<div class="cuerpo">
+  <section class="panel">
     <div class="filtros">
-      <div>
-        <label>CEDIS que envía</label>
-        <select id="fOrigen"><option value="">Todos</option></select>
-      </div>
-      <div>
-        <label>CEDIS que recibe</label>
-        <select id="fDestino"><option value="">Todos</option></select>
-      </div>
-      <div style="flex:2;">
-        <label>Buscar renglón (código o nombre)</label>
-        <input id="fBuscar" type="text" placeholder="Ej. amlodipina, 101086601…">
-      </div>
-      <div style="flex:0 0 auto;">
-        <button class="btn-sec" id="btnExcel">Descargar órdenes (Excel)</button>
-      </div>
+      <div class="campo"><label for="fO">Envía</label><select id="fO"><option value="">Todos</option><option>CEDIS PANAMA</option><option>CEDIS DIVISA</option><option>CEDIS CHIRIQUI</option></select></div>
+      <div class="campo"><label for="fD">Recibe</label><select id="fD"><option value="">Todos</option><option>CEDIS PANAMA</option><option>CEDIS DIVISA</option><option>CEDIS CHIRIQUI</option></select></div>
+      <div class="campo" style="flex:1;min-width:180px"><label for="fB">Buscar renglón</label><input type="text" id="fB" placeholder="Código o nombre"></div>
+      <div class="campo"><label>Mostrar</label><div class="seg" id="segVer"><button data-v="todos" class="on">Todos los traslados</button><button data-v="urg">Mover hoy</button><button data-v="exc">Inventario alto / exceso</button></div></div>
+      <div class="campo" id="campoNivel" style="display:none"><label>Nivel</label><div class="seg" id="segNivel"><button data-v="" class="on">Todos</button><button data-v="EXCESO">Exceso</button><button data-v="ALTO">Alto</button><button data-v="SIN_DEMANDA">Sin demanda</button></div></div>
+      <div style="display:flex;gap:6px;margin-left:auto"><button class="btn" id="btnLimpiar" title="Volver a la vista predeterminada">Limpiar filtros</button>
+      <button class="btn" id="btnXls">Descargar Excel</button></div>
     </div>
     <div class="conteo" id="conteo"></div>
-    <div class="tbl-wrap">
-      <table class="tbl" id="tabla">
-        <thead>
-          <tr>
-            <th data-k="cod">Código<span class="arrow"></span></th>
-            <th data-k="renglon">Renglón<span class="arrow"></span></th>
-            <th data-k="flujo">Traslado<span class="arrow"></span></th>
-            <th data-k="mover">Mover<span class="arrow"></span></th>
-            <th data-k="cobOrigenAntes">Cob. origen<span class="arrow"></span></th>
-            <th data-k="cobDestinoAntes">Cob. destino<span class="arrow"></span></th>
-            <th data-k="saldoDestino">Saldo destino<span class="arrow"></span></th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    <div class="leyenda">
-      <b>Cómo leerlo:</b> cada fila es una orden de traslado. <b>Cob. origen / destino</b> son los días de inventario
-      antes del movimiento. Las filas resaltadas son destinos <b>en cero</b> (prioridad). "Mover" es la cantidad
-      sugerida en unidades de emisión, redondeada, que iguala la cobertura sin dejar al origen bajo su reserva mínima.
-    </div>
-  </div>
-
-  <!-- Mapa de calor: solapamiento entre CEDIS -->
-  <div class="card" id="panelSankey">
-    <div class="sk-head">
-      <div>
-        <div class="hm-head">Flujo de traslados entre CEDIS</div>
-        <div class="hm-sub">El grosor de cada corriente es proporcional a las <b>unidades de emisión</b> que se mueven de un CEDIS a otro. Haga clic en una corriente para ver sus renglones.</div>
-      </div>
-      <div class="sk-toggle">
-        <button id="skTodos" class="sk-btn sk-on">Todos los traslados</button>
-        <button id="skUrg" class="sk-btn">Solo urgentes</button>
-      </div>
-    </div>
-    <div class="sk-filtros">
-      <div class="sk-chip-grp">
-        <span class="sk-chip-lbl">Envía</span>
-        <button class="sk-chip sk-chip-on" data-tipo="o" data-ced="">Todos</button>
-        <button class="sk-chip" data-tipo="o" data-ced="CEDIS PANAMA">Panamá</button>
-        <button class="sk-chip" data-tipo="o" data-ced="CEDIS DIVISA">Divisa</button>
-        <button class="sk-chip" data-tipo="o" data-ced="CEDIS CHIRIQUI">Chiriquí</button>
-      </div>
-      <div class="sk-chip-grp">
-        <span class="sk-chip-lbl">Recibe</span>
-        <button class="sk-chip sk-chip-on" data-tipo="d" data-ced="">Todos</button>
-        <button class="sk-chip" data-tipo="d" data-ced="CEDIS PANAMA">Panamá</button>
-        <button class="sk-chip" data-tipo="d" data-ced="CEDIS DIVISA">Divisa</button>
-        <button class="sk-chip" data-tipo="d" data-ced="CEDIS CHIRIQUI">Chiriquí</button>
-      </div>
-    </div>
-    <div id="sankeyWrap"></div>
-    <div id="sankeyDetalle"></div>
-  </div>
-  </div><!-- /lado -->
-
-  <div class="foot" id="foot"></div>
+    <div class="tw"><table id="tabla"></table></div>
+  </section>
+  <aside class="lat" id="lat"><section class="panel" id="det" style="display:none"></section><section class="panel" id="flu"></section></aside>
 </div>
 
-<div id="modalReng" class="modal-bg" style="display:none;">
-  <div class="modal-box">
-    <div class="modal-head"><span id="modalTit"></span><span class="modal-x" id="modalX">&times;</span></div>
-    <div class="modal-body" id="modalBody"></div>
-  </div>
-</div>
-
+<div class="modal-bg" id="modal"><div class="modal">
+  <h2>Cómo leer este reporte</h2>
+  <p>Compara la <b>cobertura</b> (días de inventario) de cada renglón en los tres CEDIS y propone <b>traslados</b> para equilibrarlos, con alcance nacional.</p>
+  <p><b>Demanda:</b> lo que piden todas las unidades ejecutoras que abastece cada CEDIS (Formas 8, media móvil de <span id="mVent">90</span> días), sin contar los pedidos entre CEDIS. Si un CEDIS no tiene Formas 8 de un renglón, se usa el consumo reportado. Un CEDIS sin demanda del renglón no recibe traslados.</p>
+  <p><b>Cuánto se mueve:</b> los CEDIS con más días de inventario aportan a los que tienen menos, hasta dejarlos parejos, sin que el que envía baje de su <b>reserva mínima</b> (<span id="mMin">15</span> días) y sin que el que recibe pase de su <b>tope</b> (<span id="mTopes">Panamá 90 · Divisa 60 · Chiriquí 60 días</span>).</p>
+  <p><b>Mover hoy:</b> el CEDIS que recibe está en cero y sus unidades sí piden el renglón.</p>
+  <p><b>Inventario alto / exceso:</b> inventario de los tres CEDIS dividido entre lo que piden al mes todas las unidades del país. De 7 a 12 meses es <b>alto</b>; más de 12 meses es <b>exceso</b> (se indica cuántas unidades sobran por encima de 12 meses). <b>Sin demanda</b>: hay saldo, pero ninguna unidad lo pidió en la ventana.</p>
+  <p>Toque una fila para ver, a la derecha, el detalle del traslado; el diagrama de flujo sigue visible debajo y resalta esa ruta. Toque una corriente del diagrama para filtrar la tabla.</p>
+  <p style="text-align:right"><button class="btn" id="cerrarM">Entendido</button></p>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+<div id="tourOverlay" style="display:none"><div id="tourBackdrop"></div><div id="tourBox" role="dialog" aria-live="polite"><div id="tourTitulo"></div><div id="tourTexto"></div>
+  <div id="tourNav"><span id="tourPaso"></span><span style="flex:1"></span><button id="tourSkip" class="btn-plano">Saltar</button><button id="tourPrev" class="btn-plano">◂ Atrás</button><button id="tourNext">Siguiente ▸</button></div></div></div>
 <script>
-var DATA_URL = 'redistribucion_cedis.json';
-var REP = null;
-var SORT = { k:'saldoDestino', dir:1 };  // por defecto: destinos en cero primero
+/* ================================================================
+   Redistribución entre CEDIS — redistribucion_cedis.html
+   Rediseño 30-sep-2026. Lee redistribucion_cedis.json (MODULO_REDISTRIBUCION).
+   Compatible con el JSON anterior (sin demanda nacional ni excesos) mientras
+   el GAS nuevo no haya publicado: usa los campos nuevos si existen.
+   ================================================================ */
+(function(){
+'use strict';
+const BASE='https://torredecontrolcss.github.io/REPOSICION_UE_CSS/';
+const LOGO=BASE+'icons/icon-192.png';
+let REP=null, K={}, MIN=15, F=[], EXC=[];
+const CED=[{k:'CEDIS PANAMA',n:'Panamá',c:'#0C447C'},{k:'CEDIS DIVISA',n:'Divisa',c:'#1f7a45'},{k:'CEDIS CHIRIQUI',n:'Chiriquí',c:'#8a5a1a'}];
+const cN=k=>(CED.find(x=>x.k===k)||{n:k}).n, cC=k=>(CED.find(x=>x.k===k)||{c:'#666'}).c;
+const $=id=>document.getElementById(id);
+const fmt=v=>v==null||isNaN(v)?'·':Math.round(v).toLocaleString('en-US');
+const fmtM=v=>v>=1e6?(v/1e6).toFixed(1)+' M':fmt(v);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dias=d=>d==null||d<0?'s/c':(d>=999?'≥999 d':Math.round(d)+' d');
+const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const fL=s=>{ const p=String(s||'').slice(0,10).split('-'); return p.length===3?(+p[2])+'-'+MES[+p[1]-1]+'-'+p[0]:(s||'·'); };
+const horaPTY=iso=>{ if(!/T\d/.test(String(iso||''))) return fL(iso); try{ return new Date(iso).toLocaleString('es-PA',{timeZone:'America/Panama',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' PTY'; }catch(e){ return fL(iso); } };
+const hoyPTY=()=>{ try{ return new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'}); }catch(e){ return new Date().toISOString().slice(0,10); } };
+const NIVTXT={ALTO:'Inventario alto',EXCESO:'Exceso',SIN_DEMANDA:'Sin demanda'};
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),3800); }
+const nivChip=n=>n&&n.nivel?'<span class="niv '+n.nivel+'" title="Inventario en el país para la demanda actual">'+NIVTXT[n.nivel]+(n.meses!=null?' '+n.meses+' m':'')+'</span>':'';
 
-function el(id){ return document.getElementById(id); }
-function fmt(n){ return (n==null||isNaN(n))?'—':Math.round(n).toLocaleString('es-PA'); }
-function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-function aviso(html, clase){ el('avisoBox').innerHTML = html ? '<div class="aviso '+(clase||'')+'">'+html+'</div>' : ''; }
-
-var CED_ABBR = { 'CEDIS PANAMA':{s:'Panamá', b:'b-pa'}, 'CEDIS DIVISA':{s:'Divisa', b:'b-di'}, 'CEDIS CHIRIQUI':{s:'Chiriquí', b:'b-ch'} };
-function badge(ced){ var a = CED_ABBR[ced]||{s:ced,b:''}; return '<span class="badge '+a.b+'">'+esc(a.s)+'</span>'; }
-function cedClass(ced){ return ced==='CEDIS PANAMA'?'pa':ced==='CEDIS DIVISA'?'di':'ch'; }
-
-fetch(DATA_URL, {cache:'no-cache'})
-  .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-  .then(function(data){ REP = data; render(); })
-  .catch(function(e){
-    aviso('No se pudo cargar <b>redistribucion_cedis.json</b> ('+esc(e.message)+').<br>'+
-      'Ejecute <b>publicarRedistribucionCEDIS()</b> (menú 🔄 Actualizar Tableros) en el proyecto de Apps Script para generarlo.', 'err');
+async function getJSON(f){
+  let ult; for(let i=0;i<3;i++){ try{ const r=await fetch(BASE+f,{cache:'no-cache'}); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json(); }catch(e){ ult=e; await new Promise(z=>setTimeout(z,1000*(i+1)*(i+1))); } }
+  throw ult;
+}
+/* Normaliza cada traslado: usa los campos del GAS nuevo si existen. */
+function preparar(){
+  K=REP.kpi||{}; MIN=K.minDias||15;
+  F=(REP.f||[]).map((t,i)=>{
+    const has=t.saldoOrigenDespues!=null;
+    const oDesp=has?t.saldoOrigenDespues:t.saldoOrigen-t.mover, dDesp=has?t.saldoDestinoDespues:t.saldoDestino+t.mover;
+    const cobODesp=has?(t.cobOrigenDespues>=0?t.cobOrigenDespues:null):((t.origenSinConsumo||!(t.cobOrigenAntes>0)||!(t.saldoOrigen>0))?null:t.cobOrigenAntes*oDesp/t.saldoOrigen);
+    const cobDDesp=(t.cobDestinoDespues==null||t.cobDestinoDespues<0)?null:t.cobDestinoDespues;
+    const sinc=!(t.consumoDestino>0);
+    const urg=t.urgente!=null?!!t.urgente:!!(t.destinoEnCero&&!t.origenSinConsumo);
+    return Object.assign({},t,{i,oDesp,dDesp,cobODesp,cobDDesp,sinc,urg,nuevo:has});
   });
+  EXC=(REP.excesos||[]).map((e,i)=>Object.assign({},e,{i}));
+}
+const st={o:'',d:'',q:'',ver:'todos',niv:'',sel:null,selE:null,sort:{k:'prio',d:1},sortE:{k:'niv',d:1}};
 
-function render(){
-  if(!REP){ return; }
-  (function(){
-    var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-    var f=function(s){ var p=String(s||'').slice(0,10).split('-'); return p.length===3 ? (+p[2])+'-'+M[+p[1]-1]+'-'+p[0] : (s||'—'); };
-    var corte=REP.kpi&&REP.kpi.corte, hoy=new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'});
-    var atraso=corte ? Math.round((new Date(hoy+'T00:00:00')-new Date(corte+'T00:00:00'))/86400000) : 99;
-    el('meta').innerHTML='<span class="fr'+(atraso>4?' alerta':'')+'">Saldos por CEDIS al <b>'+esc(f(corte))+'</b></span>'+
-      '<span class="fr">Publicado <b>'+esc(f(REP.generado))+'</b></span>';
-  })();
-  el('foot').textContent = 'Dirección Nacional de Logística · Torre de Control';
-  pintarKpis();
-  pintarBalance();
-  poblarFiltros();
-  pintarTabla();
-  pintarSankey();
+function filtradas(){
+  const q=st.q.toLowerCase();
+  return F.filter(t=>(!st.o||t.origen===st.o)&&(!st.d||t.destino===st.d)&&(!q||t.cod.indexOf(q)>=0||String(t.renglon).toLowerCase().indexOf(q)>=0)
+    &&(st.ver==='todos'||st.ver==='exc'||(st.ver==='urg'?t.urg:t.sinc)));
 }
-
-// ====== Color de cobertura (compartido por gráfica y mapa de calor) ======
-function colorCob(dias, minDias){
-  if(dias===-1) return '#e8eef5';        // sin consumo: saldo sin demanda
-  if(dias<=0)   return '#c0392b';        // en cero
-  if(dias < minDias) return '#e8a13a';   // bajo el mínimo
-  if(dias < minDias*2) return '#f2e6a0'; // ajustado
-  return '#8fca7f';                      // holgado
+function ordenar(a){
+  const s=st.sort;
+  const g=t=>s.k==='prio'?(t.urg?0:1)*1e12-t.mover:s.k==='cod'?t.cod:s.k==='mover'?t.mover:s.k==='o'?(t.cobODesp==null?1e9:t.cobODesp):s.k==='d'?(t.cobDDesp==null?-1:t.cobDDesp):0;
+  a.sort((x,y)=>{ const X=g(x),Y=g(y); return typeof X==='string'?s.d*X.localeCompare(Y):s.d*(X-Y); });
 }
-function txtCob(dias){
-  if(dias===-1 || dias>=9999) return 's/c';   // sin consumo (compacto para el mapa de calor)
-  return dias+'d';
+function resumen(){
+  const nSinc=F.filter(t=>t.sinc).length;
+  let h='<button class="k'+(st.ver==='urg'?' on':'')+'" data-ver="urg" style="--bg:#f6d5d1" title="El CEDIS que recibe está en cero y sus unidades piden el renglón"><span class="v" style="color:#c0392b">'+fmt(K.urgentes)+'</span><span class="l">Mover hoy · '+fmtM(K.unidadesUrgentes)+' u</span></button>'+
+    '<button class="k'+(st.ver==='todos'&&!st.o&&!st.d?' on':'')+'" data-ver="todos" style="--bg:#d7e5f4"><span class="v">'+fmt(K.totalTraslados)+'</span><span class="l">Traslados · '+fmtM(K.unidadesTotales)+' u</span></button>';
+  if(REP.excesos) h+='<button class="k'+(st.ver==='exc'?' on':'')+'" data-ver="exc" style="--bg:#e7def3" title="Renglones con 7 meses o más de inventario en el país, o sin demanda"><span class="v" style="color:#5b2c8f">'+fmt((K.invExceso||0)+(K.invAlto||0))+'</span><span class="l">Inventario alto / exceso · '+fmt(K.invExceso)+' con exceso</span></button>';
+  if(nSinc>0) h+='<button class="k'+(st.ver==='sinc'?' on':'')+'" data-ver="sinc" style="--bg:#f5ecc6" title="El CEDIS que recibe no tiene demanda del renglón"><span class="v" style="color:#8a5a1a">'+fmt(nSinc)+'</span><span class="l">Destino sin demanda</span></button>';
+  const PAS={'CEDIS PANAMA':'#dfe9f5','CEDIS DIVISA':'#dcefe2','CEDIS CHIRIQUI':'#f3e6d3'};
+  CED.forEach(c=>{ h+='<button class="k'+(st.o===c.k&&!st.d&&st.ver!=='exc'?' on':'')+'" data-o="'+c.k+'" style="--bg:'+PAS[c.k]+'" title="Filtrar: lo que envía '+c.n+'"><span class="ced"><span class="n" style="color:'+c.c+'">'+c.n+'</span></span><span class="l">envía '+fmt((K.porOrigen||{})[c.k])+' · recibe '+fmt((K.porDestino||{})[c.k])+'</span></button>'; });
+  $('resumen').innerHTML=h;
+  $('resumen').querySelectorAll('[data-ver]').forEach(b=>b.onclick=()=>{ st.ver=b.dataset.ver; st.sel=null; st.selE=null; if(b.dataset.ver==='todos'){ st.o='';st.d=''; $('fO').value='';$('fD').value=''; } setSeg(); pintar(); });
+  $('resumen').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ st.ver='todos'; st.o=(st.o===b.dataset.o&&!st.d)?'':b.dataset.o; st.d=''; st.sel=null; $('fO').value=st.o; $('fD').value=''; setSeg(); pintar(); });
 }
-function txtCobTabla(dias){
-  if(dias===-1 || dias>=9999) return '<span style="color:#888;" title="Saldo sin consumo registrado">sin consumo</span>';
-  return dias+' d';
+function setSeg(){
+  $('segVer').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.ver));
+  $('segNivel').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.niv));
+  $('campoNivel').style.display=st.ver==='exc'?'':'none';
+  ['fO','fD'].forEach(id=>{ $(id).disabled=st.ver==='exc'; });
 }
-
-// ====== Gráfica de solapamiento por renglón (corte actual) ======
-var CEDS3 = [
-  {k:'CEDIS PANAMA', s:'Panamá', c:'pa', col:'#0C447C'},
-  {k:'CEDIS DIVISA', s:'Divisa', c:'di', col:'#1e7a4a'},
-  {k:'CEDIS CHIRIQUI', s:'Chiriquí', c:'ch', col:'#8a5a1a'}
-];
-function abrirGrafica(cod){
-  var t = (REP.f||[]).find(function(x){ return String(x.cod)===String(cod); });
-  if(!t){ return; }
-  var minD = (REP.kpi&&REP.kpi.minDias)||15;
-  el('rengTit').innerHTML = '<span class="cod">'+esc(t.cod)+'</span> — '+esc(t.renglon||'');
-  // escala común de cobertura para los 3 (para que el solapamiento se vea)
-  var cobs = CEDS3.map(function(c){ var v=t.cobertura[c.k]; return v===-1?0:v; });
-  var maxC = Math.max(minD*2, Math.max.apply(null,cobs), 1);
-  var H=180, W=140, base=H-24, top=14;
-  el('plotCedis').innerHTML = CEDS3.map(function(c){
-    var cob = t.cobertura[c.k], sal = t.saldos[c.k]||0;
-    var vis = cob===-1?0:Math.max(0,cob);
-    var h = Math.round((Math.min(vis,maxC)/maxC)*(base-top));
-    var y = base - h;
-    var yMin = base - Math.round((Math.min(minD,maxC)/maxC)*(base-top));
-    var enCero = (sal===0);
-    var barCol = colorCob(cob, minD);
-    var svg =
-      '<svg class="plot-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+
-        // eje
-        '<line x1="20" y1="'+base+'" x2="'+(W-10)+'" y2="'+base+'" stroke="#bbb" stroke-width="1"/>'+
-        // línea del mínimo
-        '<line x1="20" y1="'+yMin+'" x2="'+(W-10)+'" y2="'+yMin+'" stroke="#c0392b" stroke-width="1" stroke-dasharray="4 3"/>'+
-        '<text x="'+(W-12)+'" y="'+(yMin-3)+'" font-size="8" fill="#c0392b" text-anchor="end">mín '+minD+'d</text>'+
-        // barra/nivel del CEDIS
-        '<rect x="42" y="'+y+'" width="'+(W-84)+'" height="'+h+'" fill="'+barCol+'" opacity="0.85"/>'+
-        // etiqueta de cobertura arriba de la barra
-        '<text x="'+(W/2)+'" y="'+(y-4>top?y-4:top)+'" font-size="13" font-weight="700" fill="#222" text-anchor="middle">'+txtCob(cob)+'</text>'+
-      '</svg>';
-    return '<div class="plot-col '+c.c+'">'+
-      '<div class="cn">'+esc(c.s)+'</div>'+ svg +
-      '<div class="plot-stat">Saldo: <b>'+fmt(sal)+'</b>'+(enCero?' <span class="plot-cero">EN CERO</span>':'')+'<br>Cobertura: <b>'+txtCob(cob)+'</b></div>'+
-    '</div>';
-  }).join('');
-  var ley = 'Traslado sugerido: <b>'+fmt(t.mover)+'</b> unidades de <b>'+esc(CED_ABBR[t.origen].s)+
-    '</b> &rarr; <b>'+esc(CED_ABBR[t.destino].s)+'</b>. '+
-    'La línea roja marca la reserva mínima ('+minD+' días) que el origen debe conservar. '+
-    '"s/c" = el CEDIS tiene saldo pero sin consumo registrado.';
-  el('rengLeyenda').innerHTML = ley;
-  el('panelReng').style.display = 'block';
-  el('panelReng').scrollIntoView({behavior:'smooth', block:'nearest'});
-}
-
-// ====== Mapa de calor: todos los renglones con solapamiento ======
-// ====== SANKEY de flujos entre CEDIS ======
-var SK_MODO = 'todos';   // 'todos' | 'urgentes'
-var SK_FO = '';          // filtro origen (vacío = todos)
-var SK_FD = '';          // filtro destino
-var CED_SK = [
-  {k:'CEDIS PANAMA',   s:'Panamá',   col:'#0C447C'},
-  {k:'CEDIS DIVISA',   s:'Divisa',   col:'#1e7a4a'},
-  {k:'CEDIS CHIRIQUI', s:'Chiriquí', col:'#8a5a1a'}
-];
-function pintarSankey(){
-  var q = (el('fBuscar') ? (el('fBuscar').value||'').trim().toUpperCase() : '');
-  var flu;
-  if (q){
-    // Hay búsqueda de renglón: construir los flujos SOLO con los traslados que
-    // coinciden, para que el Sankey muestre de dónde a dónde se mueve ese renglón.
-    flu = {}; CED_SK.forEach(function(a){ flu[a.k]={}; CED_SK.forEach(function(b){ if(a!==b) flu[a.k][b.k]={unidades:0,renglones:0}; }); });
-    (REP.f||[]).forEach(function(t){
-      if (((t.cod||'')+' '+(t.renglon||'')).toUpperCase().indexOf(q)<0) return;
-      if (SK_MODO==='urgentes' && !(t.destinoEnCero && !t.origenSinConsumo)) return;
-      if (t.origen===t.destino) return;
-      if (flu[t.origen] && flu[t.origen][t.destino]){
-        flu[t.origen][t.destino].unidades += t.mover;
-        flu[t.origen][t.destino].renglones += 1;
-      }
-    });
-  } else {
-    flu = (SK_MODO==='urgentes') ? (REP.flujosUrg||{}) : (REP.flujos||{});
-  }
-  // recolectar corrientes con unidades > 0, aplicando filtros por CEDIS
-  var corr = [];
-  CED_SK.forEach(function(o){
-    CED_SK.forEach(function(d){
-      if (o.k===d.k) return;
-      if (SK_FO && o.k!==SK_FO) return;     // filtro: solo envíos de X
-      if (SK_FD && d.k!==SK_FD) return;     // filtro: solo lo que recibe Y
-      var f = (flu[o.k]||{})[d.k];
-      if (f && f.unidades>0) corr.push({ o:o, d:d, unidades:f.unidades, renglones:f.renglones });
-    });
+let VIS=[], VISE=[];
+function tabla(){ if(st.ver==='exc') return tablaExc();
+  const a=filtradas(); ordenar(a); VIS=a;
+  const u=a.reduce((s,t)=>s+t.mover,0);
+  $('conteo').textContent=fmt(a.length)+' traslados · '+fmt(u)+' unidades por mover'+(a.length>400?' · se muestran los primeros 400; el Excel trae todos':'');
+  const ar=k=>st.sort.k===k?(st.sort.d>0?' ▲':' ▼'):'';
+  let h='<thead><tr><th data-k="cod">Renglón'+ar('cod')+'</th><th data-k="prio" title="Prioridad: Mover hoy primero">De → A'+ar('prio')+'</th><th class="n" data-k="mover">Unidades a mover'+ar('mover')+'</th>'+
+    '<th class="n" data-k="o" style="border-left:2px solid #b9c7d8">El que envía queda con'+ar('o')+'</th><th class="n" data-k="d" style="border-left:2px solid #b9c7d8">El que recibe queda con'+ar('d')+'</th></tr></thead><tbody>';
+  if(!a.length) h+='<tr><td colspan="5" class="cargando">No hay traslados con estos filtros.</td></tr>';
+  a.slice(0,400).forEach(t=>{
+    const oBajo=t.cobODesp!=null&&Math.round(t.cobODesp)<MIN;
+    const verbo=t.baseDestino==='CONSUMO'?' consume ':' pide ';
+    h+='<tr data-i="'+t.i+'" tabindex="0" class="'+(t.urg?'urg':'')+(st.sel===t.i?' sel':'')+'">'+
+      '<td><span class="cod mono">'+t.cod+'</span>'+(t.urg?'<span class="tag" style="background:#c0392b">MOVER HOY</span>':'')+nivChip(t.nacional)+'<br><span class="desc">'+esc(String(t.renglon).slice(0,64))+'</span></td>'+
+      '<td style="white-space:nowrap"><span class="cb" style="background:'+cC(t.origen)+'">'+cN(t.origen)+'</span><span class="flecha">→</span><span class="cb" style="background:'+cC(t.destino)+'">'+cN(t.destino)+'</span></td>'+
+      '<td class="n num" style="font-weight:700;font-size:13px">'+fmt(t.mover)+'</td>'+
+      '<td class="n bl"><b class="num">'+fmt(t.oDesp)+'</b> <span class="num'+(oBajo?' alerta':'')+'">· '+(t.cobODesp==null?'s/c':dias(t.cobODesp))+'</span>'+
+        '<span class="lin2">'+cN(t.origen)+' tenía '+fmt(t.saldoOrigen)+(t.origenSinConsumo||t.cobOrigenAntes<0?'':' · '+dias(t.cobOrigenAntes))+'</span></td>'+
+      '<td class="n bl"><b class="num">'+fmt(t.dDesp)+'</b> <span class="num">· '+(t.sinc?'s/c':dias(t.cobDDesp))+'</span>'+
+        '<span class="lin2">'+(t.sinc?'<span class="chip">sin demanda en '+cN(t.destino)+'</span>':cN(t.destino)+verbo+fmt(t.consumoDestino)+'/mes')+'</span></td></tr>';
   });
-  if (!corr.length){
-    el('sankeyWrap').innerHTML = '<div style="text-align:center;color:#888;padding:24px;font-size:13px;">No hay flujos que mostrar en esta vista.</div>';
-    el('sankeyDetalle').innerHTML = '';
+  $('tabla').innerHTML=h+'</tbody>';
+  $('tabla').querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{ const k=th.dataset.k; if(st.sort.k===k) st.sort.d=-st.sort.d; else st.sort={k,d:(k==='cod'||k==='prio')?1:-1}; tabla(); });
+  $('tabla').querySelectorAll('tbody tr[data-i]').forEach(tr=>{ const go=()=>{ st.sel=+tr.dataset.i; tabla(); lateral(); $('lat').scrollTop=0; }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
+}
+function excFiltrados(){
+  const q=st.q.toLowerCase();
+  const a=EXC.filter(e=>(!st.niv||e.nivel===st.niv)&&(!q||e.cod.indexOf(q)>=0||String(e.renglon).toLowerCase().indexOf(q)>=0));
+  const s=st.sortE, ord={EXCESO:0,ALTO:1,SIN_DEMANDA:2};
+  const g=e=>s.k==='niv'?ord[e.nivel]*1e13-(e.exceso||e.saldo):s.k==='cod'?e.cod:s.k==='saldo'?e.saldo:s.k==='dem'?e.demandaMes:s.k==='meses'?(e.meses==null?1e9:e.meses):s.k==='exc'?(e.exceso||0):0;
+  a.sort((x,y)=>{ const X=g(x),Y=g(y); return typeof X==='string'?s.d*X.localeCompare(Y):s.d*(X-Y); });
+  return a;
+}
+function tablaExc(){
+  const a=excFiltrados(); VISE=a;
+  $('conteo').textContent=fmt(a.length)+' renglones · '+fmt(a.reduce((s,e)=>s+(e.exceso||0),0))+' unidades por encima de '+(K.mesesExceso||12)+' meses'+(a.length>400?' · se muestran los primeros 400; el Excel trae todos':'');
+  const ar=k=>st.sortE.k===k?(st.sortE.d>0?' ▲':' ▼'):'';
+  let h='<thead><tr><th data-k="cod">Renglón'+ar('cod')+'</th><th data-k="niv">Nivel'+ar('niv')+'</th><th class="n" data-k="saldo">Inventario en el país'+ar('saldo')+'</th><th class="n" data-k="dem">Demanda del país / mes'+ar('dem')+'</th><th class="n" data-k="meses">Meses que alcanza'+ar('meses')+'</th><th class="n" data-k="exc">Sobra (más de '+(K.mesesExceso||12)+' m)'+ar('exc')+'</th><th style="border-left:2px solid #b9c7d8;cursor:default">Dónde está</th></tr></thead><tbody>';
+  if(!a.length) h+='<tr><td colspan="7" class="cargando">No hay renglones con este filtro.</td></tr>';
+  a.slice(0,400).forEach(e=>{
+    h+='<tr data-e="'+e.i+'" tabindex="0" class="'+(st.selE===e.i?'sel':'')+'"><td><span class="cod mono">'+e.cod+'</span>'+(e.conTraslado?'<span class="tag" style="background:#1E5A9E" title="Además tiene traslados propuestos">CON TRASLADO</span>':'')+'<br><span class="desc">'+esc(String(e.renglon).slice(0,64))+'</span></td>'+
+      '<td><span class="niv '+e.nivel+'" style="margin-left:0">'+NIVTXT[e.nivel]+'</span></td>'+
+      '<td class="n num"><b>'+fmt(e.saldo)+'</b></td><td class="n num">'+(e.demandaMes?fmt(e.demandaMes):'<span class="antes">sin demanda</span>')+'</td>'+
+      '<td class="n num"><b>'+(e.meses==null?'—':e.meses+' m')+'</b></td><td class="n num">'+(e.exceso?'<b style="color:#5b2c8f">'+fmt(e.exceso)+'</b>':'·')+'</td>'+
+      '<td class="bl" style="font-size:11.5px;white-space:nowrap">'+CED.map(c=>'<span style="color:'+c.c+';font-weight:600">'+c.n+'</span> <span class="num">'+fmtM((e.saldos||{})[c.k]||0)+'</span>').join(' · ')+'</td></tr>';
+  });
+  $('tabla').innerHTML=h+'</tbody>';
+  $('tabla').querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{ const k=th.dataset.k; if(st.sortE.k===k) st.sortE.d=-st.sortE.d; else st.sortE={k,d:(k==='cod'||k==='niv')?1:-1}; tablaExc(); });
+  $('tabla').querySelectorAll('tbody tr[data-e]').forEach(tr=>{ const go=()=>{ st.selE=+tr.dataset.e; tablaExc(); lateral(); $('lat').scrollTop=0; }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
+}
+
+/* ---------- panel derecho ---------- */
+function lateral(){
+  if(st.ver==='exc'){ detalleExc(st.selE!=null?EXC[st.selE]:null); $('flu').style.display='none'; return; }
+  $('flu').style.display=''; detalle(st.sel!=null?F[st.sel]:null); flujo();
+}
+function flujo(){
+  const sel0=st.sel!=null?F[st.sel]:null;
+  const a=sel0?F.filter(t=>t.cod===sel0.cod):filtradas(), fl={};
+  a.forEach(t=>{ const k=t.origen+'|'+t.destino; (fl[k]=fl[k]||{o:t.origen,d:t.destino,u:0,n:0}); fl[k].u+=t.mover; fl[k].n++; });
+  const L=Object.values(fl).sort((x,y)=>y.u-x.u);
+  const sel=null;
+  const W=460,H=330,xL=96,xR=W-96,nw=14,yT=30,yB=H-14,gap=26;
+  const out={},inn={}; CED.forEach(c=>{out[c.k]=0;inn[c.k]=0;}); L.forEach(f=>{ out[f.o]+=f.u; inn[f.d]+=f.u; });
+  const sumO=CED.reduce((s,c)=>s+out[c.k],0), sumI=CED.reduce((s,c)=>s+inn[c.k],0);
+  const MINH=5, disp=(yB-yT)-gap*2-MINH*3, k=Math.max(sumO,sumI)>0?disp/Math.max(sumO,sumI):0;
+  const nodos=(tot)=>{ let y=yT; const r={}; CED.forEach(c=>{ const h=Math.max(MINH,tot[c.k]*k); r[c.k]={y,h}; y+=h+gap; }); const extra=(yB-y+gap)/2; CED.forEach(c=>r[c.k].y+=Math.max(0,extra)); return r; };
+  const nL=nodos(out), nR=nodos(inn);
+  const oOff={},dOff={}; CED.forEach(c=>{oOff[c.k]=0;dOff[c.k]=0;});
+  const orden=[...L].sort((x,y)=>CED.findIndex(c=>c.k===x.o)-CED.findIndex(c=>c.k===y.o)||CED.findIndex(c=>c.k===x.d)-CED.findIndex(c=>c.k===y.d));
+  const bandas=orden.map(f=>{ const g=Math.max(2,f.u*k); const y0=nL[f.o].y+oOff[f.o]; oOff[f.o]+=g; return Object.assign({},f,{g,y0}); });
+  bandas.sort((x,y)=>CED.findIndex(c=>c.k===x.d)-CED.findIndex(c=>c.k===y.d)||CED.findIndex(c=>c.k===x.o)-CED.findIndex(c=>c.k===y.o));
+  bandas.forEach(b2=>{ b2.y1=nR[b2.d].y+dOff[b2.d]; dOff[b2.d]+=b2.g; });
+  const xa=xL+nw/2, xb=xR-nw/2, xm=(xa+xb)/2;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="Flujo de traslados entre CEDIS">'+
+    '<text x="'+xL+'" y="16" text-anchor="middle" font-size="10" fill="#5f6b78" font-weight="700">ENVÍA</text><text x="'+xR+'" y="16" text-anchor="middle" font-size="10" fill="#5f6b78" font-weight="700">RECIBE</text>';
+  bandas.forEach(b2=>{ const on=!sel||(sel.origen===b2.o&&sel.destino===b2.d);
+    s+='<path class="flu" data-o="'+b2.o+'" data-d="'+b2.d+'" d="M'+xa+' '+b2.y0+' C'+xm+' '+b2.y0+' '+xm+' '+b2.y1+' '+xb+' '+b2.y1+' L'+xb+' '+(b2.y1+b2.g)+' C'+xm+' '+(b2.y1+b2.g)+' '+xm+' '+(b2.y0+b2.g)+' '+xa+' '+(b2.y0+b2.g)+' Z" fill="'+cC(b2.o)+'" fill-opacity="'+(on?.42:.1)+'" stroke="'+cC(b2.o)+'" stroke-opacity="'+(on?.5:.12)+'" stroke-width=".6" style="cursor:pointer"><title>'+cN(b2.o)+' → '+cN(b2.d)+': '+fmt(b2.u)+' unidades en '+b2.n+' traslados</title></path>'; });
+  // cifras junto al CEDIS que envía, una por banda, separadas si las bandas son delgadas
+  const etq=[...bandas].sort((x,y)=>x.y0-y.y0); let ult=-99;
+  etq.forEach(b2=>{ let y=b2.y0+b2.g/2+3.5; if(y-ult<12) y=ult+12; ult=y; const on=!sel||(sel.origen===b2.o&&sel.destino===b2.d);
+    s+='<text x="'+(xa+5)+'" y="'+y+'" font-size="10" font-family="Consolas" fill="#1d2733" fill-opacity="'+(on?1:.35)+'" paint-order="stroke" stroke="#fff" stroke-width="3" pointer-events="none">'+fmtM(b2.u)+' → '+cN(b2.d)+'</text>'; });
+  CED.forEach(c=>{ const l=nL[c.k], r=nR[c.k];
+    s+='<rect x="'+(xL-nw/2)+'" y="'+l.y+'" width="'+nw+'" height="'+l.h+'" fill="'+c.c+'"/><text x="'+(xL-nw/2-6)+'" y="'+(l.y+l.h/2+1)+'" text-anchor="end" font-size="11.5" font-weight="700" fill="'+c.c+'">'+c.n+'</text><text x="'+(xL-nw/2-6)+'" y="'+(l.y+l.h/2+13)+'" text-anchor="end" font-size="9.5" font-family="Consolas" fill="#5f6b78">'+(out[c.k]?fmtM(out[c.k]):'0')+'</text>'+
+      '<rect x="'+(xR-nw/2)+'" y="'+r.y+'" width="'+nw+'" height="'+r.h+'" fill="'+c.c+'"/><text x="'+(xR+nw/2+6)+'" y="'+(r.y+r.h/2+1)+'" font-size="11.5" font-weight="700" fill="'+c.c+'">'+c.n+'</text><text x="'+(xR+nw/2+6)+'" y="'+(r.y+r.h/2+13)+'" font-size="9.5" font-family="Consolas" fill="#5f6b78">'+(inn[c.k]?fmtM(inn[c.k]):'0')+'</text>'; });
+  s+='</svg>';
+  const lista='<table class="tbl-det" style="margin-top:6px"><thead><tr><th>Ruta</th><th class="n">Traslados</th><th class="n">Unidades</th></tr></thead><tbody>'+
+    L.map(f=>'<tr class="ruta" data-o="'+f.o+'" data-d="'+f.d+'" style="cursor:pointer'+(sel&&!(sel.origen===f.o&&sel.destino===f.d)?';opacity:.45':'')+'"><td><span class="cb" style="background:'+cC(f.o)+'">'+cN(f.o)+'</span><span class="flecha">→</span><span class="cb" style="background:'+cC(f.d)+'">'+cN(f.d)+'</span></td><td class="n num">'+fmt(f.n)+'</td><td class="n num">'+fmt(f.u)+'</td></tr>').join('')+'</tbody></table>';
+  const alcance=sel0?'Traslados de <b>'+sel0.cod+'</b> · '+esc(String(sel0.renglon).slice(0,50))+'.':st.q?'Solo los traslados que coinciden con «'+esc(st.q)+'».':(st.o||st.d||st.ver!=='todos')?'Con los filtros de la tabla.':'Todos los traslados.';
+  $('flu').innerHTML='<div class="cab"><h3>'+(sel0?'Flujo de este renglón':'Flujo entre CEDIS')+'</h3>'+(sel0?'<button class="btn" id="verTodo">Ver flujo de todos</button>':(st.o||st.d)?'<button class="btn" id="qRuta">Quitar filtro de ruta</button>':'')+'</div><div class="cont">'+
+    '<div class="nota">'+alcance+' El grosor es proporcional a las unidades'+(sel0?'.':'. Toque una corriente o una ruta para filtrar la tabla.')+'</div>'+(L.length?s+lista:'<div class="nota" style="padding:20px 0;text-align:center">No hay traslados con estos filtros.</div>')+'</div>';
+  const set=(o,d)=>{ st.o=o; st.d=d; st.sel=null; $('fO').value=o; $('fD').value=d; pintar(); };
+  if(!sel0) $('flu').querySelectorAll('.flu,.ruta').forEach(e=>e.onclick=()=>set(e.dataset.o,e.dataset.d));
+  const q=$('qRuta'); if(q) q.onclick=()=>set('','');
+  const vt=$('verTodo'); if(vt) vt.onclick=()=>{ st.sel=null; tabla(); lateral(); };
+}
+function porCedis(t){
+  // Datos por CEDIS: del GAS nuevo (saldos/saldosDespues/demanda) o reconstruidos del JSON anterior.
+  const R=CED.map(c=>{
+    const esO=c.k===t.origen, esD=c.k===t.destino;
+    const sA=(t.saldos||{})[c.k]||0;
+    const sD=t.saldosDespues?(t.saldosDespues[c.k]!=null?t.saldosDespues[c.k]:sA):(esO?t.oDesp:esD?t.dDesp:sA);
+    let dem=t.demanda?(t.demanda[c.k]||0):null;
+    if(dem==null){ const cb=(t.cobertura||{})[c.k]; dem=(cb>0&&sA>0)?sA/cb*30:(esD&&t.consumoDestino>0?t.consumoDestino:0); }
+    const cA=dem>0?sA/dem*30:null, cD=dem>0?sD/dem*30:null;
+    const base=t.base?t.base[c.k]:(dem>0?'CONSUMO':'');
+    return {c,esO,esD,sA,sD,cA,cD,dem,base};
+  });
+  return R;
+}
+function detalle(t){
+  const box=$('det'); if(!t){ box.style.display='none'; box.innerHTML=''; return; }
+  const R=porCedis(t);
+  const otros=F.filter(x=>x.cod===t.cod&&x.i!==t.i);
+  const rol=r=>{ const env=F.some(x=>x.cod===t.cod&&x.origen===r.c.k), rec=F.some(x=>x.cod===t.cod&&x.destino===r.c.k); return env&&rec?'envía y recibe':env?'envía':rec?'recibe':'no participa'; };
+  const mv=r=>{ const out=F.filter(x=>x.cod===t.cod&&x.origen===r.c.k).reduce((s,x)=>s+x.mover,0), inn=F.filter(x=>x.cod===t.cod&&x.destino===r.c.k).reduce((s,x)=>s+x.mover,0); return inn-out; };
+  const dd=(v,res)=>v==null?'<span class="antes">s/c</span>':'<span class="num'+(res&&Math.round(v)<MIN?' alerta':'')+'">'+dias(v)+'</span>';
+  let tb='<table class="tbl-det"><thead><tr><th>CEDIS</th><th class="n">Hoy</th><th class="n">Movimiento</th><th class="n">Después</th><th class="n">Cobertura</th></tr></thead><tbody>';
+  R.forEach(r=>{ const m=mv(r), part=m!==0;
+    const mov=m<0?'<span class="num alerta">−'+fmt(-m)+'</span>':m>0?'<span class="num" style="color:#2e7d32;font-weight:700">+'+fmt(m)+'</span>':'<span class="antes">no participa</span>';
+    tb+='<tr><td><b style="color:'+r.c.c+'">'+r.c.n+'</b><span class="rol">'+rol(r)+' · '+(r.dem>0?(r.base==='CONSUMO'?'consume ':'sus unidades piden ')+fmt(r.dem)+'/mes':'sin demanda')+'</span></td>'+
+      '<td class="n num antes">'+fmt(r.sA)+'</td><td class="n">'+mov+'</td><td class="n num"><b>'+fmt(r.sD)+'</b></td>'+
+      '<td class="n">'+(part?'<span class="antes">'+dd(r.cA)+'</span> → <b>'+dd(r.cD,true)+'</b>':dd(r.cA))+'</td></tr>'; });
+  tb+='</tbody></table>';
+  const tope=Math.min(365,Math.max(MIN*3,...R.map(r=>Math.max(r.cA||0,r.cD||0)))), pc=v=>Math.max(0,Math.min(100,(v||0)/tope*100));
+  const pista=(v,col,op)=>'<div class="pista"><i style="width:'+pc(v)+'%;background:'+col+';opacity:'+op+'"></i><span class="rm" style="left:'+pc(MIN)+'%" title="Reserva mínima '+MIN+' d"></span></div>';
+  let bar='<div class="nota" style="margin-bottom:4px">Días que alcanza el inventario de cada CEDIS con lo que piden sus unidades. La línea roja punteada es la reserva mínima de '+MIN+' días. Escala: 0 a '+Math.round(tope)+' días.</div>';
+  R.forEach(r=>{ const part=mv(r)!==0;
+    bar+='<div class="cb2"><div class="ced-h"><b style="color:'+r.c.c+'">'+r.c.n+'</b><span class="nota">'+rol(r)+'</span></div>';
+    if(r.cA==null&&r.cD==null){ bar+='<div class="r"><span class="et">—</span><span class="nota">sin demanda: no se puede calcular en días</span><span></span></div></div>'; return; }
+    bar+='<div class="r"><span class="et">Hoy</span>'+pista(r.cA,r.c.c,.35)+'<span class="val hoy">'+dias(r.cA)+'</span></div>';
+    if(part) bar+='<div class="r"><span class="et">Después</span>'+pista(r.cD,r.c.c,1)+'<span class="val'+(Math.round(r.cD)<MIN?' alerta':'')+'">'+dias(r.cD)+'</span></div>';
+    bar+='</div>'; });
+  const o=R.find(r=>r.c.k===t.origen), d=R.find(r=>r.c.k===t.destino), V=[];
+  if(o.cD!=null) V.push(Math.round(o.cD)>MIN?['ok',cN(t.origen)+' conserva <b>'+dias(o.cD)+'</b>, por encima de la reserva mínima de '+MIN+' días.']:Math.round(o.cD)===MIN?['inf',cN(t.origen)+' queda con <b>'+dias(o.cD)+'</b>, justo en la reserva mínima: no le queda margen.']:['mal',cN(t.origen)+' quedaría con <b>'+dias(o.cD)+'</b>, por debajo de la reserva mínima de '+MIN+' días.']);
+  else V.push(['inf',cN(t.origen)+' no tiene demanda de este renglón: el traslado no le afecta.']);
+  if(t.sinc) V.push(['mal',cN(t.destino)+' <b>no tiene demanda</b> de este renglón. Revise antes de mover.']);
+  else if(t.saldoDestino===0) V.push(['ok',cN(t.destino)+' está en cero y pasa a <b>'+dias(d.cD)+'</b>.']);
+  else V.push(['ok',cN(t.destino)+' sube de <b>'+dias(d.cA)+'</b> a <b>'+dias(d.cD)+'</b>.']);
+  const topeD=(K.topes||{})[t.destino]; if(topeD&&d.cD!=null&&Math.round(d.cD)>=topeD-1) V.push(['inf',cN(t.destino)+' llega a su tope de <b>'+topeD+' días</b> de inventario: no se le envía más para no saturar su almacén.']);
+  const n=t.nacional||{};
+  if(n.nivel==='EXCESO') V.push(['mal','En el país hay <b>'+n.meses+' meses</b> de inventario para la demanda actual: <b>'+fmt(n.exceso)+'</b> unidades por encima de '+(K.mesesExceso||12)+' meses. Revise compras o vencimientos.']);
+  else if(n.nivel==='ALTO') V.push(['inf','Inventario alto: en el país hay <b>'+n.meses+' meses</b> de inventario para la demanda actual.']);
+  box.style.display='';
+  box.innerHTML='<div class="cab"><div><div class="nota" style="font-weight:700;letter-spacing:.4px">DETALLE DEL TRASLADO</div><h3><span class="mono">'+t.cod+'</span> · '+esc(t.renglon)+'</h3></div><button class="btn" id="cerrarDet">Cerrar detalle</button></div><div class="cont">'+
+    '<div class="mover-big">Mover <span class="u">'+fmt(t.mover)+'</span> unidades <span class="cb" style="background:'+cC(t.origen)+'">'+cN(t.origen)+'</span><span class="flecha">→</span><span class="cb" style="background:'+cC(t.destino)+'">'+cN(t.destino)+'</span>'+(t.urg?'<span class="tag" style="background:#c0392b">MOVER HOY</span>':'')+'</div>'+
+    (otros.length?'<div class="frase" style="margin-top:0">Este renglón tiene además '+otros.length+' traslado'+(otros.length>1?'s':'')+': '+otros.map(x=>fmt(x.mover)+' de '+cN(x.origen)+' a '+cN(x.destino)).join('; ')+'. Las cifras de «Después» ya los incluyen.</div>':'')+
+    '<div class="sec">Antes y después</div>'+tb+'<div class="sec">Cobertura en días, antes y después</div>'+bar+
+    '<div class="sec">Conclusión</div><ul class="ver">'+V.map(v=>'<li class="'+v[0]+'">'+v[1]+'</li>').join('')+'</ul></div>';
+  $('cerrarDet').onclick=()=>{ st.sel=null; tabla(); lateral(); };
+}
+function detalleExc(e){
+  const box=$('det'); box.style.display='';
+  if(!e){
+    const u=CED.map(c=>({c,s:EXC.filter(x=>x.nivel==='EXCESO').reduce((a,x)=>a+((x.saldos||{})[c.k]||0),0)}));
+    box.innerHTML='<div class="cab"><h3>Inventario alto y exceso</h3></div><div class="cont">'+
+      '<div class="frase">Inventario de los tres CEDIS dividido entre lo que piden al mes todas las unidades del país. De '+(K.mesesAlto||7)+' a '+(K.mesesExceso||12)+' meses es <b>alto</b>; más de '+(K.mesesExceso||12)+' es <b>exceso</b>. <b>Sin demanda</b>: hay saldo pero ninguna unidad lo pidió en '+(K.ventanaDias||90)+' días.</div>'+
+      '<ul class="ver"><li class="mal"><b>'+fmt(K.invExceso)+'</b> renglones con exceso · <b>'+fmt(K.unidadesExceso)+'</b> unidades por encima de '+(K.mesesExceso||12)+' meses.</li><li class="inf"><b>'+fmt(K.invAlto)+'</b> renglones con inventario alto.</li><li class="inf"><b>'+fmt(K.invSinDemanda)+'</b> renglones con saldo y sin demanda.</li></ul>'+
+      '<div class="sec">Dónde está el inventario de los renglones con exceso</div><table class="tbl-det"><tbody>'+u.map(x=>'<tr><td><b style="color:'+x.c.c+'">'+x.c.n+'</b></td><td class="n num">'+fmt(x.s)+'</td></tr>').join('')+'</tbody></table>'+
+      '<div class="nota">Toque un renglón de la tabla para ver su detalle.</div></div>';
     return;
   }
-  var maxU = Math.max.apply(null, corr.map(function(c){return c.unidades;}));
-
-  // layout: origen a la izquierda, destino a la derecha
-  /* Altura según el espacio: lado a lado con la tabla, el Sankey se alarga hasta
-     igualar la altura de la tabla, para no dejar un hueco debajo. Apilado (pantalla
-     angosta) conserva su proporción original 900x400. */
-  var W=900, H=400;
-  try{
-    var lado=window.matchMedia && window.matchMedia('(min-width:1201px)').matches;
-    var cT=document.querySelector('.lado>.card'), pS=el('panelSankey'), wS=el('sankeyWrap');
-    if(lado && cT && pS && wS && wS.clientWidth>0){
-      var disp=cT.offsetHeight-(pS.offsetHeight-wS.offsetHeight)-4;
-      if(disp>0) H=Math.max(400, Math.min(820, Math.round(W*disp/wS.clientWidth)));
-    }
-  }catch(eH){ H=400; }
-  var colO=180, colD=W-180, nodoW=26, top=64, bot=H-30, alto=bot-top;
-  // posición vertical de cada CEDIS (mismo orden en ambas columnas)
-  var yDe={}; CED_SK.forEach(function(c,i){ yDe[c.k] = top + (alto/(CED_SK.length-1))*i; });
-  // grosor máximo de una corriente
-  var GMAX = Math.round(64*Math.min(H/400,1.6));
-  function grosor(u){ return Math.max(3, (u/maxU)*GMAX); }
-
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
-  // corrientes (curvas bezier)
-  corr.sort(function(a,b){ return b.unidades-a.unidades; });
-  var etiquetas = '';   // se dibujan al final, encima de todas las corrientes
-  corr.forEach(function(c,idx){
-    var y1=yDe[c.o.k], y2=yDe[c.d.k], g=grosor(c.unidades);
-    var x1=colO+nodoW, x2=colD;
-    var mx=(x1+x2)/2;
-    var path='M '+x1+' '+y1+' C '+mx+' '+y1+', '+mx+' '+y2+', '+x2+' '+y2;
-    svg += '<defs><linearGradient id="g'+idx+'" x1="0" x2="1">'+
-           '<stop offset="0" stop-color="'+c.o.col+'"/><stop offset="1" stop-color="'+c.d.col+'"/></linearGradient></defs>';
-    svg += '<path class="sk-flow" d="'+path+'" stroke="url(#g'+idx+')" stroke-width="'+g+'" fill="none" opacity="0.45" '+
-           'data-o="'+c.o.k+'" data-d="'+c.d.k+'">'+
-           '<title>'+c.o.s+' → '+c.d.s+': '+fmt(c.unidades)+' unidades · '+c.renglones+' renglones</title></path>';
-    // etiqueta cerca del ORIGEN (a 22% del recorrido), donde las corrientes aún
-    // no se cruzan. Bezier en t=0.22: mezcla suave entre y1 y y2.
-    var t=0.22, yb = (1-t)*(1-t)*y1 + 2*(1-t)*t*((y1+y2)/2) + t*t*y2;
-    var xb = x1 + (x2-x1)*t;
-    var txt = fmt(c.unidades);
-    var wLbl = txt.length*7 + 10;
-    etiquetas += '<g pointer-events="none">'+
-      '<rect x="'+(xb-wLbl/2)+'" y="'+(yb-9)+'" width="'+wLbl+'" height="26" rx="3" fill="#ffffff" opacity="0.9" stroke="'+c.o.col+'" stroke-width="0.5"/>'+
-      '<text x="'+xb+'" y="'+(yb+2)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+c.o.col+'">'+txt+'</text>'+
-      '<text x="'+xb+'" y="'+(yb+12)+'" text-anchor="middle" font-size="8" fill="#888">unidades</text>'+
-      '</g>';
-  });
-  // nodos
-  CED_SK.forEach(function(c){
-    var y=yDe[c.k];
-    svg += '<rect x="'+colO+'" y="'+(y-26)+'" width="'+nodoW+'" height="52" rx="4" fill="'+c.col+'"/>';
-    svg += '<text class="sk-nodo-lbl" x="'+(colO-8)+'" y="'+(y+4)+'" text-anchor="end" fill="'+c.col+'">'+c.s+'</text>';
-    svg += '<rect x="'+(colD)+'" y="'+(y-26)+'" width="'+nodoW+'" height="52" rx="4" fill="'+c.col+'"/>';
-    svg += '<text class="sk-nodo-lbl" x="'+(colD+nodoW+8)+'" y="'+(y+4)+'" text-anchor="start" fill="'+c.col+'">'+c.s+'</text>';
-  });
-  // encabezados de columna (en el margen superior, con aire respecto a los nodos)
-  svg += '<text x="'+(colO+nodoW/2)+'" y="28" text-anchor="middle" font-size="10" fill="#999" font-weight="700" letter-spacing="1">ENVÍA</text>';
-  svg += '<text x="'+(colD+nodoW/2)+'" y="28" text-anchor="middle" font-size="10" fill="#999" font-weight="700" letter-spacing="1">RECIBE</text>';
-  svg += etiquetas;   // etiquetas al final, encima de todo
-  svg += '</svg>';
-  el('sankeyWrap').innerHTML = svg;
-  el('sankeyDetalle').innerHTML = '';
-
-  // clic en una corriente -> abrir modal con los renglones de ese flujo
-  el('sankeyWrap').querySelectorAll('.sk-flow').forEach(function(p){
-    p.addEventListener('click', function(){
-      abrirDetalleFlujo(p.getAttribute('data-o'), p.getAttribute('data-d'));
-    });
-  });
+  let tb='<table class="tbl-det"><thead><tr><th>CEDIS</th><th class="n">Saldo</th><th class="n">Sus unidades piden / mes</th><th class="n">Días que alcanza</th></tr></thead><tbody>';
+  CED.forEach(c=>{ const s=(e.saldos||{})[c.k]||0, dm=(e.demanda||{})[c.k]||0; tb+='<tr><td><b style="color:'+c.c+'">'+c.n+'</b></td><td class="n num">'+fmt(s)+'</td><td class="n num">'+(dm?fmt(dm):'<span class="antes">sin demanda</span>')+'</td><td class="n num">'+(dm?dias(s/dm*30):(s?'<span class="antes">s/d</span>':'·'))+'</td></tr>'; });
+  tb+='<tr><td><b>País</b></td><td class="n num"><b>'+fmt(e.saldo)+'</b></td><td class="n num"><b>'+(e.demandaMes?fmt(e.demandaMes):'—')+'</b></td><td class="n num"><b>'+(e.meses==null?'—':e.meses+' meses')+'</b></td></tr></tbody></table>';
+  const V=[];
+  if(e.nivel==='EXCESO') V.push(['mal','Hay <b>'+e.meses+' meses</b> de inventario en el país para la demanda actual. <b>'+fmt(e.exceso)+'</b> unidades están por encima de '+(K.mesesExceso||12)+' meses: revise compras pendientes y fechas de vencimiento.']);
+  else if(e.nivel==='ALTO') V.push(['inf','Hay <b>'+e.meses+' meses</b> de inventario en el país para la demanda actual: inventario alto, sin llegar a exceso.']);
+  else V.push(['mal','Hay <b>'+fmt(e.saldo)+'</b> unidades y ninguna unidad ejecutora lo pidió en '+(K.ventanaDias||90)+' días ni reporta consumo. Revise si sigue en uso.']);
+  if(e.conTraslado) V.push(['inf','Además tiene traslados propuestos entre CEDIS. <a href="#" id="verTras">Ver sus traslados</a>.']);
+  box.innerHTML='<div class="cab"><div><div class="nota" style="font-weight:700;letter-spacing:.4px">INVENTARIO EN EL PAÍS</div><h3><span class="mono">'+e.cod+'</span> · '+esc(e.renglon)+'</h3></div><button class="btn" id="cerrarDet">Cerrar detalle</button></div><div class="cont">'+
+    '<div class="mover-big"><span class="niv '+e.nivel+'" style="margin-left:0;font-size:12px;padding:2px 8px">'+NIVTXT[e.nivel]+'</span></div>'+tb+'<div class="sec">Conclusión</div><ul class="ver">'+V.map(v=>'<li class="'+v[0]+'">'+v[1]+'</li>').join('')+'</ul></div>';
+  $('cerrarDet').onclick=()=>{ st.selE=null; tablaExc(); lateral(); };
+  const vt=$('verTras'); if(vt) vt.onclick=ev=>{ ev.preventDefault(); st.ver='todos'; st.q=e.cod; $('fB').value=e.cod; st.selE=null; setSeg(); pintar(); const t=F.find(x=>x.cod===e.cod); if(t){ st.sel=t.i; tabla(); lateral(); } };
 }
-
-function abrirDetalleFlujo(origen, destino){
-  var soloUrg = (SK_MODO==='urgentes');
-  var lista = (REP.f||[]).filter(function(t){
-    if (t.origen!==origen || t.destino!==destino) return false;
-    if (soloUrg) return t.destinoEnCero && !t.origenSinConsumo;
-    return true;
-  });
-  lista.sort(function(a,b){ return b.mover-a.mover; });
-  var oS = (CED_ABBR[origen]||{s:origen}).s, dS = (CED_ABBR[destino]||{s:destino}).s;
-  el('modalTit').textContent = oS+' → '+dS+'  ·  '+lista.length+' renglones';
-  var filas = lista.map(function(t){
-    var urg = t.destinoEnCero && !t.origenSinConsumo;
-    var cobDesp = (t.cobDestinoDespues==null) ? null : t.cobDestinoDespues;
-    return '<tr>'+
-      '<td class="cod">'+esc(t.cod)+'</td>'+
-      '<td>'+esc(t.renglon||'')+(urg?' <span class="tag-urgente">MOVER HOY</span>':'')+'</td>'+
-      '<td class="num">'+fmt(t.mover)+'</td>'+
-      '<td class="num">'+(t.consumoDestino>0?fmt(t.consumoDestino):'<span style="color:#aaa;">sin cons.</span>')+'</td>'+
-      '<td class="num">'+(cobDesp!=null && cobDesp>=0 ? cobDesp+' d' : '<span style="color:#aaa;">—</span>')+'</td>'+
-    '</tr>';
-  }).join('');
-  el('modalBody').innerHTML = '<table><thead><tr>'+
-      '<th>Código</th><th>Renglón</th>'+
-      '<th style="text-align:right;">Mover</th>'+
-      '<th style="text-align:right;">Consumo/mes destino</th>'+
-      '<th style="text-align:right;">Cobertura tras mover</th>'+
-    '</tr></thead><tbody>'+
-    (filas||'<tr><td colspan="5" style="text-align:center;color:#888;padding:16px;">Sin renglones.</td></tr>')+'</tbody></table>';
-  el('modalReng').style.display = 'flex';
+/* ---------- Excel institucional (ExcelJS, se carga al exportar) ---------- */
+let _xls=null;
+function cargarExcelJS(){ if(window.ExcelJS) return Promise.resolve(); if(_xls) return _xls;
+  _xls=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=res; s.onerror=()=>{ _xls=null; rej(new Error('ExcelJS')); }; document.head.appendChild(s); }); return _xls; }
+async function exportarXLSX(nombre,titulo,meta,cols,filas){
+  if(!filas.length){ toast('No hay filas que exportar con los filtros actuales.'); return; }
+  toast('Preparando Excel…');
+  try{ await cargarExcelJS(); }catch(e){ toast('No se pudo preparar el Excel: revise la conexión y vuelva a intentar.'); return; }
+  const wb=new ExcelJS.Workbook(); wb.creator='Dirección Nacional de Logística';
+  const ws=wb.addWorksheet('Reporte',{views:[{state:'frozen',ySplit:7+meta.length}]});
+  try{ const r=await fetch(LOGO); const b=await r.arrayBuffer(); let bin=''; new Uint8Array(b).forEach(x=>bin+=String.fromCharCode(x));
+    const id=wb.addImage({base64:btoa(bin),extension:'png'}); ws.addImage(id,{tl:{col:0,row:0},ext:{width:58,height:58}}); }catch(_){}
+  const nC=cols.length, linea=(f,txt,o)=>{ ws.mergeCells(f,2,f,Math.max(2,nC)); const c=ws.getCell(f,2); c.value=txt; c.font=Object.assign({name:'Calibri',size:11},o||{}); };
+  linea(1,'CAJA DE SEGURO SOCIAL',{bold:true,size:13,color:{argb:'FF0C447C'}});
+  linea(2,'Dirección Nacional de Logística · Redistribución entre CEDIS',{color:{argb:'FF1E5A9E'}});
+  linea(3,titulo,{bold:true,size:12});
+  let f=5; [['Generado',new Date().toLocaleString('es-PA',{timeZone:'America/Panama'})+' (hora de Panamá)']].concat(meta).forEach(([k,v])=>{ ws.getCell(f,1).value=k; ws.getCell(f,1).font={bold:true,size:10,color:{argb:'FF5F6B78'}}; ws.mergeCells(f,2,f,Math.max(2,nC)); ws.getCell(f,2).value=v; ws.getCell(f,2).font={size:10}; f++; });
+  f++;
+  const hr=ws.getRow(f); cols.forEach((c,i)=>{ const x=hr.getCell(i+1); x.value=c.h; x.font={bold:true,color:{argb:'FFFFFFFF'},size:10}; x.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0C447C'}}; x.alignment={vertical:'middle',horizontal:c.t==='txt'?'left':'right',wrapText:true}; });
+  hr.height=30; ws.autoFilter={from:{row:f,column:1},to:{row:f,column:nC}};
+  filas.forEach((r,j)=>{ const row=ws.getRow(f+1+j); r.forEach((v,i)=>{ const x=row.getCell(i+1), t=cols[i].t;
+    x.value=(v===''||v==null)?null:(t==='txt'?String(v):(isFinite(v)?Number(v):String(v)));
+    if(t==='num') x.numFmt='#,##0'; if(t==='dec') x.numFmt='0.0'; x.font={name:t==='txt'?'Calibri':'Consolas',size:10};
+    if(j%2) x.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4F7FB'}}; }); });
+  cols.forEach((c,i)=>{ ws.getColumn(i+1).width=c.w||14; });
+  const buf=await wb.xlsx.writeBuffer(); const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download=nombre+'_'+hoyPTY()+'.xlsx';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); toast('Excel descargado.');
 }
-function _noop(){}
-
-function pintarKpis(){
-  var k = REP.kpi||{};
-  el('kpis').innerHTML =
-    '<div class="kpi cero"><div class="lab">Mover HOY (urgente)</div><div class="val">'+fmt(k.urgentes)+'</div>'+
-      '<div class="sub">Destinos en cero que un CEDIS con consumo real puede surtir.</div></div>'+
-    '<div class="kpi"><div class="lab">Unidades urgentes</div><div class="val">'+fmt(k.unidadesUrgentes)+'</div>'+
-      '<div class="sub">Total a movilizar solo en los traslados urgentes.</div></div>'+
-    '<div class="kpi"><div class="lab">Traslados totales</div><div class="val">'+fmt(k.totalTraslados)+'</div>'+
-      '<div class="sub">Incluye ajustes de cobertura menos urgentes.</div></div>'+
-    '<div class="kpi"><div class="lab">Corte de saldos</div><div class="val" style="font-size:16px;">'+esc(k.corte||'—')+'</div>'+
-      '<div class="sub">Fecha del inventario comparado.</div></div>';
+function exportar(){
+  const meta=[['Saldos por CEDIS al',fL(K.corte)],['Demanda',K.baseDemanda||'Consumo reportado por las unidades'],['Reserva mínima',MIN+' días'],['Topes de cobertura',K.topes?CED.map(c=>c.n+' '+K.topes[c.k]+' d').join(' · '):'—']];
+  if(st.ver==='exc'){
+    exportarXLSX('INVENTARIO_ALTO_EXCESO','Inventario alto, exceso y sin demanda',meta.concat([['Nivel',st.niv?NIVTXT[st.niv]:'Todos'],['Búsqueda',st.q||'—']]),
+      [{h:'Renglón',t:'txt',w:12},{h:'Descripción',t:'txt',w:48},{h:'Nivel',t:'txt',w:16},{h:'Inventario en el país',t:'num'},{h:'Demanda del país / mes',t:'num'},{h:'Meses que alcanza',t:'dec'},{h:'Unidades sobre '+(K.mesesExceso||12)+' meses',t:'num'},{h:'Saldo Panamá',t:'num'},{h:'Saldo Divisa',t:'num'},{h:'Saldo Chiriquí',t:'num'},{h:'Con traslado',t:'txt',w:10}],
+      VISE.map(e=>[e.cod,e.renglon,NIVTXT[e.nivel],e.saldo,e.demandaMes||'',e.meses==null?'':e.meses,e.exceso||'',(e.saldos||{})['CEDIS PANAMA']||0,(e.saldos||{})['CEDIS DIVISA']||0,(e.saldos||{})['CEDIS CHIRIQUI']||0,e.conTraslado?'Sí':'']));
+    return;
+  }
+  exportarXLSX('ORDENES_TRASLADO','Órdenes de traslado entre CEDIS',meta.concat([['Envía',st.o?cN(st.o):'Todos'],['Recibe',st.d?cN(st.d):'Todos'],['Mostrar',st.ver==='urg'?'Mover hoy':st.ver==='sinc'?'Destino sin demanda':'Todos'],['Búsqueda',st.q||'—']]),
+    [{h:'Prioridad',t:'txt',w:11},{h:'Renglón',t:'txt',w:12},{h:'Descripción',t:'txt',w:44},{h:'Envía',t:'txt',w:10},{h:'Recibe',t:'txt',w:10},{h:'Unidades a mover',t:'num'},
+     {h:'Envía: tenía',t:'num'},{h:'Envía: queda con',t:'num'},{h:'Envía: días después',t:'txt',w:10},{h:'Recibe: tenía',t:'num'},{h:'Recibe: queda con',t:'num'},{h:'Recibe: días después',t:'txt',w:10},{h:'Demanda / mes de quien recibe',t:'num'},{h:'Inventario en el país',t:'txt',w:18}],
+    VIS.map(t=>[t.urg?'Mover hoy':'',t.cod,t.renglon,cN(t.origen),cN(t.destino),t.mover,t.saldoOrigen,t.oDesp,t.cobODesp==null?'s/c':dias(t.cobODesp),t.saldoDestino,t.dDesp,t.sinc?'s/c':dias(t.cobDDesp),t.consumoDestino||'',t.nacional&&t.nacional.nivel?NIVTXT[t.nacional.nivel]+(t.nacional.meses!=null?' ('+t.nacional.meses+' m)':''):'']));
 }
-
-function pintarBalance(){
-  var k = REP.kpi||{};
-  var po = k.porOrigen||{}, pd = k.porDestino||{};
-  var ceds = ['CEDIS PANAMA','CEDIS DIVISA','CEDIS CHIRIQUI'];
-  el('balance').innerHTML = ceds.map(function(ce){
-    var a = CED_ABBR[ce];
-    return '<div class="ced-box '+cedClass(ce)+'">'+
-      '<div class="ced-tit">'+esc(ce)+'</div>'+
-      '<div class="ced-row env"><span>Envía (es origen en)</span><b>'+fmt(po[ce]||0)+' renglones</b></div>'+
-      '<div class="ced-row rec"><span>Recibe (es destino en)</span><b>'+fmt(pd[ce]||0)+' renglones</b></div>'+
-    '</div>';
-  }).join('');
+/* ---------- Tutorial guiado (mismo patrón que reposicion_ue.html) ---------- */
+const TOUR=[
+  {sel:'#resumen',tit:'1. Resumen del día',txt:'Estas tarjetas resumen las órdenes de traslado: cuántas son urgentes (Mover hoy), el total, los renglones con inventario alto o exceso en el país, y lo que envía y recibe cada CEDIS. Toque una para filtrar.',prep:'todos'},
+  {sel:'.filtros',tit:'2. Filtros',txt:'Elija qué CEDIS envía o recibe, busque un renglón por código o nombre, o cambie lo que se muestra. «Limpiar filtros» regresa a la vista inicial.'},
+  {sel:'#tabla',tit:'3. Las órdenes de traslado',txt:'Cada fila es una orden: qué renglón, de qué CEDIS a cuál y cuántas unidades mover. Luego, con cuánto queda cada CEDIS después del traslado (unidades · días) y, en gris, lo que tenía antes y cuánto piden sus unidades al mes. Toque una fila para ver su detalle.'},
+  {sel:'#det',tit:'4. Detalle del traslado',txt:'Cuánto mover y de dónde a dónde, la tabla de antes y después, y para cada CEDIS dos barras rotuladas «Hoy» y «Después» con sus días de inventario; la línea roja punteada es la reserva mínima. Al final, una conclusión en palabras, que avisa si hay inventario alto o exceso en el país.',prep:'detalle'},
+  {sel:'#flu',tit:'5. Flujo entre CEDIS',txt:'Cuántas unidades van de cada CEDIS a cada otro, con los mismos filtros de la tabla. Con un renglón abierto, muestra solo los traslados de ese renglón.'},
+  {sel:'#resumen [data-ver=exc]',tit:'6. Inventario alto y exceso',txt:'Lista los renglones con 7 meses o más de inventario en el país para la demanda actual, los que pasan de 12 meses (exceso, con cuántas unidades sobran) y los que tienen saldo sin demanda. Sirve para revisar compras y vencimientos.'},
+  {sel:'#btnXls',tit:'7. Descargue el reporte',txt:'Genera un Excel institucional de lo que está viendo: las órdenes de traslado o la lista de inventario alto y exceso, con los filtros aplicados.',prep:'fin'}
+];
+let TI=0;
+function tourPaso(){
+  const p=TOUR[TI]; if(!p){ tourCerrar(); return; }
+  if(p.prep==='todos'&&st.ver!=='todos'){ st.ver='todos'; setSeg(); pintar(); }
+  if(p.prep==='detalle'&&st.sel==null){ if(st.ver!=='todos'){ st.ver='todos'; setSeg(); pintar(); } const v=VIS[0]; if(v){ st.sel=v.i; tabla(); lateral(); } }
+  setTimeout(()=>{
+    const t=document.querySelector(p.sel), box=$('tourBox');
+    if(!t){ if(TI<TOUR.length-1){ TI++; tourPaso(); } else tourCerrar(); return; }   // paso sin objetivo (p. ej. JSON sin excesos): se salta
+    let sp=document.querySelector('.tour-spot'); if(!sp){ sp=document.createElement('div'); sp.className='tour-spot'; $('tourOverlay').appendChild(sp); }
+    $('tourTitulo').textContent=p.tit; $('tourTexto').textContent=p.txt; $('tourPaso').textContent='Paso '+(TI+1)+' de '+TOUR.length;
+    $('tourPrev').style.visibility=TI===0?'hidden':'visible'; $('tourNext').textContent=TI===TOUR.length-1?'Terminar':'Siguiente ▸';
+    if(t){ t.scrollIntoView({block:'center'}); setTimeout(()=>{ const r=t.getBoundingClientRect(); const hh=Math.min(r.height,window.innerHeight-40);
+      sp.style.cssText='display:block;top:'+(r.top-6)+'px;left:'+(r.left-6)+'px;width:'+(r.width+12)+'px;height:'+(hh+12)+'px';
+      const bh=box.offsetHeight||160,bw=box.offsetWidth||340; let top=r.top+hh+14; if(top+bh>window.innerHeight-10) top=Math.max(10,r.top-bh-14); if(top<10) top=10;
+      box.style.transform=''; box.style.top=top+'px'; box.style.left=Math.min(Math.max(10,r.left),window.innerWidth-bw-10)+'px'; $('tourNext').focus(); },200); }
+  },p.prep?150:0);
 }
+function tourIniciar(){ TI=0; $('tourOverlay').style.display='block'; tourPaso(); }
+function tourCerrar(){ $('tourOverlay').style.display='none'; const sp=document.querySelector('.tour-spot'); if(sp) sp.remove(); }
+$('btnTutorial').onclick=tourIniciar;
+$('tourNext').onclick=()=>{ if(TI>=TOUR.length-1){ tourCerrar(); return; } TI++; tourPaso(); };
+$('tourPrev').onclick=()=>{ if(TI>0){ TI--; tourPaso(); } };
+$('tourSkip').onclick=tourCerrar;
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('tourOverlay').style.display==='block') tourCerrar(); });
 
-function poblarFiltros(){
-  var ceds = ['CEDIS PANAMA','CEDIS DIVISA','CEDIS CHIRIQUI'];
-  var o = el('fOrigen'), d = el('fDestino');
-  ceds.forEach(function(ce){
-    o.insertAdjacentHTML('beforeend','<option value="'+esc(ce)+'">'+esc(CED_ABBR[ce].s)+'</option>');
-    d.insertAdjacentHTML('beforeend','<option value="'+esc(ce)+'">'+esc(CED_ABBR[ce].s)+'</option>');
-  });
-  o.addEventListener('change', pintarTabla);
-  d.addEventListener('change', pintarTabla);
-  el('fBuscar').addEventListener('input', function(){ pintarTabla(); pintarSankey(); });
-  var _rsz=null; window.addEventListener('resize', function(){ clearTimeout(_rsz); _rsz=setTimeout(pintarSankey,200); });
-  el('fBuscar').addEventListener('keydown', function(ev){
-    if(ev.key==='Enter'){ var arr=filas(); if(arr.length){ abrirGrafica(arr[0].cod); } }
-  });
-  el('btnExcel').addEventListener('click', descargarExcel);
-  el('rengClose').addEventListener('click', function(){ el('panelReng').style.display='none'; });
-  // toggle del Sankey
-  el('skTodos').addEventListener('click', function(){ SK_MODO='todos'; el('skTodos').classList.add('sk-on'); el('skUrg').classList.remove('sk-on'); pintarSankey(); });
-  el('skUrg').addEventListener('click', function(){ SK_MODO='urgentes'; el('skUrg').classList.add('sk-on'); el('skTodos').classList.remove('sk-on'); pintarSankey(); });
-  // filtros por CEDIS del Sankey (chips)
-  document.querySelectorAll('.sk-chip').forEach(function(chip){
-    chip.addEventListener('click', function(){
-      var tipo = chip.getAttribute('data-tipo'), ced = chip.getAttribute('data-ced');
-      // marcar activo dentro de su grupo
-      document.querySelectorAll('.sk-chip[data-tipo="'+tipo+'"]').forEach(function(c){ c.classList.remove('sk-chip-on'); });
-      chip.classList.add('sk-chip-on');
-      if (tipo==='o') SK_FO = ced; else SK_FD = ced;
-      pintarSankey();
-    });
-  });
-  // cerrar modal
-  el('modalX').addEventListener('click', function(){ el('modalReng').style.display='none'; });
-  el('modalReng').addEventListener('click', function(ev){ if(ev.target===el('modalReng')) el('modalReng').style.display='none'; });
-  // ordenamiento por columnas
-  document.querySelectorAll('#tabla th').forEach(function(th){
-    th.addEventListener('click', function(){
-      var k = th.getAttribute('data-k');
-      if(SORT.k===k){ SORT.dir = -SORT.dir; } else { SORT.k=k; SORT.dir=1; }
-      pintarTabla();
-    });
-  });
-}
+function pintar(){ resumen(); tabla(); lateral(); }
+$('fO').onchange=e=>{ st.o=e.target.value; st.sel=null; pintar(); };
+$('fD').onchange=e=>{ st.d=e.target.value; st.sel=null; pintar(); };
+$('fB').oninput=e=>{ st.q=e.target.value.trim(); st.sel=null; st.selE=null; pintar(); };
+$('segVer').querySelectorAll('button').forEach(b=>b.onclick=()=>{ if(b.dataset.v==='exc'&&!REP.excesos){ toast('La lista de inventario alto y exceso aparecerá cuando se publique el cálculo nuevo.'); return; } st.ver=b.dataset.v; st.sel=null; st.selE=null; setSeg(); pintar(); });
+$('segNivel').querySelectorAll('button').forEach(b=>b.onclick=()=>{ st.niv=b.dataset.v; st.selE=null; setSeg(); pintar(); });
+$('btnLimpiar').onclick=()=>{ Object.assign(st,{o:'',d:'',q:'',ver:'todos',niv:'',sel:null,selE:null,sort:{k:'prio',d:1},sortE:{k:'niv',d:1}}); $('fO').value='';$('fD').value='';$('fB').value=''; setSeg(); pintar(); };
+$('btnXls').onclick=exportar;
+$('btnAyuda').onclick=()=>{ $('modal').classList.add('open'); $('cerrarM').focus(); };
+$('cerrarM').onclick=()=>$('modal').classList.remove('open');
+$('modal').onclick=e=>{ if(e.target.id==='modal') $('modal').classList.remove('open'); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('modal').classList.remove('open'); });
 
-function filas(){
-  var arr = (REP.f||[]).slice();
-  var fo = el('fOrigen').value, fd = el('fDestino').value;
-  var q = (el('fBuscar').value||'').trim().toUpperCase();
-  if(fo) arr = arr.filter(function(t){ return t.origen===fo; });
-  if(fd) arr = arr.filter(function(t){ return t.destino===fd; });
-  if(q) arr = arr.filter(function(t){ return ((t.cod||'')+' '+(t.renglon||'')).toUpperCase().indexOf(q)>=0; });
-  // ordenar
-  var k = SORT.k, dir = SORT.dir;
-  arr.sort(function(a,b){
-    var va, vb;
-    if(k==='flujo'){ va=(a.origen+a.destino); vb=(b.origen+b.destino); }
-    else if(k==='renglon'||k==='cod'){ va=String(a[k]||''); vb=String(b[k]||''); }
-    else { va=a[k]||0; vb=b[k]||0; }
-    if(va<vb) return -1*dir; if(va>vb) return 1*dir; return 0;
-  });
-  return arr;
+async function iniciar(){
+  $('errorCarga').innerHTML=''; $('conteo').textContent='Cargando órdenes de traslado…';
+  try{ REP=await getJSON('redistribucion_cedis.json'); if(!REP||!Array.isArray(REP.f)) throw new Error('el archivo no trae traslados'); }
+  catch(e){ $('errorCarga').innerHTML='<div class="err"><b>No se pudo descargar redistribucion_cedis.json</b> ('+esc(e.message)+'). Revise la conexión. <button class="btn" id="reIni">Reintentar</button></div>'; $('reIni').onclick=iniciar; $('conteo').textContent=''; return; }
+  preparar();
+  const hoy=hoyPTY(), atraso=K.corte?Math.round((new Date(hoy+'T00:00:00')-new Date(K.corte+'T00:00:00'))/86400000):99;
+  $('frs').innerHTML='<span class="fr"'+(atraso>4?' style="background:#8a3b2e;border-color:#c46a5a"':'')+'>Saldos por CEDIS al <b>'+fL(K.corte)+'</b></span> '+(K.corteF8?'<span class="fr">Formas 8 al <b>'+fL(K.corteF8)+'</b></span> ':'')+'<span class="fr">Publicado <b>'+horaPTY(REP.generado)+'</b></span>';
+  if(K.ventanaDias) $('mVent').textContent=K.ventanaDias; $('mMin').textContent=MIN;
+  if(K.ueSinCedis>0) $('errorCarga').innerHTML='<div class="err" style="background:#fbf3d6;border-color:#d9b44a"><b>'+K.ueSinCedis+' unidad'+(K.ueSinCedis>1?'es':'')+' sin CEDIS asignado en el maestro:</b> sus Formas 8 no se cuentan en la demanda. '+esc((K.ueSinCedisLista||[]).map(x=>x.ue+' ('+x.filas+' filas)').join(' · '))+'. Corrija la columna «CEDIS QUE SUPLE» en CATEGORIAS_UNIDADES de MAESTROS_DINALOG.</div>';
+  if(K.topes) $('mTopes').textContent=CED.map(c=>c.n+' '+K.topes[c.k]).join(' · ')+' días';
+  setSeg(); pintar();
 }
-
-function pintarTabla(){
-  var arr = filas();
-  el('conteo').textContent = arr.length + ' traslado' + (arr.length===1?'':'s') + ' según los filtros.';
-  var html = arr.map(function(t){
-    var enCero = (t.destinoEnCero!==undefined ? t.destinoEnCero : (t.saldoDestino===0));
-    var urgente = enCero && !t.origenSinConsumo;
-    var flujo = badge(t.origen)+'<span class="arrow-mid">&rarr;</span>'+badge(t.destino);
-    var tag = urgente ? '<span class="tag-urgente">MOVER HOY</span>'
-            : (enCero ? '<span class="tag-cero">EN CERO · origen s/c</span>' : '');
-    return '<tr class="'+(urgente?'fila-urgente':(enCero?'fila-cero':''))+'" data-cod="'+esc(t.cod)+'" style="cursor:pointer;">'+
-      '<td class="cod">'+esc(t.cod)+'</td>'+
-      '<td>'+esc(t.renglon||'')+' '+tag+'</td>'+
-      '<td class="flujo">'+flujo+'</td>'+
-      '<td class="num mover">'+fmt(t.mover)+'</td>'+
-      '<td class="num">'+txtCobTabla(t.cobOrigenAntes)+'</td>'+
-      '<td class="num">'+txtCobTabla(t.cobDestinoAntes)+'</td>'+
-      '<td class="num">'+fmt(t.saldoDestino)+'</td>'+
-    '</tr>';
-  }).join('');
-  el('tbody').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#888;padding:20px;">No hay traslados que cumplan el filtro.</td></tr>';
-  // clic en fila de la tabla abre la gráfica del renglón
-  el('tbody').querySelectorAll('tr[data-cod]').forEach(function(tr){
-    tr.addEventListener('click', function(){ var c=tr.getAttribute('data-cod'); if(c) abrirGrafica(c); });
-  });
-  // indicador de orden en encabezados
-  document.querySelectorAll('#tabla th').forEach(function(th){
-    var a = th.querySelector('.arrow');
-    if(a) a.textContent = (th.getAttribute('data-k')===SORT.k) ? (SORT.dir>0?'▲':'▼') : '';
-  });
-}
-
-function descargarExcel(){
-  var arr = filas();
-  if(!arr.length){ aviso('No hay traslados para descargar con los filtros actuales.', ''); return; }
-  var cab = ['Código','Renglón','CEDIS origen','CEDIS destino','Unidades a mover','Cobertura origen (d)','Cobertura destino (d)','Saldo destino'];
-  var lineas = [cab.join('\t')];
-  arr.forEach(function(t){
-    lineas.push([t.cod, (t.renglon||'').replace(/\t/g,' '), t.origen, t.destino, t.mover, t.cobOrigenAntes, t.cobDestinoAntes, t.saldoDestino].join('\t'));
-  });
-  var blob = new Blob(['\ufeff'+lineas.join('\n')], {type:'application/vnd.ms-excel;charset=utf-8;'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url; a.download = 'ordenes_redistribucion_'+(REP.kpi&&REP.kpi.corte||'')+'.xls';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+window.__rd={st,pintar,get F(){return F;},get EXC(){return EXC;},tourIniciar};
+iniciar();
+})();
 </script>
 </body>
 </html>
