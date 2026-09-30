@@ -1033,7 +1033,8 @@ function repDatos(c){
   const det=DETR&&DETR[c]?DETR[c].f||[]:null;
   const ues=det?det.filter(u=>(u.pR||0)>0||(u.co||0)>0):null;
   const cero=ues?ues.filter(u=>(u.s||0)<=0):null;
-  const top=ues?ues.slice().sort((a,b)=>(b.pR||0)-(a.pR||0)).slice(0,5):null;
+  // Todas las unidades con inventario (de menor a mayor cobertura) y la lista de las que están en cero.
+  const con=ues?ues.filter(u=>(u.s||0)>0).sort((a,b)=>((a.s||0)/((a.pR||0)||1e-9))-((b.s||0)/((b.pR||0)||1e-9))):null, top=con;
   const tras=(REDIS&&REDIS.f||[]).filter(t=>String(t.cod)===String(c));
   return {c,nom:desc(c),vital:!!(typeof esVital==='function'&&esVital(c)),ceds,invN,salN,cobN,nivN:nivelDe(cobN),qN,trs,svg,ues,cero,top,tras};
 }
@@ -1068,8 +1069,9 @@ function repHTML(list){
       '<div class="rp-h">Proyección de inventario en CEDIS Panamá</div><div class="rp-graf">'+d.svg+'</div><div class="rp-ley"><span style="color:#0C447C">━ Sin OC</span> <span style="color:#2e7d32">┅ Con OC en camino</span></div>'+
       '<div class="rp-h">Órdenes de compra en camino a CEDIS Panamá</div>'+(d.trs.length?'<table class="rp-tab"><thead><tr><th>OC</th><th>Proveedor</th><th class="n">Cantidad</th><th>Entrega</th><th>Estado</th></tr></thead><tbody>'+
         d.trs.map(t=>'<tr><td class="mono">'+esc(t.oc)+'</td><td>'+esc(t.prov)+'</td><td class="n num">'+fmt(t.cant)+'</td><td>'+fechaLarga(t.fecha)+(t.tent?' · tentativa':'')+(atrasoDias(t)?' · <b style="color:#c0392b">atrasada '+atrasoDias(t)+' d</b>':'')+'</td><td>'+esc(t.est||'')+'</td></tr>').join('')+'</tbody></table>':'<p class="rp-p">'+(SIG_EST==='ok'?'Sin órdenes de compra en camino.':'Tránsitos no disponibles (SÍGUELO sin respuesta).')+'</p>')+
-      '<div class="rp-h">Unidades ejecutoras</div>'+(d.ues?'<p class="rp-p">'+d.cero.length+' de '+d.ues.length+' unidades con demanda están en cero. Las 5 que más piden:</p><table class="rp-tab"><thead><tr><th>Unidad</th><th>CEDIS</th><th class="n">Saldo</th><th class="n">F8 / mes</th><th class="n">Cobertura</th></tr></thead><tbody>'+
-        d.top.map(u=>{ const cb=(u.pR||0)>0?(u.s||0)/u.pR:Infinity, n=nivelDe(cb); return '<tr><td>'+esc(u.u)+'</td><td>'+esc(String(u.x||'').replace('CEDIS ',''))+'</td><td class="n num"'+((u.s||0)<=0?' style="color:#c0392b;font-weight:700"':'')+'>'+fmt(u.s||0)+'</td><td class="n num">'+fmt(u.pR||0)+'</td><td class="n num" style="color:'+n.col+'">'+fmtC(cb)+'</td></tr>'; }).join('')+'</tbody></table>':'<p class="rp-p">Detalle por unidad aún cargando.</p>')+
+      '<div class="rp-h">Unidades ejecutoras</div>'+(d.ues?'<p class="rp-p">'+d.ues.length+' unidades con demanda: <b>'+d.top.length+' con inventario</b> y <b style="color:#c0392b">'+d.cero.length+' en cero</b>.</p>'+(d.top.length?'<table class="rp-tab"><thead><tr><th>Unidad con inventario</th><th>CEDIS</th><th class="n">Saldo</th><th class="n">F8 / mes</th><th class="n">Cobertura</th></tr></thead><tbody>':'')+
+        d.top.map(u=>{ const cb=(u.pR||0)>0?(u.s||0)/u.pR:Infinity, n=nivelDe(cb); return '<tr><td>'+esc(u.u)+'</td><td>'+esc(String(u.x||'').replace('CEDIS ',''))+'</td><td class="n num"'+((u.s||0)<=0?' style="color:#c0392b;font-weight:700"':'')+'>'+fmt(u.s||0)+'</td><td class="n num">'+fmt(u.pR||0)+'</td><td class="n num" style="color:'+n.col+'">'+fmtC(cb)+'</td></tr>'; }).join('')+(d.top.length?'</tbody></table>':'')+
+        (d.cero.length?'<p class="rp-p"><b style="color:#c0392b">En cero ('+d.cero.length+'):</b> '+d.cero.map(u=>esc(u.u)).sort().join(' · ')+'.</p>':''):'<p class="rp-p">Detalle por unidad aún cargando.</p>')+
       (d.tras.length?'<div class="rp-h">Traslados sugeridos entre CEDIS</div><table class="rp-tab"><thead><tr><th>De</th><th>A</th><th class="n">Unidades</th><th>Prioridad</th></tr></thead><tbody>'+d.tras.map(t=>'<tr><td>'+esc(String(t.origen).replace('CEDIS ',''))+'</td><td>'+esc(String(t.destino).replace('CEDIS ',''))+'</td><td class="n num">'+fmt(t.mover)+'</td><td>'+(t.urgente?'<b style="color:#c0392b">Mover hoy</b>':'Ajuste')+'</td></tr>').join('')+'</tbody></table>':'')+
       '<div class="rp-h">Conclusión</div><p class="rp-p">'+repConclusion(d)+'</p></div>';
   });
@@ -1115,7 +1117,7 @@ async function repPdf(){
     const nombre='Reporte_renglones_'+HOY_SALDOS+'.pdf';
     await html2pdf().from(cont).set({margin:[8,8,12,8],filename:nombre,image:{type:'jpeg',quality:0.95},
       html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,900)},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css'],before:'.rp-salto'}})
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css'],before:'.rp-salto',avoid:['tr','.rp-p','.rp-graf']}})
       .toPdf().get('pdf').then(pdf=>{ const n=pdf.internal.getNumberOfPages(); for(let i=1;i<=n;i++){ pdf.setPage(i); pdf.setFontSize(8); pdf.setTextColor(120); pdf.text('CSS · DINALOG · Torre de Control · Página '+i+' de '+n,202,290,{align:'right'}); } }).save();
     window.scrollTo(0,y0);
   }catch(e){ toast('No se pudo generar el PDF.'); }
