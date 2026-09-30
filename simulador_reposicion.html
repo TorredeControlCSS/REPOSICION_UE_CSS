@@ -25,7 +25,7 @@ header .sub{font-size:12px;color:#cfe0f2}
 .fr b{color:#fff;font-weight:600}
 .fr.alerta{background:#8a3b2e;border-color:#c46a5a}
 .dummy{background:#b8860b;color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:3px}
-.barra{position:sticky;top:0;z-index:20;background:var(--papel);border-bottom:1px solid var(--borde);padding:10px 20px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.barra{position:sticky;top:0;z-index:20;background:var(--papel);border-bottom:1px solid var(--borde);padding:7px 20px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
 .campo{display:flex;flex-direction:column;gap:3px}
 .campo label{font-size:11px;color:var(--gris)}
 input[type=text],select{font:inherit;padding:6px 8px;border:1px solid var(--borde);border-radius:3px;background:var(--papel);color:var(--tinta);min-height:32px}
@@ -38,24 +38,24 @@ input[type=text],select{font:inherit;padding:6px 8px;border:1px solid var(--bord
 .btn.azul{background:var(--azul2);color:#fff;border-color:var(--azul2)}
 .btn.verde{background:var(--verde);color:#fff;border-color:var(--verde)}
 button:focus-visible,input:focus-visible,select:focus-visible,tr:focus-visible{outline:2px solid #f0a020;outline-offset:1px}
-.combo{position:relative;width:380px;max-width:100%}
+.combo{position:relative;width:300px;max-width:100%}
 .combo input{width:100%}
 .combo-list{position:absolute;top:100%;left:0;right:0;background:var(--papel);border:1px solid var(--borde);max-height:320px;overflow:auto;display:none;z-index:30;box-shadow:0 4px 10px rgba(0,0,0,.18)}
 .combo-list.open{display:block}
 .combo-item{padding:6px 8px;cursor:pointer;border-bottom:1px solid var(--fondo)}
 .combo-item.act,.combo-item:hover{background:var(--p-azul)}
 .combo-item .g{font-size:10.5px;color:var(--gris)}
-.tabs{display:flex;gap:4px;padding:14px 20px 0}
-.tab{font:inherit;font-size:14px;padding:9px 18px;border:1px solid var(--borde);border-bottom:0;background:var(--papel);color:var(--tinta);cursor:pointer;border-top:4px solid var(--c);border-radius:3px 3px 0 0}
+.tabs{display:flex;gap:4px;padding:8px 20px 0}
+.tab{flex:1;text-align:left;font:inherit;font-size:14px;font-weight:600;padding:6px 16px;border:1px solid var(--borde);border-bottom:0;background:var(--papel);color:var(--tinta);cursor:pointer;border-top:4px solid var(--c);border-radius:3px 3px 0 0}
 .tab.on{background:var(--c);color:#fff}
-.tab small{display:block;font-size:10.5px;opacity:.8}
+.tab small{display:inline;margin-left:10px;font-size:11.5px;font-weight:400;opacity:.8}
 main{padding:0 20px 30px}
 .panel{background:var(--papel);border:1px solid var(--borde);padding:14px 16px;display:none}
 .panel.on{display:block}
-.kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.kpi{border:1px solid transparent;border-radius:4px;padding:8px 12px;cursor:pointer;min-width:118px;text-align:left;font:inherit;color:var(--tinta)}
-.kpi .v{font-family:Consolas,monospace;font-size:20px;font-weight:700;display:block}
-.kpi .l{font-size:11.5px}
+.kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.kpi{border:1px solid transparent;border-radius:4px;padding:5px 11px;cursor:pointer;min-width:110px;text-align:left;font:inherit;color:var(--tinta)}
+.kpi .v{font-family:Consolas,monospace;font-size:17px;font-weight:700;display:block;line-height:1.2}
+.kpi .l{font-size:11px}
 .kpi.on{border-color:var(--tinta);box-shadow:inset 0 0 0 1px var(--tinta)}
 .split{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:14px;align-items:start}
 @media (max-width:1100px){.split{grid-template-columns:1fr}}
@@ -129,6 +129,15 @@ tr.sel{background:var(--p-azul)!important}
 @media (prefers-reduced-motion: reduce){.tour-hl{transition:none}}
 .prov-head td{background:var(--p-azul);cursor:pointer}
 .prov-head:hover td{background:var(--p-gris)}
+.panel{padding:10px 14px}
+.chip.rojo{background:#fdecea;color:#c0392b;border:1px solid #f1b8b1;font-weight:600}
+.chip.verde{background:#e2f3e7;color:#1f6b36;border:1px solid #b5dcc0;font-weight:600}
+.res-bar{display:flex;height:16px;border-radius:3px;overflow:hidden;margin:6px 0 4px}
+.res-bar i{display:block;height:100%}
+.res-list{width:100%;border-collapse:collapse;font-size:12px}
+.res-list td{padding:5px 6px;border-bottom:1px solid var(--fondo);cursor:pointer}
+.res-list tr:hover td{background:var(--p-gris)}
+.sim .sub{font-size:12px;font-weight:700;color:var(--gris);letter-spacing:.3px;margin:12px 0 4px;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -139,15 +148,14 @@ tr.sel{background:var(--p-azul)!important}
     <div class="sub">Dirección Nacional de Logística · CEDIS Panamá, Divisa y Chiriquí</div>
   </div>
   <div class="frescura" id="frescura"><span class="fr">Cargando datos…</span></div>
-  <button class="btn" id="btnTour" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">Recorrido guiado</button>
-  <button class="btn" id="btnAyuda" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">Cómo leer este tablero</button>
+  <button class="btn" id="btnAyuda" style="background:#fff;color:var(--azul);font-weight:700;border-color:#fff">Ayuda y recorrido guiado</button>
 </header>
 
 <div class="barra" id="barra">
   <div class="campo"><label for="inReng">Renglón</label>
     <div class="combo"><input type="text" id="inReng" placeholder="Código o nombre del renglón" autocomplete="off" disabled><div class="combo-list" id="comboList"></div></div></div>
   <div class="campo"><label for="inUE">Unidad Ejecutora</label>
-    <select id="inUE" style="width:300px"><option value="">Todas las unidades</option></select></div>
+    <select id="inUE" style="width:250px"><option value="">Todas las unidades</option></select></div>
   <div class="campo"><label>CEDIS</label>
     <div class="seg" id="segCedis"><button data-v="PA" class="on">Panamá</button><button data-v="DI">Divisa</button><button data-v="CH">Chiriquí</button></div></div>
   <div class="campo"><label>Base de salida</label>
@@ -190,6 +198,7 @@ tr.sel{background:var(--p-azul)!important}
 
 <div class="modal-bg" id="modal"><div class="modal" role="dialog" aria-modal="true">
   <h2>Cómo leer este tablero</h2>
+  <p><button class="btn azul" id="btnTour">▶ Iniciar recorrido guiado</button> <span class="nota">Le muestra paso a paso cada parte del tablero.</span></p>
   <p>Arriba eliges una sola vez el <b>renglón</b>, la <b>Unidad Ejecutora</b>, el <b>CEDIS</b>, la <b>base de salida</b> y la <b>media móvil</b>. Las tres pestañas respetan esa selección.</p>
   <h4>Base de salida</h4>
   <p><b>Req F8</b>: lo que las unidades piden al CEDIS elegido. <b>Distribuciones</b>: lo que CEDIS Panamá despachó (solo aplica a Panamá). <b>Consumo reportado</b>: lo que las unidades declaran consumir por mes.</p>
@@ -201,6 +210,21 @@ tr.sel{background:var(--p-azul)!important}
   <p>Se cuentan desde el último día con saldo. El registro de saldos empieza el <span id="ayudaIni">8-jun-2026</span>: si un renglón está en cero desde entonces se muestra como <b>≥N d</b>, porque no se sabe desde cuándo estaba vacío antes del registro.</p>
   <h4>Estado de una unidad</h4>
   <p><b>En cero · hay en CEDIS</b>: la unidad no tiene, pero su CEDIS o CEDIS Panamá sí; es un asunto de distribución o de requisición. <b>En cero · no hay en la red</b>: nadie tiene existencia; es un asunto de compras.</p>
+  <h4>Diagnóstico (inventario de una unidad)</h4>
+  <p>Dice qué hacer con cada renglón, según su saldo, su cobertura y su última Forma 8:</p>
+  <ul style="margin:4px 0 8px 18px;padding:0;font-size:13px;line-height:1.5">
+    <li><b>Sin requisición registrada</b>: en cero, su CEDIS tiene y la unidad no ha pedido.</li>
+    <li><b>Pendiente por despachar</b>: en cero, pidió y el CEDIS tiene: falta el despacho.</li>
+    <li><b>Requiere revisión</b>: en cero, pidió y se despachó, pero no alcanzó.</li>
+    <li><b>Cobertura baja · verificar despacho</b>: le queda menos de 1 mes y pidió en los últimos 30 días.</li>
+    <li><b>Cobertura baja · debe requisitar</b>: le queda menos de 1 mes y no ha pedido en 30 días.</li>
+    <li><b>Planificar requisición</b>: le quedan 1 a 2 meses y no ha pedido en 30 días.</li>
+    <li><b>Sobreabastecido</b>: más de 12 meses; no debería pedir.</li>
+    <li><b>Sin existencia en la red</b>: nadie tiene; lo resuelve Compras.</li>
+    <li><b>Sin demanda registrada</b>: tiene saldo, pero no pide ni reporta consumo.</li>
+  </ul>
+  <h4>Tránsitos</h4>
+  <p>Solo cuentan las OC que aún no llegan. <b>Tentativa</b>: es la fecha que pidió el proveedor; no hay cita confirmada. <b>Atrasada</b>: la fecha de entrega ya pasó y SÍGUELO no registra que el proveedor haya asistido. Una OC muy atrasada probablemente no llegará en la fecha que muestra la gráfica.</p>
   <p style="text-align:right"><button class="btn azul" id="cerrarModal">Entendido</button></p>
 </div></div>
 <div class="modal-bg" id="modalUE"><div class="modal" role="dialog" aria-modal="true" id="modalUEc"></div></div>
@@ -334,7 +358,7 @@ function renderCed(){
   sortRows(vis,st.sCed,(r,k)=>k==='c'?r.c:k==='inv'?r.inv:k==='sal'?r.sal:r.cob);
   VIS_CED=vis;
   const LIM=300; let mostrar=vis.slice(0,LIM);
-  if(st.cod && !mostrar.find(r=>r.c===st.cod)){ const r=filas.find(x=>x.c===st.cod); if(r) mostrar.unshift(r); }
+  const soloUno=!!st.cod; if(soloUno){ const r=filas.find(x=>x.c===st.cod); mostrar=r?[r]:[]; }
   const bl=st.base==='req'?'Req F8':st.base==='dist'?'Distribuciones':'Consumo reportado';
   $('notaCed').innerHTML='Inventario en <b>'+CED_NOM[st.ced]+'</b> ÷ salida mensual por <b>'+bl+'</b>'+(st.base==='consumo'?'':' (media móvil '+st.mm+' d)')+'. Toca una fila para simular.';
   let h='<thead><tr><th style="width:5px;padding:0"></th>'+th('c','Renglón',st.sCed)+th('inv','Inventario',st.sCed,'n')+th('sal','Salida / mes',st.sCed,'n')+th('cob','Cobertura',st.sCed,'n')+'<th>Nivel</th></tr></thead><tbody>';
@@ -346,7 +370,8 @@ function renderCed(){
       '<td><span class="tag" style="background:'+r.niv.col+'">'+r.niv.lbl+'</span>'+(r.tr?' <span class="chip" style="color:#2e7d32">OC en camino</span>':'')+'</td></tr>';
   });
   $('tblCed').innerHTML=h+'</tbody>';
-  $('pieCed').textContent=vis.length>LIM?('Mostrando '+LIM+' de '+vis.length.toLocaleString('en-US')+' renglones. Usa el buscador de renglón o una tarjeta de nivel para acotar; el Excel trae todos.'):(vis.length.toLocaleString('en-US')+' renglones.');
+  if(soloUno){ $('pieCed').innerHTML=(mostrar.length?'Mostrando solo el renglón elegido. ':'Este renglón no tiene inventario ni salida en '+CED_NOM[st.ced]+'. ')+'<a href="#" id="verTodos">Ver todos los renglones</a>'; $('verTodos').onclick=e=>{ e.preventDefault(); limpiarReng(); }; }
+  else $('pieCed').textContent=vis.length>LIM?('Mostrando '+LIM+' de '+vis.length.toLocaleString('en-US')+' renglones. Usa el buscador de renglón o una tarjeta de nivel para acotar; el Excel trae todos.'):(vis.length.toLocaleString('en-US')+' renglones.');
   enlazarOrden($('tblCed'),st.sCed,renderCed);
   $('tblCed').querySelectorAll('tbody tr').forEach(tr=>filaEnter(tr,()=>elegirReng(tr.dataset.c)));
   renderSim();
@@ -355,6 +380,8 @@ function renderCed(){
 let tiempoMes=0, playT=null, incluirTransitos=true;
 function mesDesdeHoy(iso){ if(!iso) return null; const f=new Date(String(iso).slice(0,10)+'T00:00:00'); if(isNaN(f)) return null; return Math.max(0,Math.round((f-new Date(hoyPTY()+'T00:00:00'))/86400000/30)); }
 function transitosDe(c){ if(st.ced!=='PA'||SIG_EST!=='ok') return []; const k=codKey(c); return TRANS.filter(t=>t.k===k).map(t=>({mes:mesDesdeHoy(t.fecha),cant:t.cant,t:t})).filter(x=>x.mes!=null); }
+const atrasoDias=t=>{ const f=fechaISO(t.fecha); if(!f) return 0; const d=diasEntre(f,hoyPTY()); return d>0?d:0; };
+const chipsFecha=t=>(t.tent?' <span class="chip" title="Fecha pedida por el proveedor; sin cita confirmada">tentativa</span>':'')+(atrasoDias(t)?' <span class="chip rojo" title="La fecha pasó y no hay registro de entrega">atrasada '+atrasoDias(t)+' d</span>':'');
 function tieneTransito(c){ if(SIG_EST!=='ok') return false; const k=codKey(c); return TRANS.some(t=>t.k===k); }
 function proyectar(c){
   const inv=invCedis(c,st.ced), tasa=(salidaCedis(c,st.ced,st.base)||0)*st.factor, HOR=60;
@@ -391,14 +418,36 @@ function svgProyeccion(rows,inv){
   return s+'</svg>';
 }
 function pintarGrafico(){ const c=st.cod; if(!c||!$('grafico')) return; const p=proyectar(c); $('grafico').innerHTML=svgProyeccion(p.rows,p.inv); }
+/* Panel derecho sin renglón elegido: resumen del CEDIS con accesos directos. */
+function resumenCedis(box){
+  const filas=filasCed(), tot=filas.length||1, cnt={}; ESCALA.forEach(n=>cnt[n.k]=0); filas.forEach(f=>cnt[f.niv.k]++);
+  const barra='<div class="res-bar">'+ESCALA.map(n=>'<i title="'+n.lbl+': '+cnt[n.k]+'" style="width:'+(cnt[n.k]/tot*100)+'%;background:'+n.col+'"></i>').join('')+'</div>'+
+    '<div class="leyenda">'+ESCALA.map(n=>'<span><i style="background:'+n.col+'"></i>'+n.lbl+' '+cnt[n.k]+'</span>').join('')+'</div>';
+  const urg=filas.filter(f=>f.niv.k==='desabasto'&&f.sal>0).sort((a,b)=>b.sal-a.sal).slice(0,8);
+  let h='<h3>Resumen de '+CED_NOM[st.ced]+'</h3><div class="nota">'+fmt(filas.length)+' renglones con movimiento. Toque un renglón de la tabla, o uno de esta lista, para simular su cobertura en el tiempo.</div>'+
+    '<div class="sub">Cobertura de los renglones</div>'+barra+
+    '<div class="sub">Los '+urg.length+' renglones en desabasto con más salida al mes</div><table class="res-list"><tbody>'+
+    urg.map(f=>'<tr data-c="'+f.c+'"><td><b class="mono">'+f.c+'</b> <span class="desc">'+esc(desc(f.c).slice(0,48))+'</span>'+(f.tr?' <span class="chip verde">OC en camino</span>':'')+'</td><td class="n num">'+fmt(f.inv)+' u</td><td class="n num">'+fmt(f.sal)+'/mes</td></tr>').join('')+'</tbody></table>';
+  if(st.ced==='PA'&&SIG_EST==='ok'&&TRANS.length){
+    const atr=TRANS.filter(t=>atrasoDias(t)), prox=TRANS.filter(t=>!atrasoDias(t)).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).slice(0,5);
+    h+='<div class="sub">Próximas OC por llegar</div><table class="res-list"><tbody>'+
+      prox.map(t=>'<tr data-c="'+esc(t.k)+'"><td><b class="mono">'+esc(t.k)+'</b> <span class="desc">'+esc(((S[t.k]?S[t.k][0]:t.desc)||'').slice(0,40))+'</span></td><td class="n num">'+fmt(t.cant)+' u</td><td>'+fechaLarga(t.fecha)+chipsFecha(t)+'</td></tr>').join('')+'</tbody></table>'+
+      (atr.length?'<div class="nota" style="margin-top:6px"><span class="chip rojo">'+atr.length+' OC atrasadas</span> la fecha de entrega ya pasó sin registro de entrega. Véalas en la pestaña Tránsitos.</div>':'');
+  }
+  box.innerHTML=h;
+  box.querySelectorAll('tr[data-c]').forEach(tr=>filaEnter(tr,()=>elegirReng(tr.dataset.c)));
+}
 function renderSim(){
   const box=$('sim'); const c=st.cod;
-  if(!c||!S[c]){ box.innerHTML='<div class="vacio">Elige un renglón en la tabla o en el buscador para simular su cobertura en el tiempo.</div>'; renderMesAMes(); return; }
+  if(!c||!S[c]){ resumenCedis(box); renderMesAMes(); return; }
   const p=proyectar(c), rows=p.rows, mAg=mesAgotamiento(rows); const trs=transitosDe(c); const totTr=trs.reduce((a,x)=>a+x.cant,0);
   const cob=p.tasa>0?p.inv/p.tasa:(p.inv>0?Infinity:0), niv=nivelDe(cob);
   const bl=st.base==='req'?'F8 de '+CED_NOM[st.ced]:st.base==='dist'?'Distribuciones de CEDIS Panamá':'consumo reportado de sus UE';
   const agTxt=p.tasa>0?(mAg>=60?'>60 m':mAg+' m'):'·';
-  let h='<h3>'+c+' · '+esc(desc(c))+'</h3>'+
+  const nAtr=trs.filter(x=>atrasoDias(x.t)).length, prox=trs.slice().sort((a,b)=>String(a.t.fecha).localeCompare(String(b.t.fecha)))[0];
+  const etTr=st.ced!=='PA'?'':SIG_EST!=='ok'?'<span class="chip">tránsitos: '+(SIG_EST==='cargando'?'consultando SÍGUELO':'SÍGUELO sin respuesta')+'</span>':
+    trs.length?'<span class="chip verde">'+trs.length+' OC en camino · '+fmt(totTr)+' u · próxima '+fechaLarga(prox.t.fecha)+'</span>'+(nAtr?' <span class="chip rojo">'+nAtr+' atrasada'+(nAtr>1?'s':'')+'</span>':''):'<span class="chip">sin OC en camino</span>';
+  let h='<h3>'+c+' · '+esc(desc(c))+'</h3><div style="margin:2px 0 4px">'+etTr+'</div>'+
     '<div class="simk"><div><span class="l">Inventario actual</span><span class="v">'+fmt(p.inv)+'</span><span class="l">en '+CED_NOM[st.ced]+'</span></div>'+
     '<div><span class="l">Salida mensual (×'+st.factor.toFixed(1)+')</span><span class="v">'+fmt(p.tasa)+'</span><span class="l">'+(st.base==='consumo'?'consumo':'MM '+st.mm+' d')+' × factor</span></div>'+
     '<div style="background:'+niv.pas+'"><span class="l">Cobertura base</span><span class="v" style="color:'+niv.col+'">'+fmtC(cob)+'</span><span class="l">'+niv.lbl+'</span></div>'+
@@ -410,7 +459,8 @@ function renderSim(){
     '<div id="grafico"></div>'+
     '<div class="leyenda"><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#0C447C" stroke-width="2.5"/></svg> Sin tránsitos</span><span><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#2e7d32" stroke-width="2.5" stroke-dasharray="5 3"/></svg> Con tránsitos por llegar</span></div>';
   if(trs.length){ h+='<h3 style="margin-top:10px">OC pendientes de este renglón</h3><div class="tw" style="max-height:180px"><table><thead><tr><th>OC</th><th>Proveedor</th><th class="n">Cantidad</th><th>Entrega estimada</th><th>Estado</th></tr></thead><tbody>'+
-    trs.map(x=>'<tr style="cursor:default"><td class="mono">'+esc(x.t.oc)+'</td><td>'+esc(x.t.prov)+'</td><td class="n num">'+fmt(x.cant)+'</td><td>'+fechaLarga(x.t.fecha)+'</td><td>'+esc(x.t.est)+'</td></tr>').join('')+'</tbody></table></div>'; }
+    trs.map(x=>'<tr style="cursor:default"><td class="mono">'+esc(x.t.oc)+'</td><td>'+esc(x.t.prov)+'</td><td class="n num">'+fmt(x.cant)+'</td><td>'+fechaLarga(x.t.fecha)+chipsFecha(x.t)+'</td><td>'+esc(x.t.est)+'</td></tr>').join('')+'</tbody></table></div>'+
+    (nAtr?'<div class="nota">Una OC atrasada sigue sumando en la línea verde como si llegara hoy. Si lleva mucho atraso, apague «Tránsitos» para ver el escenario sin ella.</div>':''); }
   box.innerHTML=h; pintarGrafico();
   $('inFac').oninput=e=>{ st.factor=parseFloat(e.target.value); tiempoMes=0; renderSim(); };
   $('btnTrS').onclick=()=>{ incluirTransitos=!incluirTransitos; renderSim(); };
@@ -429,7 +479,7 @@ function renderMesAMes(){
   if(!c){ cont.innerHTML=''; return; }
   if(!DETR){ cont.innerHTML='<div class="mm-head"><h3>Detalle por Unidad Ejecutora, mes a mes</h3></div><div class="tw cargando">'+(DET_ERR?'No se pudo descargar el detalle por unidad ('+esc(DET_ERR)+'). <button class="btn" id="reDet">Reintentar</button>':'Descargando el detalle mes a mes por unidad…')+'</div>'; const rb=$('reDet'); if(rb) rb.onclick=cargarDetalle; return; }
   const reng=DETR[c];
-  let h='<div class="mm-head"><h3>Detalle por Unidad Ejecutora, mes a mes</h3><span>Renglón <b class="mono">'+c+'</b> · '+esc(desc(c))+'</span></div>';
+  let h='<div class="mm-head"><h3>Detalle por Unidad Ejecutora, mes a mes</h3><span>Renglón <b class="mono">'+c+'</b> · '+esc(desc(c))+' <button class="btn" id="xlsMM" style="margin-left:10px">Descargar Excel</button></span></div>';
   if(!reng){ cont.innerHTML=h+'<div class="tw vacio">Este renglón no tiene Formas 8 ni distribuciones registradas por unidad en '+(MESES.length?mesLbl(MESES[0])+' a '+mesLbl(MESES[MESES.length-1]):'el período')+'.</div>'; return; }
   const meses=MESES, nM=meses.length;
   const ex=disp=>{ const a=new Array(nM).fill(0); (disp||[]).forEach(p=>{ a[p[0]]=p[1]; }); return a; };
@@ -459,7 +509,7 @@ function renderMesAMes(){
   h+='<tr class="tot-row"><td class="ue">TOTAL renglón</td><td class="n">'+fmt(gS)+'</td>';
   for(let i=0;i<nM;i++) h+='<td class="n sub-co">·</td><td class="n sub-f8">'+fmt(gR[i])+'</td><td class="n sub-di">'+fmt(gD[i])+'</td>';
   h+='<td class="n sub-co tot">·</td><td class="n sub-f8 tot">'+fmt(gRT)+'</td><td class="n sub-di tot">'+fmt(gDT)+'</td></tr></tbody></table></div>'+
-    '<div class="nota"><b style="color:#8a5a2a">Cons</b> consumo mensual reportado por la UE · <b style="color:#1E5A9E">F8</b> requisiciones recibidas · <b style="color:#2e7d32">Dist</b> distribuciones despachadas (solo CEDIS Panamá) · s/rep: sin consumo reportado. Toca un grupo para abrirlo o cerrarlo; toca una unidad para ver su comparativo mensual. <button class="btn" id="xlsMM" style="margin-left:8px">Descargar Excel</button></div>';
+    '<div class="nota"><b style="color:#8a5a2a">Cons</b> consumo mensual reportado por la UE · <b style="color:#1E5A9E">F8</b> requisiciones recibidas · <b style="color:#2e7d32">Dist</b> distribuciones despachadas (solo CEDIS Panamá) · s/rep: sin consumo reportado. Toca un grupo para abrirlo o cerrarlo; toca una unidad para ver su comparativo mensual.</div>';
   cont.innerHTML=h;
   cont.querySelectorAll('.grp-row').forEach(tr=>tr.onclick=()=>{ const k=c+tr.dataset.bl; const ahora=tr.textContent.trim().charAt(0)==='\u25bc'; abiertos[k]=!ahora; renderMesAMes(); });
   cont.querySelectorAll('.ue-fila').forEach(tr=>filaEnter(tr,()=>{ const f=DETU[+tr.dataset.ix]; if(f) abrirModalUE(f); }));
@@ -509,6 +559,20 @@ async function cargarUE(u){
     UEC[u]={estado:'ok',cedis:ser.cedis||e.cedis||'',fechas:ser.fechas||[],serie:ser.f||[],cons:cons?cons.c:null,consCorte:cons?cons.corte:null,f8:f8?f8.f:{},gen:ser.generado};
   }catch(err){ UEC[u]={estado:'error',msg:'No se pudo descargar la serie de saldos ('+err.message+').'}; }
 }
+/* Diagnóstico de cada renglón de una unidad. Si el renglón está en el reporte de
+   desabasto se usa su diagnóstico; si no, se deduce del saldo, la cobertura y la
+   última Forma 8 (30 días = "reciente"). */
+function diagUE(r, hoy){
+  if(r.dg&&DIAG[r.dg]) return DIAG[r.dg];
+  const dF8=r.uF8?diasEntre(fechaISO(r.uF8)||r.uF8,hoy):null, reciente=dF8!=null&&dF8<=30;
+  const f8txt=r.uF8?' (F8 del '+fechaTxt(r.uF8)+')':'';
+  if(r.cero) return r.conArriba?(reciente?'En cero · pidió'+f8txt+': verificar despacho':'En cero · debe requisitar'):'Sin existencia en la red: Compras';
+  if(!isFinite(r.cob)) return 'Sin demanda registrada';
+  if(r.cob<1) return reciente?'Cobertura baja · verificar despacho'+f8txt:'Cobertura baja · debe requisitar';
+  if(r.cob<3) return reciente?'':'Planificar requisición';
+  if(r.cob>12) return 'Sobreabastecido: no requisitar';
+  return '';
+}
 function filasUE(u){
   const U=UEC[u], cc=cedisCorto(U.cedis), i=idx(), W=VENT[i]||90;
   const F=U.fechas, last=F.length-1, fUlt=F[last]||hoyPTY(), hoy=hoyPTY();
@@ -532,7 +596,9 @@ function filasUE(u){
     else if(arriba>0||pa>0){ est='En cero · hay en CEDIS'; col='#c0392b'; }
     else { est='En cero · no hay en la red'; col='#6a7683'; }
     const dg=dMap[c];
-    return {c,saldo,um,dz,tope,cons,f8,f8a,cob,arriba,pa,cc,est,col,uF8,dg:dg?dg.diag:'',cero:saldo<=0,conArriba:saldo<=0&&(arriba>0||pa>0)};
+    if(saldo>0&&cob<1) est='Menos de 1 mes';   // con saldo: no se rotula "Desabasto"
+    const r={c,saldo,um,dz,tope,cons,f8,f8a,cob,arriba,pa,cc,est,col,uF8,dg:dg?dg.diag:'',cero:saldo<=0,conArriba:saldo<=0&&(arriba>0||pa>0)};
+    r.dgTxt=diagUE(r, hoy); return r;
   });
 }
 function construirRanking(){
@@ -658,7 +724,7 @@ function renderInventarioUE(box){
       '<td class="n num">'+(r.cons!=null?fmt(r.cons):'<span class="chip">s/rep</span>')+'</td><td class="n num">'+fmt(r.f8)+'</td><td class="n num">'+(r.f8a?fmt(r.f8a):'<span style="color:#c0392b">sin F8</span>')+'</td>'+
       '<td class="n num" style="font-weight:700;color:'+r.col+'">'+(r.cero?'0.0 m':fmtC(r.cob))+'</td>'+
       '<td><span class="tag" style="background:'+r.col+'">'+r.est+'</span></td>'+
-      '<td class="n num">'+fmt(r.arriba)+'</td><td>'+fechaTxt(r.uF8)+'</td><td>'+(DIAG[r.dg]||'')+'</td></tr>';
+      '<td class="n num">'+fmt(r.arriba)+'</td><td>'+fechaTxt(r.uF8)+'</td><td>'+esc(r.dgTxt||'—')+'</td></tr>';
   });
   h+='</tbody></table></div><div class="nota">'+(vis.length>500?'Mostrando 500 de '+vis.length+'; el Excel trae todos. ':vis.length+' renglones. ')+'Toca un renglón para simular su cobertura en el CEDIS que abastece a esta unidad y ver su historia mes a mes.</div>';
   box.innerHTML=h; volver();
@@ -708,7 +774,7 @@ function renderTr(){
   if(!d.length) h+='<tr><td colspan="5" class="vacio">No hay OC pendientes con este filtro.</td></tr>';
   provs.forEach(p=>{ const g=grupos[p], ab=abrirTodo||!!TR_AB[p], tot=g.reduce((a,t)=>a+t.cant,0);
     h+='<tr class="prov-head" data-p="'+esc(p)+'"><td colspan="5">'+(ab?'▼':'▶')+' <b>'+esc(p)+'</b> <span class="desc">· '+g.length+' OC · '+fmt(tot)+' unidades</span></td></tr>';
-    if(ab) g.forEach(t=>{ h+='<tr data-c="'+esc(t.k)+'"><td class="mono">'+esc(t.oc)+'</td><td><b class="mono">'+esc(t.k)+'</b> <span class="desc">'+esc((S[t.k]?S[t.k][0]:t.desc).slice(0,55))+'</span></td><td class="n num">'+fmt(t.cant)+'</td><td>'+esc(t.est)+'</td><td>'+fechaLarga(t.fecha)+(t.tent?' <span class="chip">tentativa</span>':'')+'</td></tr>'; });
+    if(ab) g.forEach(t=>{ h+='<tr data-c="'+esc(t.k)+'"><td class="mono">'+esc(t.oc)+'</td><td><b class="mono">'+esc(t.k)+'</b> <span class="desc">'+esc((S[t.k]?S[t.k][0]:t.desc).slice(0,55))+'</span></td><td class="n num">'+fmt(t.cant)+'</td><td>'+esc(t.est)+'</td><td>'+fechaLarga(t.fecha)+chipsFecha(t)+'</td></tr>'; });
   });
   $('tblTr').innerHTML=h+'</tbody>';
   enlazarOrden($('tblTr'),st.sTr,renderTr);
@@ -765,7 +831,7 @@ function exportarRenglonUEs(){ exportarXLSX('RENGLON_'+st.cod+'_EN_UES','Rengló
 function exportarInventarioUE(u){ const U=UEC[u]; exportarXLSX('INVENTARIO_'+baseNom(u).replace(/ /g,'_').slice(0,40),'Inventario de '+u,
     metaFiltros().concat([['CEDIS que la abastece',U.cedis],['Consumo reportado',U.cons?'corte '+fechaLarga(U.consCorte):'sin consumo publicado'],['Filtro',(document.querySelector('#ueCont .kpi.on .l')||{}).textContent||'Todos']]),
     [{h:'Renglón',t:'txt',w:12},{h:'Descripción',t:'txt',w:50},{h:'Saldo hoy',t:'num'},{h:'Último cambio',t:'txt',w:12},{h:'Días en cero',t:'txt',w:11},{h:'Consumo / mes',t:'num'},{h:'F8 / mes ('+st.mm+' d)',t:'num'},{h:'F8 en el año',t:'num'},{h:'Cobertura (meses)',t:'dec'},{h:'Estado',t:'txt',w:24},{h:'Existencia en su CEDIS',t:'num'},{h:'Última F8',t:'txt',w:12},{h:'Diagnóstico',t:'txt',w:26}],
-    VIS_UE.map(r=>[r.c,desc(r.c),r.saldo,r.um,r.cero?(r.tope?'≥'+r.dz:String(r.dz)):'',r.cons==null?'':r.cons,Math.round(r.f8),r.f8a,r.cero?0:(isFinite(r.cob)?Math.round(r.cob*10)/10:'sin salida'),r.est,r.arriba,r.uF8,DIAG[r.dg]||''])); }
+    VIS_UE.map(r=>[r.c,desc(r.c),r.saldo,r.um,r.cero?(r.tope?'≥'+r.dz:String(r.dz)):'',r.cons==null?'':r.cons,Math.round(r.f8),r.f8a,r.cero?0:(isFinite(r.cob)?Math.round(r.cob*10)/10:'sin salida'),r.est,r.arriba,r.uF8,r.dgTxt||''])); }
 function exportarMesAMes(c){ if(!DETU) return; const cols=[{h:'CEDIS',t:'txt',w:16},{h:'Unidad Ejecutora',t:'txt',w:42},{h:'Saldo hoy',t:'num'},{h:'Consumo / mes',t:'num'}];
   MESES.forEach(m=>{ cols.push({h:'F8 '+mesLbl(m),t:'num',w:11}); cols.push({h:'Dist '+mesLbl(m),t:'num',w:11}); }); cols.push({h:'F8 total',t:'num'},{h:'Dist total',t:'num'});
   exportarXLSX('MES_A_MES_'+c,'Detalle mes a mes por unidad · '+c+' · '+desc(c),[],cols,
@@ -779,7 +845,8 @@ const TOUR=[
   {sel:'#barra',t:'Filtros de todo el tablero',x:'Elige aquí el renglón, la unidad, el CEDIS, la base de salida y la media móvil. Las tres pestañas usan esta misma selección.'},
   {sel:'#tabs',t:'Tres preguntas, tres pestañas',x:'Cobertura CEDIS para ver cómo está cada renglón en el CEDIS; Unidades Ejecutoras para ver el inventario de cada unidad; Tránsitos para ver las OC que de verdad vienen en camino.',tab:'ced'},
   {sel:'#kpiCed',t:'Niveles de cobertura',x:'Cada tarjeta filtra la tabla. Tócala otra vez para quitar el filtro.',tab:'ced'},
-  {sel:'#sim',t:'Simulación',x:'Al tocar un renglón aparece su proyección: cuántos meses alcanza, qué pasa si la salida crece y cuándo llegan las OC pendientes.',tab:'ced',prep:()=>{ if(!st.cod&&VIS_CED[0]) elegirReng(VIS_CED[0].c); }},
+  {sel:'#sim',t:'Resumen y simulación',x:'Sin renglón elegido, este panel resume el CEDIS: cómo se reparte la cobertura, los renglones en desabasto con más salida y las próximas OC. Al tocar un renglón aparece su proyección, con una etiqueta de sus OC en camino (verde) y de las atrasadas (rojo).',tab:'ced'},
+  {sel:'#sim',t:'Simulación de un renglón',x:'Cuántos meses alcanza, qué pasa si la salida crece y cuándo llegan las OC pendientes. La tabla de la izquierda muestra solo ese renglón; «Ver todos los renglones» regresa a la lista.',tab:'ced',prep:()=>{ if(!st.cod&&VIS_CED[0]) elegirReng(VIS_CED[0].c); }},
   {sel:'#mesAMes',t:'Historia mes a mes',x:'Consumo, Formas 8 y distribuciones de cada unidad, mes por mes. Toca una unidad para ver su comparativo y saltar a su inventario.',tab:'ced'},
   {sel:'#ueCont',t:'Inventario por unidad',x:'Toca una unidad para ver todos sus renglones: saldo, días en cero, consumo, Formas 8, cobertura y si su CEDIS tiene existencia.',tab:'ue'}
 ];
@@ -798,7 +865,7 @@ function tourPaso(){
     $('tFin').onclick=tourFin; $('tSig').focus(); },60);
 }
 function tourFin(){ $('tour').classList.remove('open'); }
-$('btnTour').onclick=()=>{ if(!Object.keys(S).length){ toast('Espera a que termine la carga de datos.'); return; } tourI=0; $('tour').classList.add('open'); tourPaso(); };
+$('btnTour').onclick=()=>{ $('modal').classList.remove('open'); if(!Object.keys(S).length){ toast('Espera a que termine la carga de datos.'); return; } tourI=0; $('tour').classList.add('open'); tourPaso(); };
 
 /* ---------- controles globales ---------- */
 let RENG=[];
