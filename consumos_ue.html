@@ -258,15 +258,17 @@ td input:disabled{background:#f3f3f3;color:#333}
   <div id="d-dsc">
    <div class="ctrl"><label>Formato</label>
     <label class="chip on" id="dsF1"><input type="radio" name="dsFmt" value="ue" checked style="display:none"> Una hoja por Unidad Ejecutora</label>
+    <label class="chip" id="dsF3"><input type="radio" name="dsFmt" value="plan" style="display:none"> Consolidado para Planificación</label>
     <label class="chip" id="dsF2"><input type="radio" name="dsFmt" value="tipo" style="display:none"> Base completa (4 hojas)</label>
     <button class="ayuda" data-ayuda="descarga">?</button></div>
-   <div class="ctrl"><label>Periodos</label><span class="chk" id="dsPer"></span><label>Categoría</label><select id="dsCat"><option value="">Todas</option><option value="MED">Medicamentos</option><option value="MQ">Material quirúrgico</option><option value="LAB">Laboratorio y radiología</option></select></div>
+   <div class="ctrl" id="dsPlanBox" style="display:none"><label>Periodo revisado</label><select id="dsPerRev"></select><span class="note">Hoja 1: renglones × Unidad Ejecutora, en verde lo aprobado en este periodo. Hoja 2: histórico nacional por renglón de todo el ciclo.</span></div>
+   <div class="ctrl" id="dsPerBox"><label>Periodos</label><span class="chk" id="dsPer"></span><label>Categoría</label><select id="dsCat"><option value="">Todas</option><option value="MED">Medicamentos</option><option value="MQ">Material quirúrgico</option><option value="LAB">Laboratorio y radiología</option></select></div>
    <div class="panel" id="dsUeBox"><div class="ph">Unidades Ejecutoras <small id="dsUeN"></small></div><div class="pb">
     <div class="ctrl"><input id="dsUeQ" placeholder="Buscar unidad" style="width:240px"><label>CEDIS</label><select id="dsUeCed"><option value="">Todos</option></select>
      <button class="b-cl" id="dsTodas">Marcar las visibles</button><button class="b-cl" id="dsNinguna">Quitar todas</button></div>
     <div class="chk" id="dsUeL" style="max-height:220px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:2px 12px;border:1px solid var(--bd);padding:6px;background:#fff"></div>
    </div></div>
-   <div class="ctrl"><button class="pri" id="dsOk">Descargar Excel</button><span class="note" id="dsInfo"></span></div>
+   <div class="ctrl"><button class="pri" id="dsOk">Descargar Excel</button><button class="ok" id="dsPlanMail" style="display:none">✉ Enviar a Planificación</button><span class="note" id="dsInfo"></span></div>
   </div>
   <div id="d-log"><div class="ctrl"><input id="lQ" placeholder="Buscar en la bitácora" style="width:260px"><select id="lAcc"><option value="">Todas las acciones</option></select><button id="lRef">Actualizar</button><button class="b-cl" id="lXls">Descargar bitácora completa en Excel</button><span class="note" id="lTot"></span></div><div id="tLog"></div></div>
  </div>
@@ -1146,13 +1148,66 @@ async function rJson(){try{const r=await jsonp({accion:'estado_json'});$('jInfo'
 $('jReg').onclick=async()=>{const b=$('jReg');b.disabled=true;b.textContent='Regenerando… (hasta 2 minutos)';
  try{const r=await jsonp({accion:'regenerar_json'},{reintentos:0,timeout:330000});toast(r.archivos+' archivos publicados en '+r.segundos+' s. Los tableros los verán en 1 a 2 minutos.',7000);Object.keys(JC).forEach(k=>delete JC[k]);rJson();}
  catch(e){err(e);}finally{b.disabled=false;b.textContent='Regenerar JSON';}};
+/* ---------- Consolidado para Planificación: renglones x UE + histórico por renglón ---------- */
+async function armarConsolidado(per,fc){
+ const ues=CAT.U,J=[];for(let i=0;i<ues.length;i+=12){$('dsInfo').textContent='Leyendo unidades '+(i+1)+' a '+Math.min(i+12,ues.length)+' de '+ues.length+'…';
+  J.push(...await Promise.all(ues.slice(i,i+12).map(u=>getJ('ue/'+u.slug+'.json',true).then(j=>[u,j]).catch(()=>[u,null]))));}
+ $('dsInfo').textContent='Armando el consolidado…';
+ const PER=PERS.filter(p=>estadoPer(p)!=='PROGRAMADO').map(p=>p.p);
+ const vig={},rep={},tot={},nue={},uesRep=new Set();
+ J.forEach(([u,j])=>{if(!j)return;
+  Object.keys(j.ult||{}).forEach(c=>{if(fc&&tipo(c)!==fc)return;const x=j.ult[c];(vig[c]=vig[c]||{})[u.n]=x[0];if(x[1]===per){(rep[c]=rep[c]||{})[u.n]=1;uesRep.add(u.n);}});
+  Object.keys(j.R||{}).forEach(c=>{if(fc&&tipo(c)!==fc)return;j.P.forEach((p,i)=>{const v=j.R[c][i];if(v==null)return;const t=(tot[c]=tot[c]||{});t[p]=(t[p]||0)+v;if(v>0){const n=(nue[c]=nue[c]||{});n[p]=(n[p]||0)+1;}});});});
+ const cods=Object.keys(vig).filter(c=>Object.values(vig[c]).some(v=>v>0)).sort((a,b)=>(tipo(a)+a).localeCompare(tipo(b)+b));
+ const wb=new ExcelJS.Workbook();wb.creator='Dirección Nacional de Logística';const logo=await xlsLogo(wb);
+ const cab=(ws,titulo,sub)=>{if(logo!==null)ws.addImage(logo,{tl:{col:0.1,row:0.1},ext:{width:42,height:42}});
+  ws.getCell('B1').value='CAJA DE SEGURO SOCIAL · Dirección Nacional de Logística';ws.getCell('B1').font={bold:true,size:10,color:{argb:'FF444444'}};
+  ws.getCell('B2').value=titulo;ws.getCell('B2').font={bold:true,size:13,color:{argb:XA}};
+  ws.getCell('B3').value=sub+' · Generado '+new Date().toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16)+' (hora de Panamá) · '+ME.nombre;ws.getCell('B3').font={size:9,color:{argb:'FF555555'}};};
+ const encab=(row,alto)=>{row.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'},size:9};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:XA}};c.alignment={vertical:'bottom',horizontal:'center',wrapText:true};});row.height=alto;};
+ // Hoja 1
+ const UN=ues.map(u=>u.n);
+ const w1=wb.addWorksheet('Consumo revisado '+per,{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
+ cab(w1,'Consumo vigente por renglón y Unidad Ejecutora · periodo revisado '+per,'Consumo mensual en unidades del renglón'+(fc?' · categoría '+fc:'')+' · en verde: reportado y aprobado en '+per+'; sin color: último consumo aprobado de periodos anteriores');
+ w1.getRow(6).values=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(UN,['TOTAL_NACIONAL','UE_CON_CONSUMO']);encab(w1.getRow(6),150);
+ for(let k=5;k<5+UN.length;k++)w1.getRow(6).getCell(k).alignment={textRotation:90,vertical:'bottom',horizontal:'center'};
+ cods.forEach(c=>{const vals=UN.map(n=>vig[c][n]==null?null:vig[c][n]);const t=vals.reduce((a,v)=>a+(v||0),0);
+  const row=w1.addRow([c,desc(c),grupo(c),tipo(c)].concat(vals,[t,vals.filter(v=>v>0).length]));row.font={size:9};
+  UN.forEach((n,k)=>{const cel=row.getCell(5+k);if(cel.value!=null)cel.numFmt='#,##0';if(rep[c]&&rep[c][n])cel.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFDCEBDF'}};});
+  const ct=row.getCell(5+UN.length);ct.numFmt='#,##0';ct.font={bold:true,size:9};});
+ [11,44,14,6].concat(UN.map(()=>7),[13,9]).forEach((w,i)=>w1.getColumn(i+1).width=w);
+ w1.autoFilter={from:{row:6,column:1},to:{row:6,column:6+UN.length}};
+ // Hoja 2
+ const w2=wb.addWorksheet('Histórico por renglón',{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
+ cab(w2,'Histórico nacional por renglón · ciclo '+PER[0]+' a '+PER[PER.length-1],'Total nacional de consumo mensual por periodo; variación entre los dos últimos periodos con dato; UE que reportaron consumo en cada periodo');
+ w2.getRow(6).values=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(PER.map(p=>'TOTAL '+p),['VARIACION ULTIMOS DOS'],PER.map(p=>'UE '+p));encab(w2.getRow(6),34);
+ cods.forEach(c=>{const tt=PER.map(p=>tot[c]&&tot[c][p]!=null?tot[c][p]:null),nn=PER.map(p=>nue[c]&&nue[c][p]||0);
+  const con=tt.filter(v=>v!=null&&v>0);let d=null;if(con.length>=2)d=con[con.length-1]/con[con.length-2]-1;
+  const row=w2.addRow([c,desc(c),grupo(c),tipo(c)].concat(tt,[d],nn));row.font={size:9};
+  PER.forEach((p,k)=>{const cel=row.getCell(5+k);if(cel.value!=null)cel.numFmt='#,##0';});
+  const cv=row.getCell(5+PER.length);cv.numFmt='0.0%';if(d!=null&&d>=1)cv.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4DEDD'}};else if(d!=null&&d<=-0.5)cv.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE1EBF7'}};});
+ [11,44,14,6].concat(PER.map(()=>13),[12],PER.map(()=>8)).forEach((w,i)=>w2.getColumn(i+1).width=w);
+ w2.autoFilter={from:{row:6,column:1},to:{row:6,column:5+PER.length*2}};
+ const buf=await wb.xlsx.writeBuffer();
+ return {buf,nombre:'CONSOLIDADO_CONSUMOS_UE_'+per+(fc?'_'+fc:'')+'_'+new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'})+'.xlsx',resumen:{ues:uesRep.size,total:ues.length,renglones:cods.length}};}
+function b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s);}
+
+$('dsPlanMail').onclick=async()=>{if(typeof ExcelJS==='undefined'){toast('No se pudo cargar el componente de Excel.');return;}
+ const per=$('dsPerRev').value,fc=$('dsCat').value;const fin=espera($('dsPlanMail'),'Preparando…');let x;
+ try{x=await armarConsolidado(per,fc);}catch(e){fin();err(e);return;}fin();
+ modal('Enviar consolidado a Planificación','<div class="note" style="font-size:13px">Se enviará el consolidado del periodo <b>'+esc(per)+'</b> ('+x.resumen.renglones+' renglones × '+x.resumen.total+' unidades; '+x.resumen.ues+' con consumo aprobado en el periodo) como archivo adjunto a la lista <b>PLANIFICADORES</b> de la hoja CONS_NOTIF_COPIAS.</div>'+
+  '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-cancel="1" id="pmNo">Cancelar</button><button class="ok" id="pmOk">Enviar</button></div>',
+  ()=>{$('pmNo').onclick=cerrarModal;$('pmOk').onclick=async()=>{const f2=espera($('pmOk'),'Enviando…');try{const r=await postJson({accion:'notif_planificadores',periodo:per,resumen:x.resumen,archivo:{nombre:x.nombre,base64:b64(x.buf)}});if(!r.ok)throw new Error(r.error);
+   cerrarModal();modal('Consolidado enviado','<div class="okbox">✓ Enviado a '+r.destinatarios+' planificadores'+(r.cco?' y '+r.cco+' en copia oculta':'')+'.</div><div class="note">Cuota de correo restante hoy: '+r.cuota+'. Queda registrado en la bitácora.</div>');}catch(e){f2();err(e);}};});};
 const DS_SEL=new Set();
 function rDsc(){const P=PERS.filter(p=>estadoPer(p)!=='PROGRAMADO');
  $('dsPer').innerHTML=P.map(p=>'<label><input type="checkbox" value="'+p.p+'" checked> '+p.p+'</label>').join('');
+ const pa=periodoAbierto();$('dsPerRev').innerHTML=P.slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('');
  $('dsUeCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(Boolean))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');
  pintarDsUe();dsFmt();}
-function dsFmt(){const v=document.querySelector('input[name=dsFmt]:checked').value;$('dsF1').classList.toggle('on',v==='ue');$('dsF2').classList.toggle('on',v==='tipo');$('dsUeBox').style.display=v==='ue'?'':'none';
- $('dsOk').textContent=v==='ue'?'Descargar Excel por Unidad Ejecutora':'Descargar base completa';}
+function dsFmt(){const v=document.querySelector('input[name=dsFmt]:checked').value;$('dsF1').classList.toggle('on',v==='ue');$('dsF2').classList.toggle('on',v==='tipo');$('dsF3').classList.toggle('on',v==='plan');$('dsUeBox').style.display=v==='ue'?'':'none';
+ $('dsPlanBox').style.display=v==='plan'?'':'none';$('dsPerBox').querySelector('#dsPer').style.display=v==='plan'?'none':'';$('dsPerBox').querySelector('label').style.display=v==='plan'?'none':'';$('dsPlanMail').style.display=v==='plan'?'':'none';
+ $('dsOk').textContent=v==='ue'?'Descargar Excel por Unidad Ejecutora':v==='plan'?'Descargar consolidado':'Descargar base completa';}
 document.querySelectorAll('input[name=dsFmt]').forEach(r=>r.onchange=dsFmt);
 function dsVisibles(){const q=$('dsUeQ').value.trim().toLowerCase(),c=$('dsUeCed').value;return CAT.U.filter(u=>(!q||u.n.toLowerCase().includes(q))&&(!c||u.ced===c));}
 function pintarDsUe(){$('dsUeL').innerHTML=dsVisibles().map(u=>'<label title="'+esc(u.ced)+'"><input type="checkbox" value="'+esc(u.n)+'"'+(DS_SEL.has(u.n)?' checked':'')+'> '+esc(u.n)+'</label>').join('')||'<span class="note">Sin coincidencias</span>';
@@ -1219,6 +1274,9 @@ async function descargarPorUE(pers,fc){
 $('dsOk').onclick=async()=>{
  if(typeof ExcelJS==='undefined'){toast('No se pudo cargar el componente de Excel. Revise la conexión.');return;}
  const pers=[...$('dsPer').querySelectorAll('input:checked')].map(x=>x.value),fc=$('dsCat').value;if(!pers.length){toast('Elija al menos un periodo');return;}
+ if(document.querySelector('input[name=dsFmt]:checked').value==='plan'){const fin=espera($('dsOk'),'Preparando…');try{const x=await armarConsolidado($('dsPerRev').value,fc);
+   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([x.buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=x.nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
+   $('dsInfo').textContent='Listo: '+x.resumen.renglones+' renglones × '+x.resumen.total+' unidades; '+x.resumen.ues+' con consumo aprobado en '+$('dsPerRev').value+'.';}catch(e){err(e);$('dsInfo').textContent='';}finally{fin();}return;}
  if(document.querySelector('input[name=dsFmt]:checked').value==='ue'){if(!DS_SEL.size){toast('Elija al menos una Unidad Ejecutora');return;}const fin=espera($('dsOk'),'Preparando…');try{await descargarPorUE(pers,fc);}catch(e){err(e);$('dsInfo').textContent='';}finally{fin();}return;}
  const fin=espera($('dsOk'),'Preparando…');
  try{
