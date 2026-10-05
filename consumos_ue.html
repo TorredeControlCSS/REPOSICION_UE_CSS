@@ -46,6 +46,7 @@ button.ok:hover{background:#1b5e20}
 .rev-acc button{font-size:14px;padding:8px 18px;font-weight:700}
 button.espera{cursor:progress;opacity:.75}
 .okbox{background:#e3f2e4;border:1px solid #9fcfa6;color:#1b5e20;padding:7px 10px;margin-bottom:6px;font-size:13.5px}
+.tab .tcnt{display:inline-block;min-width:20px;padding:1px 6px;margin-left:7px;border-radius:10px;background:#b3261e;color:#fff;font-size:11.5px;font-weight:700;text-align:center;line-height:16px}
 .rep-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;font-size:14px}
 .stepper{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:10px}@media(max-width:1000px){.stepper{grid-template-columns:1fr}}
 .step{background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 11px}
@@ -527,11 +528,12 @@ let PEND_ANT=null;
 async function revisarPendientes(alIngresar){
  if(!ME)return;
  const pers=mensuales().filter(p=>estadoPer(p)!=='PROGRAMADO').slice(-3).map(p=>p.p),cats=misCats();
- let nv=0,na=0;
+ let nv=0,na=0;const porPer={};
  for(const p of pers){const j=await getJ('envios_'+p+'.json',true).catch(()=>null);if(!j)continue;
-  j.E.forEach(e=>{const x=ovrAplicar(Object.assign({},e),j.generado);if(!cats.includes(x.cat))return;if(tiene('VALIDA')&&['ENVIADO','DEVUELTO'].includes(x.e))nv++;if(tiene('APRUEBA')&&x.e==='VALIDADO')na++;});}
+  j.E.forEach(e=>{const x=ovrAplicar(Object.assign({},e),j.generado);if(!cats.includes(x.cat))return;let s=0;if(tiene('VALIDA')&&['ENVIADO','DEVUELTO'].includes(x.e)){nv++;s=1;}if(tiene('APRUEBA')&&x.e==='VALIDADO'){na++;s=1;}if(s)porPer[p]=(porPer[p]||0)+1;});}
  const n=nv+na,tab=document.querySelector('.tab[data-v="rev"]');
- if(tab){let b=tab.querySelector('.cnt');if(!b){b=document.createElement('span');b.className='cnt hot';tab.appendChild(b);}b.textContent=n;b.style.display=n?'':'none';}
+ if(tab){let b=tab.querySelector('.tcnt');if(!b){b=document.createElement('span');b.className='tcnt';tab.appendChild(b);}b.textContent=n;b.style.display=n?'':'none';
+  tab.title=n?n+' envíos esperan su firma: '+Object.keys(porPer).map(p=>porPer[p]+' en '+p).join(', '):'';}
  document.title=(n?'('+n+') ':'')+'Registro de Consumos por Unidad Ejecutora · DINALOG';
  const txt=[nv?nv+' por validar':'',na?na+' por aprobar':''].filter(Boolean).join(' y ');
  if(alIngresar&&n)toast('Tiene '+txt+'. Están en la pestaña Revisar.',7000);
