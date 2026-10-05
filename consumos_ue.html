@@ -47,6 +47,9 @@ button.ok:hover{background:#1b5e20}
 button.espera{cursor:progress;opacity:.75}
 .okbox{background:#e3f2e4;border:1px solid #9fcfa6;color:#1b5e20;padding:7px 10px;margin-bottom:6px;font-size:13.5px}
 .tab .tcnt{display:inline-block;min-width:20px;padding:1px 6px;margin-left:7px;border-radius:10px;background:#b3261e;color:#fff;font-size:11.5px;font-weight:700;text-align:center;line-height:16px}
+.contbar{background:#fff4dc;border:1px solid #e0b64d;color:#6b4e00;padding:9px 12px;margin-bottom:10px;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.sgc{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.sgc .note{font-size:11px}
+.sgc button{padding:1px 8px;font-size:11.5px}
 .rep-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;font-size:14px}
 .stepper{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:10px}@media(max-width:1000px){.stepper{grid-template-columns:1fr}}
 .step{background:#f4f7fb;border:1px solid #c3d2e4;padding:9px 11px}
@@ -167,7 +170,16 @@ td input:disabled{background:#f3f3f3;color:#333}
  <div class="tabs" id="tabs"></div>
 
  <!-- 1 · REPORTAR -->
+ <div class="view" id="v-seg">
+  <div class="ctrl" id="sgCtrl"><label>Periodo</label><select id="sgPer"></select><label>Categoría</label><select id="sgCat"><option value="">Todas</option><option value="MED" selected>Medicamentos</option><option value="MQ">Material quirúrgico</option><option value="LAB">Laboratorio y radiología</option></select>
+   <label>CEDIS</label><select id="sgCed"><option value="">Todos</option></select><input id="sgQ" placeholder="Buscar unidad" style="width:220px">
+   <button id="sgClr">Limpiar</button><button class="b-cl" id="sgRef">⟳ Actualizar</button><span class="note" id="sgHora"></span><button class="ayuda" data-ayuda="seguimiento">?</button></div>
+  <div class="kpis sm" id="sgK"></div>
+  <div class="panel"><div class="ph"><span id="sgTit">Seguimiento del mes</span><small><button class="b-cl" id="sgMail" style="padding:2px 8px">Copiar correos de las pendientes</button> <button class="b-cl" id="sgXls" style="padding:2px 8px">Descargar en Excel</button></small></div>
+   <div class="pb"><div id="tSeg"><div class="cargando">Cargando…</div></div></div></div>
+ </div>
  <div class="view" id="v-rep">
+  <div class="contbar" id="cCont" style="display:none"></div>
   <div class="ctrl"><label>Periodo</label><select id="cPer"></select><span id="cPerInfo" class="note"></span>
    <span id="cUeBox"><label>Unidad Ejecutora</label> <select id="cUe" style="max-width:420px"></select></span>
    <span class="chips" id="cCat" style="margin-left:6px"></span></div>
@@ -192,7 +204,7 @@ td input:disabled{background:#f3f3f3;color:#333}
  <div class="view" id="v-rev">
   <div class="legend" id="rLeg"></div>
   <div class="sub" id="rSub"></div>
-  <div class="ctrl"><label>Periodo</label><select id="rPer"></select><label>Categoría</label><select id="rCat"></select><label>UE</label><select id="rUe" style="max-width:360px"><option value="">Todas</option></select><button id="rRef">Actualizar</button></div>
+  <div class="ctrl"><label>Periodo</label><select id="rPer"></select><label>Categoría</label><select id="rCat"></select><label>UE</label><select id="rUe" style="max-width:360px"><option value="">Todas</option></select><button id="rRef">Actualizar</button><button id="rClr">Limpiar filtros</button></div>
   <div class="panel"><div class="ph"><span id="rTit"></span><small id="rCnt"></small></div><div class="pb"><div id="tRev"></div></div></div>
   <div class="panel" id="rDet" style="display:none"><div class="ph"><span id="rDetT"></span><small id="rDetS"></small></div><div class="pb">
    <div class="rev-acc"><div><b>Su decisión sobre este envío</b><div class="note" id="rSeg"></div></div><span id="rAcc"></span></div>
@@ -297,6 +309,7 @@ const AYUDA={
  reportar:['Cómo reportar','<b>1.</b> Llene la columna <i>Consumo del mes</i> con el consumo mensual de cada renglón, en unidades. Puede escribir en la pantalla, o usar <i>Descargar plantilla</i>, llenarla en su computadora y <i>Subir plantilla llena</i>. <b>2.</b> Si una fila se pone en rojo es porque cambió 3 veces o más frente al último consumo aprobado: escriba el motivo en la última columna. En el paso 2, el botón <i>Ver solo esas filas</i> las reúne. <b>3.</b> Pulse <i>Enviar a validación</i>.<br><br>Deje vacío un renglón para conservar su último valor aprobado; escriba 0 si no hubo consumo. <i>Rellenar con el último consumo aprobado</i> copia los valores anteriores en los vacíos, para que solo cambie lo que varió. La tabla muestra los renglones que su unidad ha consumido; en <i>Mostrar</i> elija <i>Todo el catálogo</i> para reportar uno nuevo. <i>Descartar lo escrito</i>, en la barra de la tabla, borra lo que no ha enviado. Lo que escribe se guarda en su equipo hasta que lo envíe.'],
  plazo:['Plazo de entrega','El P-240 (Rev. 7.0, Medidas de Control VI.B.11, pág. 10) establece que los consumos del mes se remiten en los cinco primeros días del mes siguiente. Pasada esa fecha el sistema sigue recibiendo el reporte, pero queda registrado fuera de plazo en la cobertura.'],
  mostrar:['Qué renglones ver','<b>Los que su unidad consume</b>: los que tienen un consumo aprobado mayor que cero o que ya llenó; es la vista normal para reportar. <b>Todos los de la categoría</b>: el catálogo completo, para reportar un renglón que su unidad empezó a consumir. <b>Ya llenados este mes</b>: para revisar lo que escribió antes de enviar. <b>Por justificar</b>: los que cambiaron mucho y necesitan una explicación. Cambiar la vista no borra nada de lo escrito.'],
+ seguimiento:['Seguimiento del mes','Muestra en una sola vista el estado del reporte de cada Unidad Ejecutora y categoría para el periodo elegido. <b>Las tarjetas son filtros</b>: clic en <i>Sin reporte</i> para ver solo las unidades que faltan, o en <i>Fuera de plazo</i> para las que enviaron después del día 5.<br><br>En cada celda: <b>Ver</b> abre el envío en Revisar; <b>Cargar</b> abre la carga por contingencia, para subir en nombre de la UE el reporte que envió por correo (queda registrado a su nombre y otra persona debe validarlo).<br><br><b>Copiar correos de las pendientes</b> junta los correos de los reportantes de las unidades sin reporte, listos para pegar en CCO.'],
  descarga:['Descargar consumos','<b>Una hoja por Unidad Ejecutora</b>: elija las unidades (o todas) y obtiene un Excel con un índice y una hoja por unidad. En cada hoja, una fila por renglón y una columna por periodo, más el consumo vigente, lo que está en revisión y la variación entre los dos últimos periodos con dato (rojo si se duplicó o más, azul si cayó a la mitad o menos). Con todas las unidades el archivo es pesado; para el trabajo diario conviene elegir solo las que va a revisar.<br><br><b>Base completa</b>: cuatro hojas (Vigente, Por periodo, En revisión y Envíos) con todas las unidades, una fila por dato, para filtrar o hacer tablas dinámicas.'],
  analisis:['Cómo leer este análisis','<b>Compare</b> dos periodos y, si quiere, acote por categoría, UE o renglón. Todos los valores son consumo mensual.<br><br><b>Brecha a partir de</b>: cuándo un cambio cuenta. Con 2 veces, un par UE–renglón está <b>en alza</b> si su consumo se duplicó o más y <b>en baja</b> si cayó a la mitad o menos. <b>Nuevos</b>: no tenían consumo y ahora sí. <b>Cesan</b>: tenían y ahora reportan cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.<br><br><b>Las tarjetas son filtros</b>: haga clic en <i>En alza</i> y los gráficos y las tablas muestran solo esos pares; clic de nuevo o en <i>Pares UE–renglón</i> para ver todo. Con <i>Nuevos</i>, <i>Cesan</i> o <i>Sin reporte</i> uno de los dos periodos vale cero, así que la dispersión se reemplaza por los 20 pares de mayor consumo afectado.<br><br>Con una UE elegida, los gráficos cambian a la vista de esa unidad: su evolución y sus renglones con mayor brecha.'],
  brecha:['Brecha a partir de','Define cuándo un cambio entre los dos periodos se considera una brecha. Con <b>2 veces</b>: está en <b>alza</b> si el consumo se duplicó o más, y en <b>baja</b> si cayó a la mitad o menos. Con 1,5 veces se marcan cambios más pequeños; con 3 veces, solo los muy grandes. <b>Nuevo</b>: no tenía consumo y ahora sí. <b>Cesa</b>: tenía consumo y ahora reporta cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.'],
@@ -509,7 +522,7 @@ async function entrar(s){
  $('out').onclick=()=>{const t=TOKEN;jsonp({accion:'salir',token:t},{reintentos:0,timeout:15000}).catch(()=>{});sesionVencida('Sesión cerrada.');};
  try{await cargarBase();}catch(e){err(e);return;}
  const T=[];
- if(tiene('CARGA'))T.push(['rep','1 · Reportar']);
+ if(esAdmin())T.push(['seg','Seguimiento']);else if(tiene('CARGA'))T.push(['rep','1 · Reportar']);
  if(tiene('VALIDA')||tiene('APRUEBA'))T.push(['rev','2 · Revisar']);
  T.push(['ana','3 · Análisis']);
  if(esAdmin()||tiene('APRUEBA'))T.push(['adm','4 · Administración']);
@@ -522,6 +535,64 @@ async function entrar(s){
  if(esAdmin())setTimeout(admPrecargar,2500);
  if(tiene('VALIDA')||tiene('APRUEBA')){revisarPendientes(true);clearInterval(entrar._t);entrar._t=setInterval(()=>revisarPendientes(false),180000);}
 }
+/* ======================================================================
+ *  SEGUIMIENTO (ADMIN): estado del mes en todas las unidades
+ * ==================================================================== */
+let SG={J:null,EN:[],cf:''};
+const SGN={ESP:'Reportes esperados',SIN:'Sin reporte',VAL:'Por validar',DEV:'Devueltos o en corrección',APR:'Por aprobar',OK:'Aprobados',PUB:'Publicados al Motor',TARDE:'Fuera de plazo'};
+const grupoEst=e=>e==='SIN_REPORTE'?'SIN':['ENVIADO','DEVUELTO'].includes(e)?'VAL':['OBSERVADO','EN_CORRECCION'].includes(e)?'DEV':e==='VALIDADO'?'APR':e==='APROBADO'?'OK':e==='PUBLICADO'?'PUB':'';
+['sgCat','sgCed'].forEach(id=>$(id).onchange=()=>pintarSeg());$('sgQ').oninput=()=>pintarSeg();$('sgPer').onchange=()=>rSeg(true);
+$('sgClr').onclick=()=>{$('sgCat').value='MED';$('sgCed').value='';$('sgQ').value='';SG.cf='';pintarSeg();};
+$('sgRef').onclick=()=>rSeg(true);
+async function rSeg(fresco){
+ if(!$('sgPer').options.length){const ms=mensuales().filter(p=>estadoPer(p)!=='PROGRAMADO').reverse(),pa=periodoAbierto();
+  $('sgPer').innerHTML=ms.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+({ABIERTO:'abierto',CERRADO:'cerrado',EN_CURSO:'en curso'})[estadoPer(p)]+'</option>').join('');
+  $('sgCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(Boolean))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');}
+ const per=$('sgPer').value;$('tSeg').innerHTML='<div class="cargando">Cargando…</div>';
+ try{const [J,E]=await Promise.all([getJ('estado_'+per+'.json',fresco!==false),getJ('envios_'+per+'.json',fresco!==false)]);
+  SG.J=J||{p:per,cats:['MED','MQ','LAB'],generado:null,F:CAT.U.map(u=>[u.n,u.ced,u.cod].concat(...['MED','MQ','LAB'].map(()=>['SIN_REPORTE',''])))};
+  SG.EN=E?E.E.map(e=>ovrAplicar(Object.assign({},e),E.generado)):[];}catch(e){err(e);return;}
+ if(!USR.length)admLeer('usuarios',r=>{USR=r.usuarios;if(cur==='seg')pintarSeg();});
+ pintarSeg();}
+function sgFilas(){const J=SG.J,P=PERS.find(p=>p.p===J.p)||{},ced=$('sgCed').value,q=$('sgQ').value.trim().toLowerCase();
+ const ult={};SG.EN.filter(e=>e.e!=='REEMPLAZADO').forEach(e=>{const k=e.ue+'|'+e.cat;if(!ult[k]||e.ver>ult[k].ver)ult[k]=e;});
+ return J.F.map(f=>{const o={ue:f[0],ced:f[1],cod:f[2]};J.cats.forEach((c,i)=>{const e=ult[f[0]+'|'+c],est=e?e.e:f[3+i*2];const fe=e?e.fc:f[4+i*2];
+   o[c]={e:est,f:fe||'',id:e?e.id:'',ver:e?e.ver:0,canal:e?e.canal:'',tarde:!!(P.lim&&fe&&String(fe).slice(0,10)>P.lim)};});return o;})
+  .filter(o=>(!ced||o.ced===ced)&&(!q||o.ue.toLowerCase().includes(q)));}
+function reportantes(ue){return USR.filter(u=>u.ue===ue&&u.rol==='CARGA'&&u.act==='SI');}
+function pintarSeg(){if(!SG.J)return;
+ const J=SG.J,P=PERS.find(p=>p.p===J.p)||{},cats=$('sgCat').value?[$('sgCat').value]:J.cats,F=sgFilas();
+ const cnt={ESP:0,SIN:0,VAL:0,DEV:0,APR:0,OK:0,PUB:0,TARDE:0};
+ F.forEach(o=>cats.forEach(c=>{cnt.ESP++;const g=grupoEst(o[c].e);if(g)cnt[g]++;if(o[c].tarde)cnt.TARDE++;}));
+ const col={ESP:'gr',SIN:'ro',VAL:'',DEV:'am',APR:'li',OK:'ve',PUB:'ve',TARDE:'am'};
+ let dias='';if(P.lim){const h=hoyPTY(),d=Math.round((Date.parse(P.lim)-Date.parse(h))/864e5);dias=d<0?'venció el '+P.lim:d===0?'vence hoy':d===1?'vence mañana':'vence en '+d+' días ('+P.lim+')';}
+ $('sgK').innerHTML=Object.keys(SGN).map(k=>'<div class="kpi clk '+col[k]+(SG.cf===k||(k==='ESP'&&!SG.cf)?' act':'')+'" data-k="'+k+'"><div class="l">'+SGN[k]+'</div><div class="v">'+fmt(cnt[k])+'</div>'+(k==='ESP'?'<div class="d">ver todos · '+esc(dias)+'</div>':'')+'</div>').join('');
+ $('sgK').querySelectorAll('.kpi').forEach(k=>k.onclick=()=>{SG.cf=k.dataset.k==='ESP'||SG.cf===k.dataset.k?'':k.dataset.k;pintarSeg();});
+ const pasa=o=>!SG.cf||cats.some(c=>SG.cf==='TARDE'?o[c].tarde:grupoEst(o[c].e)===SG.cf);
+ const rows=F.filter(pasa);
+ $('sgTit').textContent='Seguimiento '+J.p+' · '+rows.length+' unidades'+(SG.cf?' · '+SGN[SG.cf].toLowerCase():'');
+ $('sgHora').textContent=J.generado?'datos publicados '+new Date(J.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(5,16):'aún sin envíos este periodo';
+ const puedeCargar=reportable(P);
+ const celda=(o,c)=>{const x=o[c];return '<div class="sgc">'+st(x.e)+(x.f?' <span class="note">'+esc(String(x.f).slice(5,16))+'</span>':'')+(x.tarde?' <span class="st s-DEVUELTO">fuera de plazo</span>':'')+(x.canal==='CONTINGENCIA'?' <span class="st s-OBSERVADO" title="Cargado por contingencia">contingencia</span>':'')+
+  (x.id?' <button class="b-cl" data-ver="'+esc(x.id)+'">Ver</button>':puedeCargar?' <button class="b-cl" data-car="'+esc(o.ue)+'|'+c+'">Cargar</button>':'')+'</div>';};
+ table($('tSeg'),[{k:'ue',l:'Unidad Ejecutora'},{k:'ced',l:'CEDIS'}].concat(cats.map(c=>({k:c,l:CATN[c],ns:1,f:(v,o)=>celda(o,c)})),
+   [{k:'rep',l:'Reportante',ns:1,f:(v,o)=>{const r=reportantes(o.ue);return r.length?r.map(u=>'<span title="'+esc(u.correo||'sin correo')+'">'+esc(u.n)+'</span>').join('<br>'):'<span class="note" style="color:#b3261e">sin reportante registrado</span>';}}]),
+  rows,{sort:'ue',vacio:'Ninguna unidad en este filtro.',after:el=>{
+   el.querySelectorAll('[data-ver]').forEach(b=>b.onclick=()=>abrirEnvio(J.p,b.dataset.ver));
+   el.querySelectorAll('[data-car]').forEach(b=>b.onclick=()=>{const [ue,c]=b.dataset.car.split('|');contingencia(ue,c,J.p);});}});}
+async function abrirEnvio(per,id){await go('rev');$('rPer').value=per;await rRev();verEnvio(id,'r');}
+function contingencia(ue,cat,per){$('cUe').value=ue;$('cPer').value=per;C.cat=cat;C.J=null;
+ go('rep').then(()=>{CONT={ue,cat,per};pintarCont();});CONT={ue,cat,per};}
+$('sgMail').onclick=()=>{if(!SG.J)return;const cats=$('sgCat').value?[$('sgCat').value]:SG.J.cats,F=sgFilas().filter(o=>cats.some(c=>o[c].e==='SIN_REPORTE'));
+ const correos=[],sinRep=[];F.forEach(o=>{const falta=cats.filter(c=>o[c].e==='SIN_REPORTE');const r=reportantes(o.ue).filter(u=>u.correo&&falta.some(c=>String(u.cats||'').includes(c)));if(r.length)r.forEach(u=>correos.push(u.correo));else sinRep.push(o.ue+' ('+falta.join(', ')+')');});
+ const uni=[...new Set(correos)],lista=uni.join('; ');
+ modal('Correos de las unidades pendientes','<div class="note" style="font-size:13px">'+F.length+' unidades sin reporte en '+esc(SG.J.p)+'. '+uni.length+' correos de reportantes'+(sinRep.length?'; '+sinRep.length+' unidades no tienen reportante registrado.':'.')+' Péguelos en el campo CCO de su correo.</div><textarea rows="5" style="width:100%" id="sgML" readonly>'+esc(lista)+'</textarea>'+
+  (sinRep.length?'<div class="note"><b>Sin reportante:</b> '+sinRep.map(esc).join(', ')+'</div>':'')+'<button class="pri" id="sgMC">Copiar</button>',()=>{$('sgMC').onclick=async()=>{try{await navigator.clipboard.writeText(lista);toast('Correos copiados');}catch(e){$('sgML').select();document.execCommand('copy');toast('Correos copiados');}};});};
+$('sgXls').onclick=()=>{if(!SG.J)return;const cats=$('sgCat').value?[$('sgCat').value]:SG.J.cats,F=sgFilas();
+ const cols=[{k:'ue',l:'UNIDAD_EJECUTORA'},{k:'ced',l:'CEDIS'}].concat(...cats.map(c=>[{k:c+'_e',l:c+'_ESTADO'},{k:c+'_f',l:c+'_FECHA_ENVIO'},{k:c+'_t',l:c+'_FUERA_DE_PLAZO'}]),[{k:'rep',l:'REPORTANTE'},{k:'cor',l:'CORREO'}]);
+ const rows=F.map(o=>{const r={ue:o.ue,ced:o.ced,rep:reportantes(o.ue).map(u=>u.n).join(', '),cor:reportantes(o.ue).map(u=>u.correo).filter(Boolean).join('; ')};cats.forEach(c=>{r[c+'_e']=o[c].e;r[c+'_f']=o[c].f;r[c+'_t']=o[c].tarde?'SI':'';});return r;});
+ xls('SEGUIMIENTO_'+SG.J.p,cols,rows,'Seguimiento '+SG.J.p,{titulo:'Seguimiento de reportes · '+SG.J.p,meta:[['Periodo',SG.J.p],['Unidades',String(rows.length)]],color:r=>cats.some(c=>r[c+'_e']==='SIN_REPORTE')?'FFF4DEDD':null});};
+
 /* Aviso de envíos por firmar: número en la pestaña Revisar y en el título del navegador,
    aviso al ingresar y cada vez que llega uno nuevo. Se revisa cada 3 minutos y al volver a la pestaña. */
 let PEND_ANT=null;
@@ -541,7 +612,8 @@ async function revisarPendientes(alIngresar){
  PEND_ANT=n;}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ME&&(tiene('VALIDA')||tiene('APRUEBA')))revisarPendientes(false);});
 async function go(v){cur=v;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.v===v));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id==='v-'+v));
- return ({rep:rRep,rev:rRev,ana:rAna,adm:rAdm})[v]();}
+ if(v!=='rep')CONT=null;
+ return ({seg:rSeg,rep:rRep,rev:rRev,ana:rAna,adm:rAdm})[v]();}
 
 function initSelects(){
  const mens=mensuales(),pa=periodoAbierto();
@@ -567,6 +639,10 @@ function dkey(){return 'cons_draft|'+ME.cedula+'|'+C.ue+'|'+C.cat+'|'+C.per;}
 function draft(){try{return JSON.parse(ls.get(dkey())||'{}');}catch(e){return {};}}
 function saveDraft(d){d._t=new Date().toISOString();if(ls.set(dkey(),JSON.stringify(d)))$('cDraft').textContent='guardado en este equipo '+new Date().toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit',timeZone:'America/Panama'});}
 $('cPer').onchange=()=>rRep();$('cUe').onchange=()=>{C.J=null;rRep();};
+let CONT=null;
+function pintarCont(){const b=$('cCont');if(!esAdmin()){b.style.display='none';return;}
+ b.style.display='';b.innerHTML='<span>⚠ <b>Carga por contingencia</b>: está cargando en nombre de <b>'+esc(C.ue)+'</b>. Quedará registrado a su nombre como carga por contingencia, y otra persona deberá validarlo.</span><button class="b-cl" id="cContV">← Volver a Seguimiento</button>';
+ $('cContV').onclick=()=>go('seg');}
 async function rRep(fresco){
  const ueN=$('cUe').value;if(ueN!==C.ue)C.J=null;C.per=$('cPer').value;C.ue=ueN;C.archivo=null;
  const cats=misCats();if(!cats.includes(C.cat))C.cat=cats[0];
@@ -590,7 +666,7 @@ async function rRep(fresco){
   ' <button class="b-cl" id="cRefE" style="padding:3px 10px;margin-left:6px" title="Vuelve a consultar el estado de su reporte">⟳ Actualizar estado</button>'+
   (e&&e.obs?'<div class="warn" style="margin:6px 0 0"><b>Qué debe corregir (Planificación):</b> '+esc(e.obs)+'</div>':'')+(C.soloLectura?'<div class="note" style="margin-top:4px">'+por+'</div>':'');
  if($('cRefE'))$('cRefE').onclick=()=>{$('cRefE').disabled=true;$('cRefE').textContent='Actualizando…';C.J=null;Object.keys(JC).forEach(k=>{if(/^ue\/|^envio/.test(k)){delete JC[k];delete JT[k];}});rRep(true);};
- $('cSteps').style.display=C.soloLectura?'none':'';$('cClr').style.display=C.soloLectura?'none':'';$('cTit').textContent=C.ue+' · '+CATN[C.cat]+' · '+C.per;
+ $('cSteps').style.display=C.soloLectura?'none':'';$('cClr').style.display=C.soloLectura?'none':'';$('cTit').textContent=C.ue+' · '+CATN[C.cat]+' · '+C.per;pintarCont();
  let d=draft();
  if(e&&e.id&&!d._t&&(est==='OBSERVADO'||est==='ENVIADO'||est==='EN_CORRECCION'||C.soloLectura)){
   let dd=null;const sn=(()=>{try{return JSON.parse(ls.get('cons_sent|'+C.ue+'|'+C.cat+'|'+C.per)||'null');}catch(z){return null;}})();
@@ -678,12 +754,12 @@ function leerExcel(f){
 $('cSend').onclick=()=>{const rows=cRows().filter(r=>r.v!=='');
  modal('Confirmar envío','<div class="note">Se enviará a validación el consumo de <b>'+esc(CATN[C.cat].toLowerCase())+'</b> de <b>'+esc(C.ue)+'</b> para <b>'+C.per+'</b>: '+rows.length+' renglones'+(C.archivo?', con el archivo <b>'+esc(C.archivo.nombre)+'</b> como respaldo':'')+'. Quedará registrado a su nombre con fecha y hora de Panamá. Después de enviar no se edita: una corrección genera una versión nueva.</div><button class="pri" id="sOk">Enviar</button>',
  ()=>$('sOk').onclick=async()=>{const b=$('sOk');b.disabled=true;b.textContent='Enviando…';
-  try{const r=await postJson({accion:'enviar',ue:C.ue,cat:C.cat,periodo:C.per,canal:C.archivo?'EXCEL':'FORMULARIO',archivo:C.archivo,filas:rows.map(x=>[x.cod,+x.v,String(x.j||'')])});
+  try{const r=await postJson({accion:'enviar',ue:C.ue,cat:C.cat,periodo:C.per,canal:C.archivo?'EXCEL':'FORMULARIO',contingencia:esAdmin(),archivo:C.archivo,filas:rows.map(x=>[x.cod,+x.v,String(x.j||'')])});
    if(!r.ok)throw new Error(r.error);ls.del(dkey());
    const env={};rows.forEach(x=>env[x.cod]={v:+x.v,j:String(x.j||'')});ls.set('cons_sent|'+C.ue+'|'+C.cat+'|'+C.per,JSON.stringify({id:r.id,d:env}));
    const hp=new Date().toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16);
    ls.set('cons_env|'+C.ue+'|'+C.cat+'|'+C.per,JSON.stringify({id:r.id,ver:r.version,e:'ENVIADO',f:hp,n:r.renglones,t:Date.now()}));
-   C.J=null;
+   C.J=null;if(tiene('VALIDA')||tiene('APRUEBA'))setTimeout(()=>revisarPendientes(false),1500);
    modal('Reporte enviado','<div class="okbox" style="font-size:14px">✓ <b>Su reporte fue recibido.</b></div><div class="note" style="font-size:13.5px;line-height:1.6">'+esc(CATN[C.cat])+' · '+esc(C.per)+' · '+esc(C.ue)+'<br>Envío <b>'+esc(r.id)+'</b>, versión '+r.version+', '+r.renglones+' renglones, '+esc(hp)+'.<br><br>Planificación lo revisará. Mientras no lo validen, puede corregir valores y pulsar <b>Reenviar corrección</b>; se guardará como versión '+(r.version+1)+'. Si le hacen una observación, la verá en esta misma pantalla.</div><button class="pri" id="envOk">Entendido</button>',
     ()=>$('envOk').onclick=()=>{cerrarModal();rRep(true);});}
   catch(e){b.disabled=false;b.textContent='Enviar';err(e);}});};
@@ -728,7 +804,7 @@ function infoEnv(r){const e=r.envio;
  * ==================================================================== */
 let BJ=[],SEL=null,rS='';
 const RSUB={val:{l:'Por validar',est:['ENVIADO','DEVUELTO'],r:'VALIDA',hot:1},apr:{l:'Por aprobar',est:['VALIDADO'],r:'APRUEBA',hot:1},obs:{l:'Devueltos a la UE y en corrección',est:['OBSERVADO','EN_CORRECCION'],r:'VALIDA'},fin:{l:'Aprobados y publicados',est:['APROBADO','PUBLICADO'],r:''},his:{l:'Carga histórica',est:['HISTORICO'],r:''}};
-['rCat','rUe'].forEach(id=>$(id).onchange=()=>pintarRev());$('rPer').onchange=()=>rRev();$('rRef').onclick=()=>rRev();
+['rCat','rUe'].forEach(id=>$(id).onchange=()=>pintarRev());$('rClr').onclick=()=>{$('rCat').value='';$('rUe').value='';$('rDet').style.display='none';pintarRev();};$('rPer').onchange=()=>rRev();$('rRef').onclick=()=>rRev();
 function subsRev(){return Object.keys(RSUB).filter(k=>!RSUB[k].r||tiene(RSUB[k].r));}
 async function rRev(){
  const subs=subsRev();if(!subs.includes(rS))rS=subs[0];
@@ -1166,7 +1242,11 @@ function pintarLog(){const q=$('lQ').value.trim().toLowerCase(),fa=$('lAcc').val
 let TOUR=[],TI=0;
 function pasosTour(){
  const p=[{sel:'#tabs',tit:'Las pestañas',txt:'Todo el sistema está en estas pestañas, en el orden del trabajo: reportar, revisar, analizar y administrar. Usted solo ve las que corresponden a su rol.'}];
- if(tiene('CARGA'))p.push(
+ if(esAdmin())p.push(
+  {tab:'seg',sel:'#sgK',tit:'Seguimiento: el mes de un vistazo',txt:'Cuántos reportes se esperan, cuántos faltan, cuántos esperan firma y cuántos llegaron fuera de plazo. Las tarjetas son filtros.'},
+  {tab:'seg',sel:'#tSeg',tit:'Una fila por unidad',txt:'El estado de cada categoría, la fecha de envío y el reportante. Ver abre el envío; Cargar sirve para subir por contingencia el reporte que la UE mandó por correo.'},
+  {tab:'seg',sel:'#sgMail',tit:'Recordar a las pendientes',txt:'Junta los correos de los reportantes de las unidades sin reporte, para pegarlos en CCO.'});
+ if(tiene('CARGA')&&!esAdmin())p.push(
   {tab:'rep',sel:'#cPer',tit:'1 · Reportar: el periodo',txt:'Elija el mes que va a reportar. Solo se puede cargar el periodo abierto. La fecha límite es el día 5 del mes siguiente, según el P-240.'},
   {tab:'rep',sel:'#cCat',tit:'Su categoría',txt:'Medicamentos, material quirúrgico y laboratorio se reportan por separado. Usted ve solo las categorías que tiene asignadas.'},
   {tab:'rep',sel:'#cEstado',tit:'El estado de su envío',txt:'Aquí ve si ya envió, si Planificación le hizo una observación y en qué etapa está. Si le observaron algo, el comentario aparece aquí.'},
