@@ -47,6 +47,7 @@ button.ok:hover{background:#1b5e20}
 button.espera{cursor:progress;opacity:.75}
 .okbox{background:#e3f2e4;border:1px solid #9fcfa6;color:#1b5e20;padding:7px 10px;margin-bottom:6px;font-size:13.5px}
 .tab .tcnt{display:inline-block;min-width:20px;padding:1px 6px;margin-left:7px;border-radius:10px;background:#b3261e;color:#fff;font-size:11.5px;font-weight:700;text-align:center;line-height:16px}
+.tab.tcont{background:#fff4dc;color:#6b4e00;font-weight:700}.tab.tcont.active{background:#c28a00;color:#fff}.tab .tx{margin-left:8px;padding:0 4px;border-radius:3px}.tab .tx:hover{background:rgba(0,0,0,.18)}
 .contbar{background:#fff4dc;border:1px solid #e0b64d;color:#6b4e00;padding:9px 12px;margin-bottom:10px;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .sgc{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.sgc .note{font-size:11px}
 .sgc button{padding:1px 8px;font-size:11.5px}
@@ -172,7 +173,7 @@ td input:disabled{background:#f3f3f3;color:#333}
  <!-- 1 · REPORTAR -->
  <div class="view" id="v-seg">
   <div class="ctrl" id="sgCtrl"><label>Periodo</label><select id="sgPer"></select><label>Categoría</label><select id="sgCat"><option value="">Todas</option><option value="MED" selected>Medicamentos</option><option value="MQ">Material quirúrgico</option><option value="LAB">Laboratorio y radiología</option></select>
-   <label>CEDIS</label><select id="sgCed"><option value="">Todos</option></select><input id="sgQ" placeholder="Buscar unidad" style="width:220px">
+   <label>CEDIS</label><select id="sgCed"><option value="">Todos</option></select><label>UE</label><select id="sgUe" style="max-width:340px"><option value="">Todas</option></select>
    <button id="sgClr">Limpiar</button><button class="b-cl" id="sgRef">⟳ Actualizar</button><span class="note" id="sgHora"></span><button class="ayuda" data-ayuda="seguimiento">?</button></div>
   <div class="kpis sm" id="sgK"></div>
   <div class="panel"><div class="ph"><span id="sgTit">Seguimiento del mes</span><small><button class="b-cl" id="sgMail" style="padding:2px 8px">Copiar correos de las pendientes</button> <button class="b-cl" id="sgXls" style="padding:2px 8px">Descargar en Excel</button></small></div>
@@ -541,24 +542,26 @@ async function entrar(s){
 let SG={J:null,EN:[],cf:''};
 const SGN={ESP:'Reportes esperados',SIN:'Sin reporte',VAL:'Por validar',DEV:'Devueltos o en corrección',APR:'Por aprobar',OK:'Aprobados',PUB:'Publicados al Motor',TARDE:'Fuera de plazo'};
 const grupoEst=e=>e==='SIN_REPORTE'?'SIN':['ENVIADO','DEVUELTO'].includes(e)?'VAL':['OBSERVADO','EN_CORRECCION'].includes(e)?'DEV':e==='VALIDADO'?'APR':e==='APROBADO'?'OK':e==='PUBLICADO'?'PUB':'';
-['sgCat','sgCed'].forEach(id=>$(id).onchange=()=>pintarSeg());$('sgQ').oninput=()=>pintarSeg();$('sgPer').onchange=()=>rSeg(true);
-$('sgClr').onclick=()=>{$('sgCat').value='MED';$('sgCed').value='';$('sgQ').value='';SG.cf='';pintarSeg();};
+['sgCat','sgCed','sgUe'].forEach(id=>$(id).onchange=()=>pintarSeg());$('sgPer').onchange=()=>rSeg(true);
+$('sgClr').onclick=()=>{$('sgCat').value='MED';$('sgCed').value='';$('sgUe').value='';SG.cf='';pintarSeg();};
 $('sgRef').onclick=()=>rSeg(true);
 async function rSeg(fresco){
  if(!$('sgPer').options.length){const ms=mensuales().filter(p=>estadoPer(p)!=='PROGRAMADO').reverse(),pa=periodoAbierto();
   $('sgPer').innerHTML=ms.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+({ABIERTO:'abierto',CERRADO:'cerrado',EN_CURSO:'en curso'})[estadoPer(p)]+'</option>').join('');
-  $('sgCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(Boolean))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');}
+  $('sgCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(Boolean))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');
+  $('sgUe').innerHTML='<option value="">Todas</option>'+CAT.U.map(u=>u.n).sort((a,b)=>a.localeCompare(b,'es')).map(n=>'<option>'+esc(n)+'</option>').join('');}
  const per=$('sgPer').value;$('tSeg').innerHTML='<div class="cargando">Cargando…</div>';
  try{const [J,E]=await Promise.all([getJ('estado_'+per+'.json',fresco!==false),getJ('envios_'+per+'.json',fresco!==false)]);
   SG.J=J||{p:per,cats:['MED','MQ','LAB'],generado:null,F:CAT.U.map(u=>[u.n,u.ced,u.cod].concat(...['MED','MQ','LAB'].map(()=>['SIN_REPORTE',''])))};
   SG.EN=E?E.E.map(e=>ovrAplicar(Object.assign({},e),E.generado)):[];}catch(e){err(e);return;}
  if(!USR.length)admLeer('usuarios',r=>{USR=r.usuarios;if(cur==='seg')pintarSeg();});
  pintarSeg();}
-function sgFilas(){const J=SG.J,P=PERS.find(p=>p.p===J.p)||{},ced=$('sgCed').value,q=$('sgQ').value.trim().toLowerCase();
+function sgFilas(){const J=SG.J,P=PERS.find(p=>p.p===J.p)||{},ced=$('sgCed').value,fu=$('sgUe').value;
  const ult={};SG.EN.filter(e=>e.e!=='REEMPLAZADO').forEach(e=>{const k=e.ue+'|'+e.cat;if(!ult[k]||e.ver>ult[k].ver)ult[k]=e;});
  return J.F.map(f=>{const o={ue:f[0],ced:f[1],cod:f[2]};J.cats.forEach((c,i)=>{const e=ult[f[0]+'|'+c],est=e?e.e:f[3+i*2];const fe=e?e.fc:f[4+i*2];
    o[c]={e:est,f:fe||'',id:e?e.id:'',ver:e?e.ver:0,canal:e?e.canal:'',tarde:!!(P.lim&&fe&&String(fe).slice(0,10)>P.lim)};});return o;})
-  .filter(o=>(!ced||o.ced===ced)&&(!q||o.ue.toLowerCase().includes(q)));}
+  .filter(o=>(!ced||o.ced===ced)&&(!fu||o.ue===fu));}
+const RANGO={SIN_REPORTE:0,OBSERVADO:1,EN_CORRECCION:1,ENVIADO:2,DEVUELTO:2,VALIDADO:3,APROBADO:4,PUBLICADO:5};
 function reportantes(ue){return USR.filter(u=>u.ue===ue&&u.rol==='CARGA'&&u.act==='SI');}
 function pintarSeg(){if(!SG.J)return;
  const J=SG.J,P=PERS.find(p=>p.p===J.p)||{},cats=$('sgCat').value?[$('sgCat').value]:J.cats,F=sgFilas();
@@ -569,20 +572,24 @@ function pintarSeg(){if(!SG.J)return;
  $('sgK').innerHTML=Object.keys(SGN).map(k=>'<div class="kpi clk '+col[k]+(SG.cf===k||(k==='ESP'&&!SG.cf)?' act':'')+'" data-k="'+k+'"><div class="l">'+SGN[k]+'</div><div class="v">'+fmt(cnt[k])+'</div>'+(k==='ESP'?'<div class="d">ver todos · '+esc(dias)+'</div>':'')+'</div>').join('');
  $('sgK').querySelectorAll('.kpi').forEach(k=>k.onclick=()=>{SG.cf=k.dataset.k==='ESP'||SG.cf===k.dataset.k?'':k.dataset.k;pintarSeg();});
  const pasa=o=>!SG.cf||cats.some(c=>SG.cf==='TARDE'?o[c].tarde:grupoEst(o[c].e)===SG.cf);
- const rows=F.filter(pasa);
+ const rows=F.filter(pasa).map(o=>{cats.forEach(c=>{o[c+'_r']=(RANGO[o[c].e]??0)*1e10+(o[c].f?Date.parse(String(o[c].f).replace(' ','T'))/1e3:0);});o.rep=reportantes(o.ue).map(u=>u.n).join(', ')||'~';return o;});
  $('sgTit').textContent='Seguimiento '+J.p+' · '+rows.length+' unidades'+(SG.cf?' · '+SGN[SG.cf].toLowerCase():'');
  $('sgHora').textContent=J.generado?'datos publicados '+new Date(J.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(5,16):'aún sin envíos este periodo';
  const puedeCargar=reportable(P);
  const celda=(o,c)=>{const x=o[c];return '<div class="sgc">'+st(x.e)+(x.f?' <span class="note">'+esc(String(x.f).slice(5,16))+'</span>':'')+(x.tarde?' <span class="st s-DEVUELTO">fuera de plazo</span>':'')+(x.canal==='CONTINGENCIA'?' <span class="st s-OBSERVADO" title="Cargado por contingencia">contingencia</span>':'')+
   (x.id?' <button class="b-cl" data-ver="'+esc(x.id)+'">Ver</button>':puedeCargar?' <button class="b-cl" data-car="'+esc(o.ue)+'|'+c+'">Cargar</button>':'')+'</div>';};
- table($('tSeg'),[{k:'ue',l:'Unidad Ejecutora'},{k:'ced',l:'CEDIS'}].concat(cats.map(c=>({k:c,l:CATN[c],ns:1,f:(v,o)=>celda(o,c)})),
-   [{k:'rep',l:'Reportante',ns:1,f:(v,o)=>{const r=reportantes(o.ue);return r.length?r.map(u=>'<span title="'+esc(u.correo||'sin correo')+'">'+esc(u.n)+'</span>').join('<br>'):'<span class="note" style="color:#b3261e">sin reportante registrado</span>';}}]),
+ table($('tSeg'),[{k:'ue',l:'Unidad Ejecutora'},{k:'ced',l:'CEDIS'}].concat(cats.map(c=>({k:c+'_r',l:CATN[c],t:'n',f:(v,o)=>celda(o,c)})),
+   [{k:'rep',l:'Reportante',f:(v,o)=>{const r=reportantes(o.ue);return r.length?r.map(u=>'<span title="'+esc(u.correo||'sin correo')+'">'+esc(u.n)+'</span>').join('<br>'):'<span class="note" style="color:#b3261e">sin reportante registrado</span>';}}]),
   rows,{sort:'ue',vacio:'Ninguna unidad en este filtro.',after:el=>{
    el.querySelectorAll('[data-ver]').forEach(b=>b.onclick=()=>abrirEnvio(J.p,b.dataset.ver));
    el.querySelectorAll('[data-car]').forEach(b=>b.onclick=()=>{const [ue,c]=b.dataset.car.split('|');contingencia(ue,c,J.p);});}});}
 async function abrirEnvio(per,id){await go('rev');$('rPer').value=per;await rRev();verEnvio(id,'r');}
-function contingencia(ue,cat,per){$('cUe').value=ue;$('cPer').value=per;C.cat=cat;C.J=null;
- go('rep').then(()=>{CONT={ue,cat,per};pintarCont();});CONT={ue,cat,per};}
+function tabCont(on){let t=document.querySelector('.tab[data-v="rep"]');
+ if(on&&!t){const s=document.querySelector('.tab[data-v="seg"]');t=document.createElement('div');t.className='tab tcont';t.dataset.v='rep';
+  t.innerHTML='Carga por contingencia <span class="tx" title="Cerrar y volver a Seguimiento">✕</span>';s.after(t);
+  t.onclick=()=>go('rep');t.querySelector('.tx').onclick=ev=>{ev.stopPropagation();tabCont(false);go('seg');};}
+ if(!on&&t)t.remove();}
+function contingencia(ue,cat,per){$('cUe').value=ue;$('cPer').value=per;C.cat=cat;C.J=null;tabCont(true);go('rep');}
 $('sgMail').onclick=()=>{if(!SG.J)return;const cats=$('sgCat').value?[$('sgCat').value]:SG.J.cats,F=sgFilas().filter(o=>cats.some(c=>o[c].e==='SIN_REPORTE'));
  const correos=[],sinRep=[];F.forEach(o=>{const falta=cats.filter(c=>o[c].e==='SIN_REPORTE');const r=reportantes(o.ue).filter(u=>u.correo&&falta.some(c=>String(u.cats||'').includes(c)));if(r.length)r.forEach(u=>correos.push(u.correo));else sinRep.push(o.ue+' ('+falta.join(', ')+')');});
  const uni=[...new Set(correos)],lista=uni.join('; ');
@@ -612,7 +619,6 @@ async function revisarPendientes(alIngresar){
  PEND_ANT=n;}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ME&&(tiene('VALIDA')||tiene('APRUEBA')))revisarPendientes(false);});
 async function go(v){cur=v;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.v===v));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id==='v-'+v));
- if(v!=='rep')CONT=null;
  return ({seg:rSeg,rep:rRep,rev:rRev,ana:rAna,adm:rAdm})[v]();}
 
 function initSelects(){
@@ -641,8 +647,8 @@ function saveDraft(d){d._t=new Date().toISOString();if(ls.set(dkey(),JSON.string
 $('cPer').onchange=()=>rRep();$('cUe').onchange=()=>{C.J=null;rRep();};
 let CONT=null;
 function pintarCont(){const b=$('cCont');if(!esAdmin()){b.style.display='none';return;}
- b.style.display='';b.innerHTML='<span>⚠ <b>Carga por contingencia</b>: está cargando en nombre de <b>'+esc(C.ue)+'</b>. Quedará registrado a su nombre como carga por contingencia, y otra persona deberá validarlo.</span><button class="b-cl" id="cContV">← Volver a Seguimiento</button>';
- $('cContV').onclick=()=>go('seg');}
+ b.style.display='';b.innerHTML='<span>⚠ <b>Carga por contingencia</b>: está cargando en nombre de <b>'+esc(C.ue)+'</b>. Puede cambiar de unidad o categoría arriba. Quedará registrado a su nombre como carga por contingencia, y otra persona deberá validarlo.</span><button class="b-cl" id="cContV">← Terminar y volver a Seguimiento</button>';
+ $('cContV').onclick=()=>{tabCont(false);go('seg');};}
 async function rRep(fresco){
  const ueN=$('cUe').value;if(ueN!==C.ue)C.J=null;C.per=$('cPer').value;C.ue=ueN;C.archivo=null;
  const cats=misCats();if(!cats.includes(C.cat))C.cat=cats[0];
@@ -775,10 +781,17 @@ async function verEnvio(id,dest){
  let r=null;try{r=await getJ('envio/'+id+'.json',true);}catch(e){err(e);return;}
  if(!r){tt.innerHTML='<div class="cargando">El detalle de este envío se está publicando. Intente de nuevo en un minuto.</div>';return;}
  r=JSON.parse(JSON.stringify(r));const e=ovrAplicar(r.envio,r.generado);
- const bx='<div class="ctrl" style="margin-top:-2px"><button class="b-cl" data-xd="'+esc(e.id)+'">Descargar este envío en Excel</button></div>';
+ const bx='<div class="ctrl" style="margin-top:-2px"><button class="b-cl" data-xd="'+esc(e.id)+'">Descargar este envío en Excel</button>'+(dest!=='h'&&esAdmin()&&!['HISTORICO','PUBLICADO'].includes(e.e)&&!e.pub?'<span style="flex:1"></span><button class="bad" id="rDel" style="padding:3px 10px">Eliminar reporte (registro de prueba)</button>':'')+'</div>';
  if(dest==='h'){$('hT').textContent=e.id+' · '+e.ue+' · '+CATN[e.cat];$('hInfo').innerHTML=infoEnv(r)+bx;}
  else{SEL=r;$('rDetT').textContent=e.id+' · '+e.ue+' · '+CATN[e.cat];$('rDetS').textContent='versión '+e.ver+' · recibido '+e.fc+' · estado '+e.e;$('rInfo').innerHTML=infoEnv(r)+bx;}
  document.querySelectorAll('[data-xd="'+e.id+'"]').forEach(b=>b.onclick=()=>descargarEnvio(r));
+ if($('rDel'))$('rDel').onclick=()=>modal('Eliminar reporte '+e.id,'<div class="warn" style="font-size:13px">Se borra <b>por completo</b> el reporte de <b>'+esc(e.ue)+'</b> · '+esc(CATN[e.cat])+' · '+esc(e.per)+', <b>con todas sus versiones</b>, del registro y de los tableros. Úselo solo para registros de prueba o cargados por error. No se puede deshacer; la bitácora conservará quién lo eliminó y por qué.</div>'+
+  '<label>Motivo (obligatorio)</label><input id="dlM" placeholder="Ej.: registro de prueba"><label>Para confirmar, escriba el número del envío: <b>'+esc(e.id)+'</b></label><input id="dlC" autocomplete="off">'+
+  '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-cancel="1" id="dlNo">Cancelar</button><button class="bad" id="dlOk">Eliminar definitivamente</button></div>',
+  ()=>{$('dlNo').onclick=cerrarModal;$('dlOk').onclick=async()=>{if(!$('dlM').value.trim()){toast('Escriba el motivo');$('dlM').focus();return;}if($('dlC').value.trim()!==e.id){toast('El número de envío no coincide');$('dlC').focus();return;}
+   const fin=espera($('dlOk'),'Eliminando…');try{const x=await jsonp({accion:'eliminar_reporte',id:e.id,motivo:$('dlM').value.trim()},{reintentos:0,timeout:120000});
+    cerrarModal();invalidar(e.per,e.ue);BJ=BJ.filter(z=>!x.envios.includes(z.id));$('rDet').style.display='none';SEL=null;pintarRev();revisarPendientes(false);
+    toast('Reporte eliminado: '+x.envios.join(', ')+' ('+x.renglones+' renglones). Los tableros se actualizan en 1 a 2 minutos.',7000);}catch(z){fin();err(z);}};});
  const rows=r.filas.map(f=>({cod:f[0],des:desc(f[0]),v:f[1],prev:f[2],pp:f[3],j:f[4],o:f[5],dp:f[2]?(f[1]-f[2])/f[2]:null,fl:e.e!=='HISTORICO'&&marcado(f[2],f[1])}));
  tt._all=rows;
  if(dest==='h')table(tt,colsDet(e),rows,{sort:'cod',reset:true,cls:x=>x.fl?'flag':''});else rDetalle();
