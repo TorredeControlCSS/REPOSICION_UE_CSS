@@ -102,7 +102,7 @@ input.n{width:110px;text-align:right}input.just{width:100%;min-width:200px}
 .st{display:inline-block;padding:1px 7px;font-size:11px;border:1px solid var(--bd);white-space:nowrap;background:#f3f3f3;color:#444}
 .s-SIN_REPORTE{background:#f3f3f3;color:#555}.s-ENVIADO{background:#e1ebf7;color:#0C447C}.s-OBSERVADO{background:#fff3cd;color:#7a5a00}
 .s-VALIDADO{background:#e8e0f3;color:#4a2f7a}.s-APROBADO{background:#e3f2e4;color:#1b5e20}.s-DEVUELTO{background:#fbe3e1;color:#8c1d16}
-.s-PUBLICADO{background:#1b5e20;color:#fff}.s-EN_CORRECCION{background:#fde2c4;color:#8a4b00}.s-HISTORICO{background:#eef3f9;color:#0C447C}.s-REEMPLAZADO{background:#f3f3f3;color:#888}
+.s-PUBLICADO{background:#1b5e20;color:#fff}.s-EN_CURSO{background:#f3f3f3;color:#555}.s-EN_CORRECCION{background:#fde2c4;color:#8a4b00}.s-HISTORICO{background:#eef3f9;color:#0C447C}.s-REEMPLAZADO{background:#f3f3f3;color:#888}
 .s-PENDIENTE{background:#fff3cd;color:#7a5a00}.s-RECHAZADA{background:#fbe3e1;color:#8c1d16}.s-APROBADA{background:#e3f2e4;color:#1b5e20}
 .s-ABIERTO{background:#e3f2e4;color:#1b5e20}.s-PROGRAMADO{background:#f3f3f3;color:#555}.s-CERRADO{background:#e1ebf7;color:#0C447C}
 .s-NUEVO{background:#e3f2e4;color:#1b5e20}.s-CAMBIO{background:#e1ebf7;color:#0C447C}.s-A_CERO{background:#fbe3e1;color:#8c1d16}
@@ -241,9 +241,19 @@ td input:disabled{background:#f3f3f3;color:#333}
    <div class="panel" style="margin-top:10px"><div class="ph">Publicaciones anteriores</div><div class="pb"><div id="tPubs"></div></div></div>
   </div>
   <div id="d-json"><div class="legend">Los tableros leen archivos JSON publicados en el repositorio, no el script. Se actualizan solos cuando llega un envío, una firma o una publicación. Use <b>Regenerar JSON</b> la primera vez y si algún tablero muestra datos desactualizados.</div><div class="ctrl"><button class="pri" id="jReg">Regenerar JSON</button><span class="note" id="jInfo"></span></div></div>
-  <div id="d-dsc"><div class="legend">Descarga en un solo Excel todos los consumos del registro, con el formato institucional. Trae tres hojas: <b>Vigente</b> (el último consumo aprobado por UE y renglón, que es el que usa el Motor), <b>Por periodo</b> (cada consumo oficial de cada periodo, uno por fila) y <b>Envíos</b> (cada reporte recibido, con su estado y quién lo cargó, validó y aprobó).</div>
-   <div class="ctrl"><label>Periodos</label><span class="chk" id="dsPer"></span><label>Categoría</label><select id="dsCat"><option value="">Todas</option><option value="MED">Medicamentos</option><option value="MQ">Material quirúrgico</option><option value="LAB">Laboratorio y radiología</option></select>
-   <button class="pri" id="dsOk">Descargar Excel completo</button><span class="note" id="dsInfo"></span></div></div>
+  <div id="d-dsc">
+   <div class="ctrl"><label>Formato</label>
+    <label class="chip on" id="dsF1"><input type="radio" name="dsFmt" value="ue" checked style="display:none"> Una hoja por Unidad Ejecutora</label>
+    <label class="chip" id="dsF2"><input type="radio" name="dsFmt" value="tipo" style="display:none"> Base completa (4 hojas)</label>
+    <button class="ayuda" data-ayuda="descarga">?</button></div>
+   <div class="ctrl"><label>Periodos</label><span class="chk" id="dsPer"></span><label>Categoría</label><select id="dsCat"><option value="">Todas</option><option value="MED">Medicamentos</option><option value="MQ">Material quirúrgico</option><option value="LAB">Laboratorio y radiología</option></select></div>
+   <div class="panel" id="dsUeBox"><div class="ph">Unidades Ejecutoras <small id="dsUeN"></small></div><div class="pb">
+    <div class="ctrl"><input id="dsUeQ" placeholder="Buscar unidad" style="width:240px"><label>CEDIS</label><select id="dsUeCed"><option value="">Todos</option></select>
+     <button class="b-cl" id="dsTodas">Marcar las visibles</button><button class="b-cl" id="dsNinguna">Quitar todas</button></div>
+    <div class="chk" id="dsUeL" style="max-height:220px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:2px 12px;border:1px solid var(--bd);padding:6px;background:#fff"></div>
+   </div></div>
+   <div class="ctrl"><button class="pri" id="dsOk">Descargar Excel</button><span class="note" id="dsInfo"></span></div>
+  </div>
   <div id="d-log"><div class="ctrl"><input id="lQ" placeholder="Buscar en la bitácora" style="width:260px"><select id="lAcc"><option value="">Todas las acciones</option></select><button id="lRef">Actualizar</button><button class="b-cl" id="lXls">Descargar bitácora completa en Excel</button><span class="note" id="lTot"></span></div><div id="tLog"></div></div>
  </div>
 </div></div>
@@ -286,6 +296,7 @@ const AYUDA={
  reportar:['Cómo reportar','<b>1.</b> Llene la columna <i>Consumo del mes</i> con el consumo mensual de cada renglón, en unidades. Puede escribir en la pantalla, o usar <i>Descargar plantilla</i>, llenarla en su computadora y <i>Subir plantilla llena</i>. <b>2.</b> Si una fila se pone en rojo es porque cambió 3 veces o más frente al último consumo aprobado: escriba el motivo en la última columna. En el paso 2, el botón <i>Ver solo esas filas</i> las reúne. <b>3.</b> Pulse <i>Enviar a validación</i>.<br><br>Deje vacío un renglón para conservar su último valor aprobado; escriba 0 si no hubo consumo. <i>Rellenar con el último consumo aprobado</i> copia los valores anteriores en los vacíos, para que solo cambie lo que varió. La tabla muestra los renglones que su unidad ha consumido; en <i>Mostrar</i> elija <i>Todo el catálogo</i> para reportar uno nuevo. <i>Descartar lo escrito</i>, en la barra de la tabla, borra lo que no ha enviado. Lo que escribe se guarda en su equipo hasta que lo envíe.'],
  plazo:['Plazo de entrega','El P-240 (Rev. 7.0, Medidas de Control VI.B.11, pág. 10) establece que los consumos del mes se remiten en los cinco primeros días del mes siguiente. Pasada esa fecha el sistema sigue recibiendo el reporte, pero queda registrado fuera de plazo en la cobertura.'],
  mostrar:['Qué renglones ver','<b>Los que su unidad consume</b>: los que tienen un consumo aprobado mayor que cero o que ya llenó; es la vista normal para reportar. <b>Todos los de la categoría</b>: el catálogo completo, para reportar un renglón que su unidad empezó a consumir. <b>Ya llenados este mes</b>: para revisar lo que escribió antes de enviar. <b>Por justificar</b>: los que cambiaron mucho y necesitan una explicación. Cambiar la vista no borra nada de lo escrito.'],
+ descarga:['Descargar consumos','<b>Una hoja por Unidad Ejecutora</b>: elija las unidades (o todas) y obtiene un Excel con un índice y una hoja por unidad. En cada hoja, una fila por renglón y una columna por periodo, más el consumo vigente, lo que está en revisión y la variación entre los dos últimos periodos con dato (rojo si se duplicó o más, azul si cayó a la mitad o menos). Con todas las unidades el archivo es pesado; para el trabajo diario conviene elegir solo las que va a revisar.<br><br><b>Base completa</b>: cuatro hojas (Vigente, Por periodo, En revisión y Envíos) con todas las unidades, una fila por dato, para filtrar o hacer tablas dinámicas.'],
  analisis:['Cómo leer este análisis','<b>Compare</b> dos periodos y, si quiere, acote por categoría, UE o renglón. Todos los valores son consumo mensual.<br><br><b>Brecha a partir de</b>: cuándo un cambio cuenta. Con 2 veces, un par UE–renglón está <b>en alza</b> si su consumo se duplicó o más y <b>en baja</b> si cayó a la mitad o menos. <b>Nuevos</b>: no tenían consumo y ahora sí. <b>Cesan</b>: tenían y ahora reportan cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.<br><br><b>Las tarjetas son filtros</b>: haga clic en <i>En alza</i> y los gráficos y las tablas muestran solo esos pares; clic de nuevo o en <i>Pares UE–renglón</i> para ver todo. Con <i>Nuevos</i>, <i>Cesan</i> o <i>Sin reporte</i> uno de los dos periodos vale cero, así que la dispersión se reemplaza por los 20 pares de mayor consumo afectado.<br><br>Con una UE elegida, los gráficos cambian a la vista de esa unidad: su evolución y sus renglones con mayor brecha.'],
  brecha:['Brecha a partir de','Define cuándo un cambio entre los dos periodos se considera una brecha. Con <b>2 veces</b>: está en <b>alza</b> si el consumo se duplicó o más, y en <b>baja</b> si cayó a la mitad o menos. Con 1,5 veces se marcan cambios más pequeños; con 3 veces, solo los muy grandes. <b>Nuevo</b>: no tenía consumo y ahora sí. <b>Cesa</b>: tenía consumo y ahora reporta cero. <b>Sin reporte</b>: la UE no envió el segundo periodo.'],
  kpis:['Las tarjetas','<b>UE que reportan</b>: cuántas unidades enviaron datos en cada periodo. <b>Pares UE–renglón</b>: cada combinación de una unidad y un renglón con consumo. <b>En alza / En baja</b>: pares que cambiaron más que la brecha elegida. <b>Nuevos / Cesan</b>: aparecen o desaparecen. <b>Sin reporte</b>: pares con dato en el primer periodo de unidades que no reportaron el segundo.'],
@@ -354,7 +365,7 @@ async function postJson(body){
  throw new Error('El servidor no confirmó el envío. Revise el historial antes de reintentar.');
 }
 function err(e){toast(e.message||String(e),6000);}
-function sesionVencida(msg){clearInterval(entrar._t);document.title='Registro de Consumos por Unidad Ejecutora · DINALOG';TOKEN='';ss.del('cons_tok');ME=null;cerrarModal();$('scrApp').style.display='none';$('scrLogin').style.display='';$('who').innerHTML='';toast(msg||'Su sesión venció. Ingrese de nuevo.');}
+function sesionVencida(msg){clearInterval(entrar._t);['usuarios','solicitudes','periodos','publicaciones','bitacora'].forEach(a=>ss.del('adm|'+a));document.title='Registro de Consumos por Unidad Ejecutora · DINALOG';TOKEN='';ss.del('cons_tok');ME=null;cerrarModal();$('scrApp').style.display='none';$('scrLogin').style.display='';$('who').innerHTML='';toast(msg||'Su sesión venció. Ingrese de nuevo.');}
 
 /* ---------- tabla ordenable ---------- */
 function table(el,cols,rows,opt={}){
@@ -434,8 +445,12 @@ const esAdmin=()=>ME&&ME.roles.indexOf('ADMIN')>=0;
 function misCats(){return esAdmin()?['MED','MQ','LAB']:ME.cats;}
 function mensuales(){return PERS.filter(p=>p.t==='MENSUAL');}
 const hoyPTY=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'});
-function reportable(P){if(!P||P.t!=='MENSUAL')return false;if(P.e==='ABIERTO')return true;if(P.e==='CERRADO')return false;return !!P.ini&&P.ini<=hoyPTY();}
-function estadoPer(P){return !P?'—':reportable(P)?'ABIERTO':P.e==='CERRADO'?'CERRADO':'PROGRAMADO';}
+/* Un mes se reporta cuando ya terminó (P-240: en los cinco primeros días del mes siguiente).
+   El mes en curso no se reporta, salvo que un administrador lo abra a mano. */
+function reportable(P){if(!P||P.t!=='MENSUAL')return false;if(P.e==='ABIERTO')return true;if(P.e==='CERRADO')return false;return !!P.fin&&P.fin<hoyPTY();}
+function estadoPer(P){if(!P)return '—';if(reportable(P))return 'ABIERTO';if(P.e==='CERRADO')return 'CERRADO';return P.ini&&P.ini<=hoyPTY()?'EN_CURSO':'PROGRAMADO';}
+const MESN=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function mesSiguiente(P){const m=/^(\d{4})-(\d{2})$/.exec(P.p||'');if(!m)return '';const k=+m[2]%12;return MESN[k]+' '+(+m[2]===12?+m[1]+1:m[1]);}
 function periodoAbierto(){const m=mensuales();const ab=m.filter(reportable);return (ab.slice(-1)[0]||m.filter(p=>p.e==='CERRADO').slice(-1)[0]||m[0]||{}).p;}
 async function ueJson(ue,fresco){
  const j=await getJ('ue/'+slug(ue)+'.json',fresco).catch(()=>null);
@@ -503,6 +518,7 @@ async function entrar(s){
  initSelects();
  await go(T[0][0]);
  if(SIN_JSON&&esAdmin())toast('Los JSON aún no están publicados. Vaya a Administración › JSON y pulse Regenerar JSON.',8000);
+ if(esAdmin())setTimeout(admPrecargar,2500);
  if(tiene('VALIDA')||tiene('APRUEBA')){revisarPendientes(true);clearInterval(entrar._t);entrar._t=setInterval(()=>revisarPendientes(false),180000);}
 }
 /* Aviso de envíos por firmar: número en la pestaña Revisar y en el título del navegador,
@@ -527,7 +543,7 @@ async function go(v){cur=v;document.querySelectorAll('.tab').forEach(x=>x.classL
 
 function initSelects(){
  const mens=mensuales(),pa=periodoAbierto();
- $('cPer').innerHTML=mens.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+({ABIERTO:'abierto para reportar',CERRADO:'cerrado',PROGRAMADO:'aún no comienza'})[estadoPer(p)]+'</option>').join('');
+ $('cPer').innerHTML=mens.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+({ABIERTO:'abierto para reportar',CERRADO:'cerrado',EN_CURSO:'mes en curso, aún no se reporta',PROGRAMADO:'aún no comienza'})[estadoPer(p)]+'</option>').join('');
  $('rPer').innerHTML=PERS.filter(p=>p.t!=='MENSUAL'||estadoPer(p)!=='PROGRAMADO').slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('');
  $('kPer').innerHTML=mens.slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('');
  const uesCarga=esAdmin()?CAT.U.map(u=>u.n):ME.ues;
@@ -564,7 +580,7 @@ async function rRep(fresco){
  const abierto=reportable(P),bloq=['VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
  C.soloLectura=!abierto||bloq;
  const MSG={SIN_REPORTE:'pendiente, su unidad aún no lo ha enviado',ENVIADO:'en revisión de Planificación. Si necesita corregir algo antes de que lo validen, cambie los valores y pulse Reenviar corrección: se guarda como una versión nueva',OBSERVADO:'Planificación le devolvió el reporte para corregir: revise el comentario, corrija y pulse Reenviar corrección',VALIDADO:'validado por Planificación, espera la aprobación de la jefatura',DEVUELTO:'en revisión interna de Planificación',APROBADO:'aprobado, ya es el consumo oficial de su unidad',PUBLICADO:'aprobado y publicado al Motor de Asignación',EN_CORRECCION:'Planificación lo reabrió para corrección: corrija lo indicado y envíe de nuevo. Mientras tanto sigue vigente el valor aprobado'};
- const por=!abierto?(estadoPer(P)==='CERRADO'?'La Dirección cerró este periodo. Si necesita corregir algo, comuníquese con Planificación.':'Este mes todavía no comienza; se podrá reportar desde el '+P.ini+'.'):'Como ya está en revisión o aprobado, no se puede modificar. Si hay un error, pida a Planificación que lo observe.';
+ const por=!abierto?(estadoPer(P)==='CERRADO'?'La Dirección cerró este periodo. Si necesita corregir algo, comuníquese con Planificación.':(estadoPer(P)==='EN_CURSO'?'Este mes aún no termina: su consumo se reporta del 1 al 5 de '+mesSiguiente(P)+'. Para reportar el mes anterior, elíjalo en Periodo.':'Este mes todavía no comienza.')):'Como ya está en revisión o aprobado, no se puede modificar. Si hay un error, pida a Planificación que lo observe.';
  const MES=(()=>{const m=/^(\d{4})-(\d{2})$/.exec(C.per);return m?['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][+m[2]-1]+' '+m[1]:C.per;})();
  const enviado=['ENVIADO','VALIDADO','APROBADO','PUBLICADO','DEVUELTO'].includes(est);
  $('cEstado').innerHTML=(enviado&&e?'<div class="okbox">✓ <b>Reporte recibido</b> el '+esc(e.f||'')+' · '+esc(e.id)+' · versión '+e.ver+(e.n?' · '+e.n+' renglones':'')+'</div>':'')+
@@ -961,8 +977,13 @@ function rAdm(){
  $('dSub').querySelectorAll('div').forEach(d=>d.onclick=()=>{dS=d.dataset.s;rAdm();});
  DSUB.forEach(x=>$('d-'+x[0]).style.display=x[0]===dS?'':'none');
  return ({usr:rUsr,sol:rSol,per:rPer,pub:rPub,dsc:rDsc,json:rJson,log:rLog})[dS]();}
-const ADM_T={};const admFresco=k=>ADM_T[k]&&Date.now()-ADM_T[k]<120000;
-async function rUsr(forzar){if(!forzar&&admFresco('usr')){pintarUsr();return;}$('tUsr').innerHTML='<div class="cargando">Cargando…</div>';try{USR=(await jsonp({accion:'usuarios'})).usuarios;ADM_T.usr=Date.now();}catch(e){err(e);return;}pintarUsr();}
+/* Administración con mala conexión: cada lista se guarda en esta sesión del navegador; al abrirla
+   se muestra al instante lo último leído y se actualiza por detrás. Al cerrar el navegador se borra. */
+async function admLeer(accion,aplicar,elCarga){const k='adm|'+accion;let c=null;try{c=JSON.parse(ss.get(k)||'null');}catch(e){}
+ if(c)aplicar(c,true);else if(elCarga)$(elCarga).innerHTML='<div class="cargando">Cargando…</div>';
+ try{const r=await jsonp({accion});const s=JSON.stringify(r);if(!c||s!==JSON.stringify(c))aplicar(r,false);ss.set(k,s);}catch(e){if(!c)err(e);}}
+function admPrecargar(){['usuarios','solicitudes','periodos','publicaciones'].reduce((p,a)=>p.then(()=>{if(ss.get('adm|'+a))return;return jsonp({accion:a}).then(r=>ss.set('adm|'+a,JSON.stringify(r))).catch(()=>{});}),Promise.resolve());}
+async function rUsr(){return admLeer('usuarios',r=>{USR=r.usuarios;pintarUsr();},'tUsr');}
 $('uQ').oninput=()=>pintarUsr();$('uRol').onchange=()=>pintarUsr();
 function pintarUsr(){const q=$('uQ').value.trim().toLowerCase(),fr=$('uRol').value;
  table($('tUsr'),[{k:'id',l:'Usuario'},{k:'ced',l:'Cédula'},{k:'n',l:'Nombre'},{k:'cargo',l:'Cargo'},{k:'rol',l:'Rol'},{k:'ue',l:'Unidad Ejecutora'},{k:'cats',l:'Categorías'},{k:'correo',l:'Correo'},{k:'act',l:'Activo',f:v=>st(v==='SI'?'ACTIVO':'INACTIVO')},{k:'pin',l:'PIN'},{k:'alta',l:'Alta'},
@@ -983,7 +1004,7 @@ function userForm(u){const nuevo=!u;u=u||{ced:'',n:'',cargo:'',correo:'',tel:'',
    if(r.pinTemporal){$('uOk').remove();$('uR').innerHTML='<div class="legend">Usuario creado. Ingresa con su cédula y el PIN temporal <b class="num">'+esc(r.pinTemporal)+'</b> (últimos 4 dígitos de su cédula); el sistema le pedirá cambiarlo.</div>';}else{cerrarModal();toast('Usuario guardado');}
    rUsr(true);}catch(e){err(e);}});}
 $('uNew').onclick=()=>userForm(null);
-async function rSol(forzar){if(!forzar&&admFresco('sol')){pintarSol();return;}$('tSol').innerHTML='<div class="cargando">Cargando…</div>';try{SOL=(await jsonp({accion:'solicitudes'})).solicitudes;ADM_T.sol=Date.now();}catch(e){err(e);return;}pintarSol();}
+async function rSol(){return admLeer('solicitudes',r=>{SOL=r.solicitudes;pintarSol();},'tSol');}
 $('sEst').onchange=()=>pintarSol();
 function pintarSol(){const fe=$('sEst').value;
  table($('tSol'),[{k:'id',l:'Solicitud'},{k:'f',l:'Fecha'},{k:'ced',l:'Cédula'},{k:'n',l:'Nombre'},{k:'cargo',l:'Cargo'},{k:'ue',l:'Unidad Ejecutora'},{k:'cats',l:'Categorías'},{k:'rol',l:'Rol'},{k:'j',l:'Justificación'},{k:'e',l:'Estado',f:v=>st(v)},
@@ -991,12 +1012,13 @@ function pintarSol(){const fe=$('sEst').value;
   el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const x=await jsonp({accion:'resolver_solicitud',id:b.dataset.a,decision:'APROBAR'},{reintentos:0});toast('Acceso aprobado. La persona ingresa con su cédula'+(x.pinTemporal?' y los últimos 4 dígitos de su cédula como PIN temporal.':' y el PIN que ya usa.'),7000);rSol(true);}catch(e){b.disabled=false;err(e);}});
   el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>modal('Rechazar '+b.dataset.r,'<label>Motivo (obligatorio)</label><textarea rows="3" id="rm" style="width:100%"></textarea><button class="pri" id="rOk">Rechazar</button>',
    ()=>$('rOk').onclick=async()=>{if(!$('rm').value.trim()){toast('El motivo es obligatorio');return;}try{await jsonp({accion:'resolver_solicitud',id:b.dataset.r,decision:'RECHAZAR',motivo:$('rm').value},{reintentos:0});cerrarModal();toast('Solicitud rechazada.');rSol(true);}catch(e){err(e);}}));}});}
-async function rPer(){try{PERS=(await jsonp({accion:'periodos'})).periodos;}catch(e){err(e);return;}
+async function rPer(){return admLeer('periodos',r=>{PERS=r.periodos;pintarPer();},'tPer');}
+function pintarPer(){
  table($('tPer'),[{k:'p',l:'Periodo'},{k:'t',l:'Tipo'},{k:'ini',l:'Inicio'},{k:'fin',l:'Fin'},{k:'lim',l:'Fecha límite'},{k:'e',l:'Estado',f:v=>st(v)},
  {k:'p',l:'',ns:1,f:(v,r)=>r.t!=='MENSUAL'?'':r.e==='ABIERTO'?'<button data-c="'+v+'">Cerrar</button>':'<button data-o="'+v+'">Abrir</button>'}],PERS,{sort:'fin',after:el=>{
- el.querySelectorAll('[data-o],[data-c]').forEach(b=>b.onclick=async()=>{const abrir=!!b.dataset.o;b.disabled=true;try{await jsonp({accion:'periodo_estado',periodo:b.dataset.o||b.dataset.c,estado:abrir?'ABIERTO':'CERRADO'},{reintentos:0,timeout:90000});toast('Periodo '+(abrir?'abierto':'cerrado'));await rPer();initSelects();}catch(e){b.disabled=false;err(e);}});}});}
-$('pNew').onclick=async()=>{try{const r=await jsonp({accion:'crear_periodo'},{reintentos:0,timeout:90000});toast('Periodo '+r.periodo+' creado');await rPer();initSelects();}catch(e){err(e);}};
-async function rPub(){try{pintarPubs((await jsonp({accion:'publicaciones'})).publicaciones);}catch(e){err(e);}}
+ el.querySelectorAll('[data-o],[data-c]').forEach(b=>b.onclick=async()=>{const abrir=!!b.dataset.o;b.disabled=true;try{await jsonp({accion:'periodo_estado',periodo:b.dataset.o||b.dataset.c,estado:abrir?'ABIERTO':'CERRADO'},{reintentos:0,timeout:90000});toast('Periodo '+(abrir?'abierto':'cerrado'));ss.del('adm|periodos');await rPer();initSelects();}catch(e){b.disabled=false;err(e);}});}});}
+$('pNew').onclick=async()=>{try{const r=await jsonp({accion:'crear_periodo'},{reintentos:0,timeout:90000});toast('Periodo '+r.periodo+' creado');ss.del('adm|periodos');await rPer();initSelects();}catch(e){err(e);}};
+async function rPub(){return admLeer('publicaciones',r=>pintarPubs(r.publicaciones),'tPubs');}
 $('pSim').onclick=async()=>{const b=$('pSim');b.disabled=true;$('pRes').innerHTML='<div class="cargando">Calculando la simulación…</div>';
  try{const r=await jsonp({accion:'simular'},{reintentos:0,timeout:120000});SIM=r.simulacion;const s=r.resumen;
   $('pRes').innerHTML='<div class="kpis">'+kpi('Envíos aprobados sin publicar',r.aprobadosPendientes,'ve')+kpi('Pares UE–renglón evaluados',fmt(s.evaluados),'gr')+kpi('Cambian de valor',fmt(s.cambios),'')+kpi('Pares nuevos',fmt(s.nuevos),'ve')+kpi('Pasan a cero',fmt(s.aCero),'ro')+'</div><div id="tSim"></div>';
@@ -1016,17 +1038,90 @@ async function rJson(){try{const r=await jsonp({accion:'estado_json'});$('jInfo'
 $('jReg').onclick=async()=>{const b=$('jReg');b.disabled=true;b.textContent='Regenerando… (hasta 2 minutos)';
  try{const r=await jsonp({accion:'regenerar_json'},{reintentos:0,timeout:330000});toast(r.archivos+' archivos publicados en '+r.segundos+' s. Los tableros los verán en 1 a 2 minutos.',7000);Object.keys(JC).forEach(k=>delete JC[k]);rJson();}
  catch(e){err(e);}finally{b.disabled=false;b.textContent='Regenerar JSON';}};
+const DS_SEL=new Set();
 function rDsc(){const P=PERS.filter(p=>estadoPer(p)!=='PROGRAMADO');
- $('dsPer').innerHTML=P.map(p=>'<label><input type="checkbox" value="'+p.p+'" checked> '+p.p+'</label>').join('');}
+ $('dsPer').innerHTML=P.map(p=>'<label><input type="checkbox" value="'+p.p+'" checked> '+p.p+'</label>').join('');
+ $('dsUeCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(Boolean))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');
+ pintarDsUe();dsFmt();}
+function dsFmt(){const v=document.querySelector('input[name=dsFmt]:checked').value;$('dsF1').classList.toggle('on',v==='ue');$('dsF2').classList.toggle('on',v==='tipo');$('dsUeBox').style.display=v==='ue'?'':'none';
+ $('dsOk').textContent=v==='ue'?'Descargar Excel por Unidad Ejecutora':'Descargar base completa';}
+document.querySelectorAll('input[name=dsFmt]').forEach(r=>r.onchange=dsFmt);
+function dsVisibles(){const q=$('dsUeQ').value.trim().toLowerCase(),c=$('dsUeCed').value;return CAT.U.filter(u=>(!q||u.n.toLowerCase().includes(q))&&(!c||u.ced===c));}
+function pintarDsUe(){$('dsUeL').innerHTML=dsVisibles().map(u=>'<label title="'+esc(u.ced)+'"><input type="checkbox" value="'+esc(u.n)+'"'+(DS_SEL.has(u.n)?' checked':'')+'> '+esc(u.n)+'</label>').join('')||'<span class="note">Sin coincidencias</span>';
+ $('dsUeL').querySelectorAll('input').forEach(i=>i.onchange=()=>{i.checked?DS_SEL.add(i.value):DS_SEL.delete(i.value);dsCuenta();});dsCuenta();}
+function dsCuenta(){$('dsUeN').textContent=DS_SEL.size+' de '+CAT.U.length+' elegidas'+(DS_SEL.size>25?' · archivo pesado':'');}
+$('dsUeQ').oninput=pintarDsUe;$('dsUeCed').onchange=pintarDsUe;
+$('dsTodas').onclick=()=>{dsVisibles().forEach(u=>DS_SEL.add(u.n));pintarDsUe();};$('dsNinguna').onclick=()=>{DS_SEL.clear();pintarDsUe();};
+/* Excel con índice y una hoja por Unidad Ejecutora */
+async function descargarPorUE(pers,fc){
+ const ues=CAT.U.filter(u=>DS_SEL.has(u.n));if(!ues.length){toast('Elija al menos una Unidad Ejecutora');return;}
+ const J=[];for(let i=0;i<ues.length;i+=12){$('dsInfo').textContent='Leyendo unidades '+(i+1)+' a '+Math.min(i+12,ues.length)+' de '+ues.length+'…';
+  J.push(...await Promise.all(ues.slice(i,i+12).map(u=>getJ('ue/'+u.slug+'.json',true).then(j=>[u,j]).catch(()=>[u,null]))));}
+ // lo que está en revisión (aún no aprobado), por UE
+ const PEND=['ENVIADO','OBSERVADO','VALIDADO','DEVUELTO'],EN=[];for(const p of pers){const j=await getJ('envios_'+p+'.json',true).catch(()=>null);if(j)EN.push(...j.E);}
+ const penE=EN.filter(e=>PEND.includes(e.e)&&DS_SEL.has(e.ue)&&(!fc||e.cat===fc)),REV={};
+ for(let i=0;i<penE.length;i+=8){$('dsInfo').textContent='Leyendo reportes en revisión…';
+  (await Promise.all(penE.slice(i,i+8).map(e=>getJ('envio/'+e.id+'.json',true).catch(()=>null)))).forEach((d,k)=>{if(!d)return;const e=penE[i+k];
+   d.filas.forEach(x=>{(REV[e.ue]=REV[e.ue]||{})[x[0]]={v:x[1],e:e.e,per:e.per};});});}
+ $('dsInfo').textContent='Armando el Excel…';
+ const wb=new ExcelJS.Workbook();wb.creator='Dirección Nacional de Logística';const logo=await xlsLogo(wb);
+ const nombres=new Set(),nomHoja=n=>{let b=n.replace(/[\\\/\?\*\[\]:]/g,' ').replace(/\s+/g,' ').trim().slice(0,31),x=b,k=2;while(nombres.has(x.toUpperCase())){x=b.slice(0,28)+' '+k;k++;}nombres.add(x.toUpperCase());return x;};
+ const idx=wb.addWorksheet('Índice',{views:[{state:'frozen',ySplit:5,showGridLines:false}]});nombres.add('ÍNDICE');
+ if(logo!==null)idx.addImage(logo,{tl:{col:0.1,row:0.1},ext:{width:42,height:42}});
+ idx.getCell('B1').value='CAJA DE SEGURO SOCIAL · Dirección Nacional de Logística';idx.getCell('B1').font={bold:true,size:10,color:{argb:'FF444444'}};
+ idx.getCell('B2').value='Consumos por Unidad Ejecutora';idx.getCell('B2').font={bold:true,size:14,color:{argb:XA}};
+ idx.getCell('B3').value='Periodos: '+pers.join(', ')+(fc?' · Categoría '+fc:'')+' · Generado '+new Date().toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16)+' (hora de Panamá) · '+ME.nombre+' · Clic en una unidad para ir a su hoja.';idx.getCell('B3').font={size:9,color:{argb:'FF555555'}};
+ const hi=['UNIDAD_EJECUTORA','CEDIS','RENGLONES','EN_ALZA_x2','EN_BAJA_x2','EN_REVISION','ULTIMO_PERIODO_CON_DATO'];idx.getRow(5).values=hi;
+ idx.getRow(5).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'},size:10};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:XA}};c.alignment={vertical:'middle',wrapText:true};});idx.getRow(5).height=28;
+ [44,16,14,12,12,12,14].forEach((w,i)=>idx.getColumn(i+1).width=w);
+ const FA='FFF4DEDD',FB='FFE1EBF7',FR='FFFFF4DC';
+ for(const [u,j] of J){
+  const nh=nomHoja(u.n),ws=wb.addWorksheet(nh,{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
+  const P=j?j.P.filter(p=>pers.includes(p)):[],ix=P.map(p=>j.P.indexOf(p)),R=j?j.R:{},rev=REV[u.n]||{};
+  const cods=[...new Set(Object.keys(R).concat(Object.keys(rev)))].filter(c=>(!fc||tipo(c)===fc)&&(ix.some(i=>R[c]&&R[c][i]!=null)||rev[c]))
+   .sort((a,b)=>(tipo(a)+a).localeCompare(tipo(b)+b));
+  if(logo!==null)ws.addImage(logo,{tl:{col:0.1,row:0.1},ext:{width:38,height:38}});
+  ws.getCell('C1').value=u.n;ws.getCell('C1').font={bold:true,size:14,color:{argb:XA}};
+  ws.getCell('C2').value=(u.ced||'')+' · consumo mensual en unidades del renglón · '+cods.length+' renglones';ws.getCell('C2').font={size:9,color:{argb:'FF555555'}};
+  ws.getCell('C3').value={text:'← Volver al índice',hyperlink:"#'Índice'!A1"};ws.getCell('C3').font={size:9,color:{argb:'FF1E5A9E'},underline:true};
+  ws.getCell('C4').value='Variación: entre los dos últimos periodos con dato. Rojo = se duplicó o más; azul = cayó a la mitad o menos; amarillo = en revisión, aún no aprobado.';ws.getCell('C4').font={size:8.5,italic:true,color:{argb:'FF666666'}};
+  const cols=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(P,['VIGENTE','PERIODO_VIGENTE','EN_REVISION','ESTADO_REVISION','VARIACION']);
+  ws.getRow(6).values=cols;ws.getRow(6).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'},size:9.5};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:XA}};c.alignment={vertical:'middle',horizontal:'center',wrapText:true};});ws.getRow(6).height=30;
+  let alza=0,baja=0,nrev=0,ultK=-1;
+  cods.forEach(c=>{const vals=ix.map(i=>R[c]?R[c][i]:null),ult=j&&j.ult?j.ult[c]:null,rv=rev[c];
+   const conDato=vals.map((v,k)=>[v,k]).filter(x=>x[0]!=null);let d=null;
+   if(rv){const base=conDato.length?conDato[conDato.length-1][0]:null;if(base>0)d=rv.v/base-1;}
+   else if(conDato.length>=2){const a=conDato[conDato.length-2][0],b=conDato[conDato.length-1][0];if(a>0)d=b/a-1;}
+   if(conDato.length)ultK=Math.max(ultK,conDato[conDato.length-1][1]);
+   const row=ws.addRow([c,desc(c),grupo(c),tipo(c)].concat(vals,[ult?ult[0]:null,ult?ult[1]:'',rv?rv.v:null,rv?rv.e+' · '+rv.per:'',d]));
+   row.font={size:9.5};
+   for(let k=0;k<P.length+3;k++){const cel=row.getCell(5+k);if(k!==P.length+1&&typeof cel.value==='number')cel.numFmt='#,##0.##';}
+   const cv=row.getCell(5+P.length+4);cv.numFmt='0.0%';
+   if(d!=null&&d>=1){cv.fill={type:'pattern',pattern:'solid',fgColor:{argb:FA}};alza++;}else if(d!=null&&d<=-0.5){cv.fill={type:'pattern',pattern:'solid',fgColor:{argb:FB}};baja++;}
+   if(rv){nrev++;[2,3].forEach(o=>row.getCell(5+P.length+o).fill={type:'pattern',pattern:'solid',fgColor:{argb:FR}});}});
+  [12,46,14,6].concat(P.map(()=>12),[12,12,12,20,10]).forEach((w,i)=>ws.getColumn(i+1).width=w);
+  ws.autoFilter={from:{row:6,column:1},to:{row:6,column:cols.length}};
+  const ri=idx.addRow([{text:u.n,hyperlink:"#'"+nh+"'!A1"},u.ced||'',cods.length,alza,baja,nrev,ultK>=0?P[ultK]:'']);ri.getCell(1).font={color:{argb:'FF1E5A9E'},underline:true,size:10};
+  if(alza)ri.getCell(4).fill={type:'pattern',pattern:'solid',fgColor:{argb:FA}};if(baja)ri.getCell(5).fill={type:'pattern',pattern:'solid',fgColor:{argb:FB}};if(nrev)ri.getCell(6).fill={type:'pattern',pattern:'solid',fgColor:{argb:FR}};
+ }
+ idx.autoFilter={from:{row:5,column:1},to:{row:5,column:hi.length}};
+ const buf=await wb.xlsx.writeBuffer();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+ a.download='CONSUMOS_POR_UE_'+(ues.length===1?slug(ues[0].n).slice(0,40):ues.length+'_UNIDADES')+'_'+new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'})+'.xlsx';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
+ $('dsInfo').textContent='Listo: '+ues.length+' unidades, una hoja cada una, más el índice.';}
 $('dsOk').onclick=async()=>{
  if(typeof ExcelJS==='undefined'){toast('No se pudo cargar el componente de Excel. Revise la conexión.');return;}
  const pers=[...$('dsPer').querySelectorAll('input:checked')].map(x=>x.value),fc=$('dsCat').value;if(!pers.length){toast('Elija al menos un periodo');return;}
+ if(document.querySelector('input[name=dsFmt]:checked').value==='ue'){if(!DS_SEL.size){toast('Elija al menos una Unidad Ejecutora');return;}const fin=espera($('dsOk'),'Preparando…');try{await descargarPorUE(pers,fc);}catch(e){err(e);$('dsInfo').textContent='';}finally{fin();}return;}
  const fin=espera($('dsOk'),'Preparando…');
  try{
   const U=CAT.U,J=[];for(let i=0;i<U.length;i+=12){$('dsInfo').textContent='Leyendo unidades '+(i+1)+' a '+Math.min(i+12,U.length)+' de '+U.length+'…';
    J.push(...await Promise.all(U.slice(i,i+12).map(u=>getJ('ue/'+u.slug+'.json',true).then(j=>[u,j]).catch(()=>[u,null]))));}
   $('dsInfo').textContent='Leyendo envíos…';
   const EN=[];for(const p of pers){const j=await getJ('envios_'+p+'.json',true).catch(()=>null);if(j)EN.push(...j.E);}
+  const PEND=['ENVIADO','OBSERVADO','VALIDADO','DEVUELTO'],penE=EN.filter(e=>PEND.includes(e.e)&&(!fc||e.cat===fc)),rev=[];
+  for(let i=0;i<penE.length;i+=8){$('dsInfo').textContent='Leyendo reportes en revisión '+(i+1)+' a '+Math.min(i+8,penE.length)+' de '+penE.length+'…';
+   (await Promise.all(penE.slice(i,i+8).map(e=>getJ('envio/'+e.id+'.json',true).catch(()=>null)))).forEach((d,k)=>{if(!d)return;const e=penE[i+k],ced=(UEI[e.ue]||{}).ced||'';
+    d.filas.forEach(x=>{const dp=x[2]?(x[1]-x[2])/x[2]:'';rev.push([e.per,e.id,e.ver,e.e,ced,e.ue,x[0],desc(x[0]),grupo(x[0]),tipo(x[0]),x[1],x[2],x[3],dp,x[4]]);});});}
   const vig=[],per=[];
   J.forEach(([u,j])=>{if(!j)return;
    Object.keys(j.ult||{}).forEach(cod=>{if(fc&&tipo(cod)!==fc)return;const x=j.ult[cod];vig.push([u.ced,u.n,cod,desc(cod),grupo(cod),tipo(cod),x[0],x[1]]);});
@@ -1043,20 +1138,23 @@ $('dsOk').onclick=async()=>{
    ws.autoFilter={from:{row:5,column:1},to:{row:5,column:cols.length}};return ws;};
   hoja('Vigente','Consumo vigente por UE y renglón (último aprobado; el que usa el Motor)',['CEDIS','UNIDAD_EJECUTORA','CODIGO','DESCRIPCION','GRUPO','CATEGORIA','CONSUMO_MENSUAL_VIGENTE','PERIODO_DEL_DATO'],vig,[16,40,12,55,16,10,16,14]).getColumn(7).numFmt='#,##0.##';
   hoja('Por periodo','Consumos oficiales por periodo',['PERIODO','CEDIS','UNIDAD_EJECUTORA','CODIGO','DESCRIPCION','GRUPO','CATEGORIA','CONSUMO_MENSUAL'],per,[10,16,40,12,55,16,10,16]).getColumn(8).numFmt='#,##0.##';
+  const wr=hoja('En revisión','Consumos reportados que aún no están aprobados (no los usa el Motor todavía)',['PERIODO','ENVIO','VERSION','ESTADO','CEDIS','UNIDAD_EJECUTORA','CODIGO','DESCRIPCION','GRUPO','CATEGORIA','CONSUMO_REPORTADO','ULTIMO_APROBADO','PERIODO_DEL_DATO','VARIACION','JUSTIFICACION'],rev,[10,22,8,12,16,40,12,55,16,10,16,16,14,11,40]);
+  wr.getColumn(11).numFmt='#,##0.##';wr.getColumn(12).numFmt='#,##0.##';wr.getColumn(14).numFmt='0.0%';
   hoja('Envíos','Reportes recibidos y su estado',['ENVIO','PERIODO','UNIDAD_EJECUTORA','CATEGORIA','VERSION','ESTADO','CANAL','RENGLONES','CARGADO_POR','FECHA_CARGA','VALIDADO_POR','FECHA_VALIDACION','APROBADO_POR','FECHA_APROBACION','PUBLICACION','OBSERVACION'],
    EN.filter(e=>!fc||e.cat===fc).map(e=>[e.id,e.per,e.ue,e.cat,e.ver,e.e,e.canal,e.n,e.cpor,e.fc,e.vpor,e.fv,e.apor,e.fa,e.pub,e.e==='HISTORICO'?'':e.obs]),[22,10,40,8,8,13,11,10,26,16,26,16,26,16,14,40]);
   const buf=await wb.xlsx.writeBuffer();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
   a.download='CONSUMOS_UE_COMPLETO_'+new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'})+'.xlsx';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
-  $('dsInfo').textContent='Listo: '+fmt(vig.length)+' filas vigentes, '+fmt(per.length)+' por periodo, '+fmt(EN.length)+' envíos.';}
+  $('dsInfo').textContent='Listo: '+fmt(vig.length)+' filas vigentes, '+fmt(per.length)+' por periodo, '+fmt(rev.length)+' en revisión ('+penE.length+' reportes), '+fmt(EN.length)+' envíos.';}
  catch(e){err(e);$('dsInfo').textContent='';}finally{fin();}};
-async function rLog(){$('tLog').innerHTML='<div class="cargando">Cargando…</div>';let r;try{r=await jsonp({accion:'bitacora'});}catch(e){err(e);return;}LOG=r.eventos;
+async function rLog(){return admLeer('bitacora',pintarBit,'tLog');}
+function pintarBit(r){LOG=r.eventos;
  $('lTot').textContent=r.total>LOG.length?'mostrando los '+LOG.length+' eventos más recientes de '+r.total:r.total+' eventos';
  const acc=[...new Set(LOG.map(x=>x.a))].sort(),sel=$('lAcc').value;$('lAcc').innerHTML='<option value="">Todas las acciones</option>'+acc.map(a=>'<option'+(a===sel?' selected':'')+'>'+esc(a)+'</option>').join('');pintarLog();}
 const COLS_LOG=[{k:'f',l:'Fecha y hora (Panamá)'},{k:'id',l:'Evento'},{k:'a',l:'Acción'},{k:'u',l:'Usuario'},{k:'ue',l:'Unidad Ejecutora'},{k:'per',l:'Periodo'},{k:'env',l:'Envío'},{k:'d',l:'Detalle'}];
 $('lAcc').onchange=()=>pintarLog();
 $('lXls').onclick=async()=>{const fin=espera($('lXls'),'Preparando…');try{const r=await jsonp({accion:'bitacora',todo:'1'},{reintentos:0,timeout:90000});
   await xls('BITACORA_REGISTRO_CONSUMOS_'+new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'}),COLS_LOG,r.eventos,'Bitácora',{titulo:'Bitácora del Registro de Consumos',meta:[['Eventos',String(r.eventos.length)+' (todos, del más reciente al más antiguo)'],['Contenido','Ingresos, envíos, firmas, correcciones, publicaciones al Motor, usuarios, PIN y correos']],color:x=>/REEMPLAZADO|EN_CORRECCION|DEVUELTO|OBSERVADO|RECHAZADA|JSON_ERROR|CORREO_NO_ENVIADO/.test(x.a)?'FFF6EDD6':/APROBADO|PUBLICACION|ALTA_USUARIO/.test(x.a)?'FFDCEBDF':null});}catch(e){err(e);}finally{fin();}};
-$('lQ').oninput=()=>pintarLog();$('lRef').onclick=()=>rLog();
+$('lQ').oninput=()=>pintarLog();$('lRef').onclick=()=>{ss.del('adm|bitacora');rLog();};
 function pintarLog(){const q=$('lQ').value.trim().toLowerCase(),fa=$('lAcc').value;
  table($('tLog'),COLS_LOG.filter(c=>c.k!=='id'),LOG.filter(r=>(!fa||r.a===fa)&&(!q||(r.a+' '+r.u+' '+r.d+' '+r.ue+' '+r.env).toLowerCase().includes(q))),{sort:'f',dir:-1});}
 
