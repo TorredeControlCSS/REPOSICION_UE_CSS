@@ -798,10 +798,20 @@ async function verEnvio(id,dest){
  let r=null;try{r=await getJ('envio/'+id+'.json',true);}catch(e){err(e);return;}
  if(!r){tt.innerHTML='<div class="cargando">El detalle de este envío se está publicando. Intente de nuevo en un minuto.</div>';return;}
  r=JSON.parse(JSON.stringify(r));const e=ovrAplicar(r.envio,r.generado);
- const bx='<div class="ctrl" style="margin-top:-2px"><button class="b-cl" data-xd="'+esc(e.id)+'">Descargar este envío en Excel</button>'+(dest!=='h'&&esAdmin()&&!['HISTORICO','PUBLICADO'].includes(e.e)&&!e.pub?'<span style="flex:1"></span><button class="bad" id="rDel" style="padding:3px 10px">Eliminar reporte (registro de prueba)</button>':'')+'</div>';
+ const bx='<div class="ctrl" style="margin-top:-2px"><button class="b-cl" data-xd="'+esc(e.id)+'">Descargar este envío en Excel</button>'+(dest!=='h'&&esAdmin()&&!['HISTORICO','PUBLICADO'].includes(e.e)&&!e.pub?'<span style="flex:1"></span>'+(['ENVIADO','OBSERVADO','VALIDADO','DEVUELTO'].includes(e.e)?'<button class="b-cl" id="rMov" style="padding:3px 10px">Mover a otro periodo</button> ':'')+'<button class="bad" id="rDel" style="padding:3px 10px">Eliminar reporte (registro de prueba)</button>':'')+'</div>';
  if(dest==='h'){$('hT').textContent=e.id+' · '+e.ue+' · '+CATN[e.cat];$('hInfo').innerHTML=infoEnv(r)+bx;}
  else{SEL=r;$('rDetT').textContent=e.id+' · '+e.ue+' · '+CATN[e.cat];$('rDetS').textContent='versión '+e.ver+' · recibido '+e.fc+' · estado '+e.e;$('rInfo').innerHTML=infoEnv(r)+bx;}
  document.querySelectorAll('[data-xd="'+e.id+'"]').forEach(b=>b.onclick=()=>descargarEnvio(r));
+ if($('rMov'))$('rMov').onclick=()=>{const ops=mensuales().filter(p=>p.p!==e.per&&estadoPer(p)!=='PROGRAMADO'&&p.e!=='CERRADO').reverse(),pa=periodoAbierto();
+  modal('Mover '+e.id+' a otro periodo','<div class="note" style="font-size:13px">Para cuando la UE eligió el mes equivocado. El reporte de <b>'+esc(e.ue)+'</b> · '+esc(CATN[e.cat])+' se mueve completo (todas sus versiones y renglones) al periodo correcto, con un número de envío nuevo de ese periodo. Se conservan los valores, las justificaciones, el estado y quién lo cargó. Queda registrado en la bitácora.</div>'+
+   '<label>Periodo actual</label><input value="'+esc(e.per)+'" disabled><label>Mover a</label><select id="mvP">'+ops.map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('')+'</select>'+
+   '<label>Motivo (obligatorio)</label><input id="mvM" value="La UE eligió el periodo equivocado">'+
+   '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-cancel="1" id="mvNo">Cancelar</button><button class="ok" id="mvOk">Mover</button></div>',
+   ()=>{$('mvNo').onclick=cerrarModal;$('mvOk').onclick=async()=>{if(!$('mvM').value.trim()){toast('Escriba el motivo');return;}const fin=espera($('mvOk'),'Moviendo…');
+    try{const x=await jsonp({accion:'mover_periodo',id:e.id,destino:$('mvP').value,motivo:$('mvM').value.trim()},{reintentos:0,timeout:120000});
+     cerrarModal();invalidar(x.origen,x.ue);invalidar(x.destino,x.ue);BJ=BJ.filter(z=>!Object.keys(x.ids).includes(z.id));$('rDet').style.display='none';SEL=null;
+     $('rPer').value=x.destino;await rRev();revisarPendientes(false);
+     toast('Reporte movido a '+x.destino+': ahora es '+x.nuevo+' ('+x.renglones+' renglones). Los tableros se actualizan en 1 a 2 minutos.',8000);}catch(z){fin();err(z);}};});};
  if($('rDel'))$('rDel').onclick=()=>modal('Eliminar reporte '+e.id,'<div class="warn" style="font-size:13px">Se borra <b>por completo</b> el reporte de <b>'+esc(e.ue)+'</b> · '+esc(CATN[e.cat])+' · '+esc(e.per)+', <b>con todas sus versiones</b>, del registro y de los tableros. Úselo solo para registros de prueba o cargados por error. No se puede deshacer; la bitácora conservará quién lo eliminó y por qué.</div>'+
   '<label>Motivo (obligatorio)</label><input id="dlM" placeholder="Ej.: registro de prueba"><label>Para confirmar, escriba el número del envío: <b>'+esc(e.id)+'</b></label><input id="dlC" autocomplete="off">'+
   '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-cancel="1" id="dlNo">Cancelar</button><button class="bad" id="dlOk">Eliminar definitivamente</button></div>',
