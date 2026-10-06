@@ -247,7 +247,7 @@ td input:disabled{background:#f3f3f3;color:#333}
   <div class="sub" id="dSub"></div>
   <div id="d-usr"><div class="ctrl"><button class="pri" id="uNew">Nuevo usuario</button><input id="uQ" placeholder="Buscar nombre, cédula o UE" style="width:240px"><select id="uRol"><option value="">Todos los roles</option><option>ADMIN</option><option>APRUEBA</option><option>VALIDA</option><option>CARGA</option><option>LECTURA</option></select></div><div id="tUsr"></div></div>
   <div id="d-sol"><div class="ctrl"><select id="sEst"><option value="PENDIENTE">Pendientes</option><option value="">Todas</option></select></div><div id="tSol"></div></div>
-  <div id="d-per"><div class="ctrl"><button id="pNew">Crear el mes siguiente</button></div><div id="tPer"></div><div class="note" style="margin-top:6px">Abrir un periodo habilita la carga a las UE. Cerrarlo bloquea nuevos envíos.</div></div>
+  <div id="d-per"><div class="ctrl"><button id="pNew">Crear el mes siguiente</button></div><div id="tPer"></div><div class="note" style="margin-top:6px">Cada mes se abre solo al terminar, llega en plazo hasta la fecha límite (día 5), se recibe como <b>fuera de plazo</b> hasta 5 días después y <b>se cierra solo</b> (día 10). <b>Abrir / extender</b> lo deja abierto a mano hasta que usted lo cierre; <b>Cerrar ya</b> lo cierra antes.</div></div>
   <div id="d-pub">
    <div class="legend"><b>Lo aprobado se publica solo:</b> cada aprobación escribe enseguida el consumo en MAESTROS_DINALOG › MAESTRO_CONSUMOS_UE, la hoja que leen el Motor de Asignación y Curvas de Inventario, con una copia completa de la hoja en Drive antes de escribir. Esta pantalla sirve para <b>reintentar</b> si alguna publicación falló (la simulación muestra lo aprobado que aún no está en el Motor), ver el <b>historial</b> y <b>revertir</b> la última publicación.</div>
    <div class="ctrl"><button class="pri" id="pSim">Correr simulación</button><button class="ok" id="pPub" disabled>Publicar al Motor</button><span class="note" id="pInfo"></span></div>
@@ -261,7 +261,7 @@ td input:disabled{background:#f3f3f3;color:#333}
     <label class="chip" id="dsF3"><input type="radio" name="dsFmt" value="plan" style="display:none"> Consolidado para Planificación</label>
     <label class="chip" id="dsF2"><input type="radio" name="dsFmt" value="tipo" style="display:none"> Base completa (4 hojas)</label>
     <button class="ayuda" data-ayuda="descarga">?</button></div>
-   <div class="ctrl" id="dsPlanBox" style="display:none"><label>Periodo revisado</label><select id="dsPerRev"></select><span class="note">Hoja 1: renglones × Unidad Ejecutora, en verde lo aprobado en este periodo. Hoja 2: histórico nacional por renglón de todo el ciclo.</span></div>
+   <div class="ctrl" id="dsPlanBox" style="display:none"><label>Periodo revisado</label><select id="dsPerRev"></select><span class="note">Hoja 1: renglones × Unidad Ejecutora, en verde lo aprobado en este periodo. Hoja 2: histórico nacional por renglón de todo el ciclo. Hoja 3: de qué periodo viene cada valor de la hoja 1.</span></div>
    <div class="ctrl" id="dsPerBox"><label>Periodos</label><span class="chk" id="dsPer"></span><label>Categoría</label><select id="dsCat"><option value="">Todas</option><option value="MED">Medicamentos</option><option value="MQ">Material quirúrgico</option><option value="LAB">Laboratorio y radiología</option></select></div>
    <div class="panel" id="dsUeBox"><div class="ph">Unidades Ejecutoras <small id="dsUeN"></small></div><div class="pb">
     <div class="ctrl"><input id="dsUeQ" placeholder="Buscar unidad" style="width:240px"><label>CEDIS</label><select id="dsUeCed"><option value="">Todos</option></select>
@@ -314,7 +314,7 @@ $('mX').onclick=cerrarModal;
 const CATN={MED:'Medicamentos',MQ:'Material quirúrgico',LAB:'Laboratorio y radiología'};
 const AYUDA={
  reportar:['Cómo reportar','<b>1.</b> Llene la columna <i>Consumo del mes</i> con el consumo mensual de cada renglón, en unidades. Puede escribir en la pantalla, o usar <i>Descargar plantilla</i>, llenarla en su computadora y <i>Subir plantilla llena</i>. <b>2.</b> Si una fila se pone en rojo es porque cambió 3 veces o más frente al último consumo aprobado: escriba el motivo en la última columna. En el paso 2, el botón <i>Ver solo esas filas</i> las reúne. <b>3.</b> Pulse <i>Enviar a validación</i>.<br><br>Deje vacío un renglón para conservar su último valor aprobado; escriba 0 si no hubo consumo. <i>Rellenar con el último consumo aprobado</i> copia los valores anteriores en los vacíos, para que solo cambie lo que varió. La tabla muestra los renglones que su unidad ha consumido; en <i>Mostrar</i> elija <i>Todo el catálogo</i> para reportar uno nuevo. <i>Descartar lo escrito</i>, en la barra de la tabla, borra lo que no ha enviado. Lo que escribe se guarda en su equipo hasta que lo envíe.'],
- plazo:['Plazo de entrega','El P-240 (Rev. 7.0, Medidas de Control VI.B.11, pág. 10) establece que los consumos del mes se remiten en los cinco primeros días del mes siguiente. Pasada esa fecha el sistema sigue recibiendo el reporte, pero queda registrado fuera de plazo en la cobertura.'],
+ plazo:['Plazo de reporte','El P-240 (Rev. 7.0, VI.B.11) establece que cada unidad remite su consumo en los <b>cinco primeros días del mes siguiente</b>. Hasta esa fecha el reporte llega en plazo; del día 6 al 10 todavía se recibe, pero queda marcado <b>fuera de plazo</b>; desde el día 11 el mes se cierra y ya no se puede reportar.'],
  mostrar:['Qué renglones ver','<b>Los que su unidad consume</b>: los que tienen un consumo aprobado mayor que cero o que ya llenó; es la vista normal para reportar. <b>Todos los de la categoría</b>: el catálogo completo, para reportar un renglón que su unidad empezó a consumir. <b>Ya llenados este mes</b>: para revisar lo que escribió antes de enviar. <b>Por justificar</b>: los que cambiaron mucho y necesitan una explicación. Cambiar la vista no borra nada de lo escrito.'],
  seguimiento:['Seguimiento del mes','<b>Notificar a las UE</b> envía a cada reportante un correo con la etapa de su reporte (validado, devuelto, reabierto o aprobado y actualizado en DINALOG-CSS, con lo que cambió frente al consumo anterior). Cada aviso sale una sola vez; úselo al terminar una jornada de firmas.<br><br>Muestra en una sola vista el estado del reporte de cada Unidad Ejecutora y categoría para el periodo elegido. <b>Las tarjetas son filtros</b>: clic en <i>Sin reporte</i> para ver solo las unidades que faltan, o en <i>Fuera de plazo</i> para las que enviaron después del día 5.<br><br>En cada celda: <b>Ver</b> abre el envío en Revisar; <b>Cargar</b> abre la carga por contingencia, para subir en nombre de la UE el reporte que envió por correo (queda registrado a su nombre y otra persona debe validarlo).<br><br><b>Copiar correos de las pendientes</b> junta los correos de los reportantes de las unidades sin reporte, listos para pegar en CCO.'],
  descarga:['Descargar consumos','<b>Una hoja por Unidad Ejecutora</b>: elija las unidades (o todas) y obtiene un Excel con un índice y una hoja por unidad. En cada hoja, una fila por renglón y una columna por periodo, más el consumo vigente, lo que está en revisión y la variación entre los dos últimos periodos con dato (rojo si se duplicó o más, azul si cayó a la mitad o menos). Con todas las unidades el archivo es pesado; para el trabajo diario conviene elegir solo las que va a revisar.<br><br><b>Base completa</b>: cuatro hojas (Vigente, Por periodo, En revisión y Envíos) con todas las unidades, una fila por dato, para filtrar o hacer tablas dinámicas.'],
@@ -468,8 +468,14 @@ function mensuales(){return PERS.filter(p=>p.t==='MENSUAL');}
 const hoyPTY=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'});
 /* Un mes se reporta cuando ya terminó (P-240: en los cinco primeros días del mes siguiente).
    El mes en curso no se reporta, salvo que un administrador lo abra a mano. */
-function reportable(P){if(!P||P.t!=='MENSUAL')return false;if(P.e==='ABIERTO')return true;if(P.e==='CERRADO')return false;return !!P.fin&&P.fin<hoyPTY();}
-function estadoPer(P){if(!P)return '—';if(reportable(P))return 'ABIERTO';if(P.e==='CERRADO')return 'CERRADO';return P.ini&&P.ini<=hoyPTY()?'EN_CURSO':'PROGRAMADO';}
+/* Ventana de reporte: se abre al terminar el mes; hasta la fecha límite (día 5) en plazo;
+   después "fuera de plazo"; se cierra sola 5 días después de la fecha límite (día 10).
+   ABIERTO a mano lo extiende; CERRADO a mano lo cierra antes. */
+const DIAS_GRACIA=5;
+function cierrePer(P){if(!P||!P.lim)return '';const d=new Date(P.lim+'T12:00:00');d.setDate(d.getDate()+DIAS_GRACIA);return d.toISOString().slice(0,10);}
+function reportable(P){if(!P||P.t!=='MENSUAL')return false;if(P.e==='ABIERTO')return true;if(P.e==='CERRADO')return false;const h=hoyPTY(),c=cierrePer(P);return !!P.fin&&P.fin<h&&(!c||h<=c);}
+function estadoPer(P){if(!P)return '—';if(reportable(P))return 'ABIERTO';if(P.e==='CERRADO')return 'CERRADO';if(P.t==='MENSUAL'&&P.fin&&P.fin<hoyPTY())return 'CERRADO';return P.ini&&P.ini<=hoyPTY()?'EN_CURSO':'PROGRAMADO';}
+function tardePer(P){return reportable(P)&&P.lim&&hoyPTY()>P.lim;}
 const MESN=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function mesSiguiente(P){const m=/^(\d{4})-(\d{2})$/.exec(P.p||'');if(!m)return '';const k=+m[2]%12;return MESN[k]+' '+(+m[2]===12?+m[1]+1:m[1]);}
 function periodoAbierto(){const m=mensuales();const ab=m.filter(reportable);return (ab.slice(-1)[0]||m.filter(p=>p.e==='CERRADO').slice(-1)[0]||m[0]||{}).p;}
@@ -553,7 +559,7 @@ $('sgClr').onclick=()=>{$('sgCat').value='MED';$('sgCed').value='';$('sgUe').val
 $('sgRef').onclick=()=>rSeg(true);
 async function rSeg(fresco){
  if(!$('sgPer').options.length){const ms=mensuales().filter(p=>estadoPer(p)!=='PROGRAMADO').reverse(),pa=periodoAbierto();
-  $('sgPer').innerHTML=ms.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+({ABIERTO:'abierto',CERRADO:'cerrado',EN_CURSO:'en curso'})[estadoPer(p)]+'</option>').join('');
+  $('sgPer').innerHTML=ms.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+(tardePer(p)?'fuera de plazo, cierra '+cierrePer(p).slice(5):({ABIERTO:'abierto',CERRADO:'cerrado',EN_CURSO:'en curso'})[estadoPer(p)])+'</option>').join('');
   $('sgCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(Boolean))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');
   $('sgUe').innerHTML='<option value="">Todas</option>'+CAT.U.map(u=>u.n).sort((a,b)=>a.localeCompare(b,'es')).map(n=>'<option>'+esc(n)+'</option>').join('');}
  const per=$('sgPer').value;$('tSeg').innerHTML='<div class="cargando">Cargando…</div>';
@@ -574,7 +580,7 @@ function pintarSeg(){if(!SG.J)return;
  const cnt={ESP:0,SIN:0,VAL:0,DEV:0,APR:0,OK:0,PUB:0,TARDE:0};
  F.forEach(o=>cats.forEach(c=>{cnt.ESP++;const g=grupoEst(o[c].e);if(g)cnt[g]++;if(o[c].tarde)cnt.TARDE++;}));
  const col={ESP:'gr',SIN:'ro',VAL:'',DEV:'am',APR:'li',OK:'ve',PUB:'ve',TARDE:'am'};
- let dias='';if(P.lim){const h=hoyPTY(),d=Math.round((Date.parse(P.lim)-Date.parse(h))/864e5);dias=d<0?'venció el '+P.lim:d===0?'vence hoy':d===1?'vence mañana':'vence en '+d+' días ('+P.lim+')';}
+ let dias='';if(P.lim){const h=hoyPTY(),d=Math.round((Date.parse(P.lim)-Date.parse(h))/864e5);dias=d<0?(reportable(P)?'fuera de plazo · cierra el '+cierrePer(P):'cerrado'):d===0?'vence hoy · cierra el '+cierrePer(P):d===1?'vence mañana':'vence en '+d+' días ('+P.lim+')';}
  $('sgK').innerHTML=Object.keys(SGN).map(k=>'<div class="kpi clk '+col[k]+(SG.cf===k||(k==='ESP'&&!SG.cf)?' act':'')+'" data-k="'+k+'"><div class="l">'+SGN[k]+'</div><div class="v">'+fmt(cnt[k])+'</div>'+(k==='ESP'?'<div class="d">ver todos · '+esc(dias)+'</div>':'')+'</div>').join('');
  $('sgK').querySelectorAll('.kpi').forEach(k=>k.onclick=()=>{SG.cf=k.dataset.k==='ESP'||SG.cf===k.dataset.k?'':k.dataset.k;pintarSeg();});
  const pasa=o=>!SG.cf||cats.some(c=>SG.cf==='TARDE'?o[c].tarde:grupoEst(o[c].e)===SG.cf);
@@ -644,7 +650,7 @@ async function go(v){cur=v;document.querySelectorAll('.tab').forEach(x=>x.classL
 
 function initSelects(){
  const mens=mensuales(),pa=periodoAbierto();
- $('cPer').innerHTML=mens.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+({ABIERTO:'abierto para reportar',CERRADO:'cerrado',EN_CURSO:'mes en curso, aún no se reporta',PROGRAMADO:'aún no comienza'})[estadoPer(p)]+'</option>').join('');
+ $('cPer').innerHTML=mens.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+(tardePer(p)?'abierto, fuera de plazo · cierra el '+cierrePer(p):({ABIERTO:'abierto para reportar',CERRADO:'cerrado',EN_CURSO:'mes en curso, aún no se reporta',PROGRAMADO:'aún no comienza'})[estadoPer(p)])+'</option>').join('');
  $('rPer').innerHTML=PERS.filter(p=>p.t!=='MENSUAL'||estadoPer(p)!=='PROGRAMADO').slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('');
  $('kPer').innerHTML=mens.slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('');
  const uesCarga=esAdmin()?CAT.U.map(u=>u.n):ME.ues;
@@ -674,7 +680,7 @@ async function rRep(fresco){
  const ueN=$('cUe').value;if(ueN!==C.ue)C.J=null;C.per=$('cPer').value;C.ue=ueN;C.archivo=null;
  const cats=misCats();if(!cats.includes(C.cat))C.cat=cats[0];
  const P=PERS.find(p=>p.p===C.per)||{};
- $('cPerInfo').innerHTML=(P.lim?'vence '+P.lim+' <button class="ayuda" data-ayuda="plazo">?</button>':'');
+ $('cPerInfo').innerHTML=(P.lim?(tardePer(P)?'<span style="color:#b3261e">fuera de plazo (venció '+P.lim+') · cierra el '+cierrePer(P)+'</span>':'vence '+P.lim+(cierrePer(P)?' · cierra el '+cierrePer(P):''))+' <button class="ayuda" data-ayuda="plazo">?</button>':'');
  $('cCat').innerHTML=cats.map(c=>'<span data-c="'+c+'" class="chip cat'+(c===C.cat?' on':'')+'">'+CATN[c]+'</span>').join('');
  $('cCat').querySelectorAll('span').forEach(d=>d.onclick=()=>{C.cat=d.dataset.c;rRep();});
  $('cTit').textContent=C.ue+' · '+CATN[C.cat];$('tCarga').innerHTML='<div class="cargando">Cargando…</div>';$('cEstado').innerHTML='';
@@ -1073,7 +1079,7 @@ async function pintarCobUE(){
  const est=(j,u,c,p)=>{const x=((j&&j.env[c])||{})[p]||null;return p===ESTP.p?envEfectivo(x,'cons_env|'+u+'|'+c+'|'+p,j&&j.generado):x;};
  const mes=[];ues.forEach((u,i)=>cats.forEach(c=>mes.push(est(J[i],u,c,ESTP.p))));
  const n=s=>mes.filter(x=>x&&s.includes(x.e)).length;let dias='—';if(P.lim){const d=Math.ceil((new Date(P.lim+'T23:59:59-05:00')-new Date())/864e5);dias=d>=0?String(d):'vencido';}
- $('kCob').innerHTML=kpi('Reportes de '+ESTP.p,mes.length,'gr',cats.join(' · '))+kpi('Pendientes de enviar',mes.filter(x=>!x).length,'ro')+kpi('Enviados o en revisión',n(['ENVIADO','OBSERVADO','VALIDADO','DEVUELTO','EN_CORRECCION']),'')+kpi('Aprobados',n(['APROBADO','PUBLICADO']),'ve')+kpi('Días para el vencimiento',dias,'gr',P.lim?'vence '+P.lim:'');
+ $('kCob').innerHTML=kpi('Reportes de '+ESTP.p,mes.length,'gr',cats.join(' · '))+kpi('Pendientes de enviar',mes.filter(x=>!x).length,'ro')+kpi('Enviados o en revisión',n(['ENVIADO','OBSERVADO','VALIDADO','DEVUELTO','EN_CORRECCION']),'')+kpi('Aprobados',n(['APROBADO','PUBLICADO']),'ve')+kpi('Días para el vencimiento',dias,'gr',P.lim?'vence '+P.lim+' · cierra el '+cierrePer(P):'');
  const pers=PERS.filter(p=>estadoPer(p)!=='PROGRAMADO').map(p=>p.p).reverse(),rows=[];
  ues.forEach((u,i)=>pers.forEach(p=>{const Pp=PERS.find(x=>x.p===p)||{},o={ue:u,per:p,fin:Pp.fin||''};cats.forEach(c=>{const x=est(J[i],u,c,p);o[c]=x?x.e:(Pp.t==='MENSUAL'?'SIN_REPORTE':'—');o[c+'_f']=x?x.f:'';o[c+'_t']=x&&Pp.lim&&x.f&&x.f.slice(0,10)>Pp.lim;});rows.push(o);}));
  table($('tCob'),(ues.length>1?[{k:'ue',l:'Unidad Ejecutora'}]:[]).concat([{k:'per',l:'Periodo'},{k:'fin',l:'Cierra'}]).concat(cats.map(c=>({k:c,l:CATN[c],f:(v,r)=>(v==='—'?'<span class="note">sin dato</span>':st(v))+(r[c+'_f']?' <span class="note">'+esc(r[c+'_f'])+'</span>':'')+(r[c+'_t']?' <span class="st s-DEVUELTO">fuera de plazo</span>':'')}))),rows,{sort:'fin',dir:-1,reset:true,vacio:'Aún no hay reportes.'});}
@@ -1083,7 +1089,7 @@ function pintarCob(){if(!ESTP)return;if(!ME.nacional)return pintarCobUE();$('kNa
  m=m.filter(o=>(!fc||o.ced===fc)&&(!q||o.ue.toLowerCase().includes(q)));
  const all=[];m.forEach(o=>cats.forEach(c=>all.push(o[c])));const cnt=s=>all.filter(x=>x===s).length;
  const P=PERS.find(p=>p.p===ESTP.p)||{};let dias='—';if(P.lim){const d=Math.ceil((new Date(P.lim+'T23:59:59-05:00')-new Date())/864e5);dias=d>=0?String(d):'vencido';}
- $('kCob').innerHTML=kpi('Envíos esperados',all.length,'gr')+kpi('Sin reporte',cnt('SIN_REPORTE'),'ro')+kpi('Enviados',cnt('ENVIADO'),'')+kpi('Observados, devueltos o en corrección',cnt('OBSERVADO')+cnt('DEVUELTO')+cnt('EN_CORRECCION'),'am')+kpi('Validados',cnt('VALIDADO'),'li')+kpi('Aprobados',cnt('APROBADO'),'ve')+kpi('Publicados al Motor',cnt('PUBLICADO'),'ve')+kpi('Días para el vencimiento',dias,'gr',P.lim?'vence '+P.lim:'');
+ $('kCob').innerHTML=kpi('Envíos esperados',all.length,'gr')+kpi('Sin reporte',cnt('SIN_REPORTE'),'ro')+kpi('Enviados',cnt('ENVIADO'),'')+kpi('Observados, devueltos o en corrección',cnt('OBSERVADO')+cnt('DEVUELTO')+cnt('EN_CORRECCION'),'am')+kpi('Validados',cnt('VALIDADO'),'li')+kpi('Aprobados',cnt('APROBADO'),'ve')+kpi('Publicados al Motor',cnt('PUBLICADO'),'ve')+kpi('Días para el vencimiento',dias,'gr',P.lim?'vence '+P.lim+' · cierra el '+cierrePer(P):'');
  $('kSub').textContent='periodo '+ESTP.p+(ESTP.generado?' · actualizado '+new Date(ESTP.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16)+' (hora de Panamá)':' · aún sin envíos');
  const E=['SIN_REPORTE','ENVIADO','OBSERVADO','DEVUELTO','EN_CORRECCION','VALIDADO','APROBADO','PUBLICADO'],col={EN_CORRECCION:'#f2b36b',SIN_REPORTE:'#d9d9d9',ENVIADO:'#9fb6d3',OBSERVADO:'#e0c068',DEVUELTO:'#e6a39e',VALIDADO:'#b9a3d9',APROBADO:'#8fca9c',PUBLICADO:'#2e7d32'};
  const ceds=[...new Set(m.map(o=>o.ced))].sort();
@@ -1138,8 +1144,8 @@ function pintarSol(){const fe=$('sEst').value;
    ()=>$('rOk').onclick=async()=>{if(!$('rm').value.trim()){toast('El motivo es obligatorio');return;}try{await jsonp({accion:'resolver_solicitud',id:b.dataset.r,decision:'RECHAZAR',motivo:$('rm').value},{reintentos:0});cerrarModal();toast('Solicitud rechazada.');rSol(true);}catch(e){err(e);}}));}});}
 async function rPer(){return admLeer('periodos',r=>{PERS=r.periodos;pintarPer();},'tPer');}
 function pintarPer(){
- table($('tPer'),[{k:'p',l:'Periodo'},{k:'t',l:'Tipo'},{k:'ini',l:'Inicio'},{k:'fin',l:'Fin'},{k:'lim',l:'Fecha límite'},{k:'e',l:'Estado',f:v=>st(v)},
- {k:'p',l:'',ns:1,f:(v,r)=>r.t!=='MENSUAL'?'':r.e==='ABIERTO'?'<button data-c="'+v+'">Cerrar</button>':'<button data-o="'+v+'">Abrir</button>'}],PERS,{sort:'fin',after:el=>{
+ table($('tPer'),[{k:'p',l:'Periodo'},{k:'t',l:'Tipo'},{k:'ini',l:'Inicio'},{k:'fin',l:'Fin'},{k:'lim',l:'Fecha límite'},{k:'cie',l:'Cierra solo',f:(v,r)=>r.t==='MENSUAL'?cierrePer(r):''},{k:'e',l:'Estado',f:(v,r)=>r.t!=='MENSUAL'?st(v):st(tardePer(r)?'ABIERTO':estadoPer(r))+(tardePer(r)?' <span class="note">fuera de plazo</span>':'')+(v==='ABIERTO'||v==='CERRADO'?' <span class="note">(a mano)</span>':'')},
+ {k:'p',l:'',ns:1,f:(v,r)=>r.t!=='MENSUAL'?'':reportable(r)?'<button data-c="'+v+'">Cerrar ya</button>':'<button data-o="'+v+'" title="Lo deja abierto a mano hasta que lo cierre">Abrir / extender</button>'}],PERS,{sort:'fin',after:el=>{
  el.querySelectorAll('[data-o],[data-c]').forEach(b=>b.onclick=async()=>{const abrir=!!b.dataset.o;b.disabled=true;try{await jsonp({accion:'periodo_estado',periodo:b.dataset.o||b.dataset.c,estado:abrir?'ABIERTO':'CERRADO'},{reintentos:0,timeout:90000});toast('Periodo '+(abrir?'abierto':'cerrado'));ss.del('adm|periodos');await rPer();initSelects();}catch(e){b.disabled=false;err(e);}});}});}
 $('pNew').onclick=async()=>{try{const r=await jsonp({accion:'crear_periodo'},{reintentos:0,timeout:90000});toast('Periodo '+r.periodo+' creado');ss.del('adm|periodos');await rPer();initSelects();}catch(e){err(e);}};
 async function rPub(){return admLeer('publicaciones',r=>pintarPubs(r.publicaciones),'tPubs');}
@@ -1168,9 +1174,9 @@ async function armarConsolidado(per,fc){
   J.push(...await Promise.all(ues.slice(i,i+12).map(u=>getJ('ue/'+u.slug+'.json',true).then(j=>[u,j]).catch(()=>[u,null]))));}
  $('dsInfo').textContent='Armando el consolidado…';
  const PER=PERS.filter(p=>estadoPer(p)!=='PROGRAMADO').map(p=>p.p);
- const vig={},rep={},tot={},nue={},uesRep=new Set();
+ const vig={},rep={},tot={},nue={},pdd={},uesRep=new Set();
  J.forEach(([u,j])=>{if(!j)return;
-  Object.keys(j.ult||{}).forEach(c=>{if(fc&&tipo(c)!==fc)return;const x=j.ult[c];(vig[c]=vig[c]||{})[u.n]=x[0];if(x[1]===per){(rep[c]=rep[c]||{})[u.n]=1;uesRep.add(u.n);}});
+  Object.keys(j.ult||{}).forEach(c=>{if(fc&&tipo(c)!==fc)return;const x=j.ult[c];(vig[c]=vig[c]||{})[u.n]=x[0];(pdd[c]=pdd[c]||{})[u.n]=x[1];if(x[1]===per){(rep[c]=rep[c]||{})[u.n]=1;uesRep.add(u.n);}});
   Object.keys(j.R||{}).forEach(c=>{if(fc&&tipo(c)!==fc)return;j.P.forEach((p,i)=>{const v=j.R[c][i];if(v==null)return;const t=(tot[c]=tot[c]||{});t[p]=(t[p]||0)+v;if(v>0){const n=(nue[c]=nue[c]||{});n[p]=(n[p]||0)+1;}});});});
  const cods=Object.keys(vig).filter(c=>Object.values(vig[c]).some(v=>v>0)).sort((a,b)=>(tipo(a)+a).localeCompare(tipo(b)+b));
  const wb=new ExcelJS.Workbook();wb.creator='Dirección Nacional de Logística';const logo=await xlsLogo(wb);
@@ -1202,6 +1208,18 @@ async function armarConsolidado(per,fc){
   const cv=row.getCell(5+PER.length);cv.numFmt='0.0%';if(d!=null&&d>=1)cv.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4DEDD'}};else if(d!=null&&d<=-0.5)cv.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE1EBF7'}};});
  [11,44,14,6].concat(PER.map(()=>13),[12],PER.map(()=>8)).forEach((w,i)=>w2.getColumn(i+1).width=w);
  w2.autoFilter={from:{row:6,column:1},to:{row:6,column:5+PER.length*2}};
+ // Hoja 3: de qué periodo es cada consumo vigente de la Hoja 1
+ const w3=wb.addWorksheet('Periodo del dato',{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
+ cab(w3,'Periodo del dato · de qué periodo viene cada consumo de la hoja 1','Misma matriz que la hoja 1: en cada celda, el periodo del último consumo aprobado. Verde: '+per+'; amarillo: periodo anterior al revisado; gris: más antiguo');
+ w3.getRow(6).values=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(UN,['UE_CON_DATO_'+per.replace('-','_')]);encab(w3.getRow(6),150);
+ for(let k=5;k<5+UN.length;k++)w3.getRow(6).getCell(k).alignment={textRotation:90,vertical:'bottom',horizontal:'center'};
+ const ix=PER.indexOf(per),antP=ix>0?PER[ix-1]:null;
+ const FILL={a:{type:'pattern',pattern:'solid',fgColor:{argb:'FFDCEBDF'}},b:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF4DC'}},c:{type:'pattern',pattern:'solid',fgColor:{argb:'FFEDEDED'}}};
+ cods.forEach(c=>{const ps=UN.map(n=>pdd[c]&&pdd[c][n]?pdd[c][n]:null);
+  const row=w3.addRow([c,desc(c),grupo(c),tipo(c)].concat(ps,[ps.filter(p=>p===per).length]));row.font={size:8.5};
+  UN.forEach((n,k)=>{const p=ps[k],cel=row.getCell(5+k);if(!p)return;cel.alignment={horizontal:'center'};cel.fill=p===per?FILL.a:p===antP?FILL.b:FILL.c;});});
+ [11,44,14,6].concat(UN.map(()=>8),[12]).forEach((w,i)=>w3.getColumn(i+1).width=w);
+ w3.autoFilter={from:{row:6,column:1},to:{row:6,column:5+UN.length}};
  const buf=await wb.xlsx.writeBuffer();
  return {buf,nombre:'CONSOLIDADO_CONSUMOS_UE_'+per+(fc?'_'+fc:'')+'_'+new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'})+'.xlsx',resumen:{ues:uesRep.size,total:ues.length,renglones:cods.length}};}
 function b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s);}
