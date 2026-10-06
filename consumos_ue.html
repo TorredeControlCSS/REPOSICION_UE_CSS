@@ -283,7 +283,11 @@ td input:disabled{background:#f3f3f3;color:#333}
  *  CONFIGURACIÓN
  * ==================================================================== */
 const API='https://script.google.com/macros/s/AKfycbxX8DxhSvo6jSLjLi8FvWqQWb8hG3bNt6V6kwjqntEFypZiMYk372eBJY-seAF4ThM_fw/exec';
-const BASE='https://torredecontrolcss.github.io/REPOSICION_UE_CSS/consumos/';
+/* Los JSON se leen directo del repositorio (raw): quedan visibles segundos después de cada
+   envío o firma, sin esperar a que GitHub Pages republique el sitio. La página publicada
+   queda como respaldo si raw no responde. */
+const BASE='https://raw.githubusercontent.com/TorredeControlCSS/REPOSICION_UE_CSS/main/consumos/';
+const BASE2='https://torredecontrolcss.github.io/REPOSICION_UE_CSS/consumos/';
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -341,7 +345,7 @@ const JC={},JT={};
 async function getJ(f,fresco){
  if(!fresco&&JC[f]&&Date.now()-JT[f]<60000)return JC[f];
  for(let i=0;i<3;i++){
-  try{const r=await fetch(BASE+f+'?ts='+Date.now(),{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error(r.status);const j=await r.json();JC[f]=j;JT[f]=Date.now();return j;}
+  try{const r=await fetch((i<2?BASE:BASE2)+f+'?ts='+Date.now(),{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error(r.status);const j=await r.json();JC[f]=j;JT[f]=Date.now();return j;}
   catch(e){if(i===2)throw new Error('No se pudo leer '+f+'. Revise la conexión.');await new Promise(z=>setTimeout(z,1200*(i+1)));}
  }}
 
