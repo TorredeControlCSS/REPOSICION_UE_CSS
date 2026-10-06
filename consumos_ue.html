@@ -261,7 +261,7 @@ td input:disabled{background:#f3f3f3;color:#333}
     <label class="chip" id="dsF3"><input type="radio" name="dsFmt" value="plan" style="display:none"> Consolidado para Planificación</label>
     <label class="chip" id="dsF2"><input type="radio" name="dsFmt" value="tipo" style="display:none"> Base completa (4 hojas)</label>
     <button class="ayuda" data-ayuda="descarga">?</button></div>
-   <div class="ctrl" id="dsPlanBox" style="display:none"><label>Periodo revisado</label><select id="dsPerRev"></select><span class="note">Hoja 1: renglones × Unidad Ejecutora, en verde lo aprobado en este periodo. Hoja 2: histórico nacional por renglón de todo el ciclo. Hoja 3: de qué periodo viene cada valor de la hoja 1.</span></div>
+   <div class="ctrl" id="dsPlanBox" style="display:none"><label>Periodo revisado</label><select id="dsPerRev"></select><span class="note">Hoja 1: demanda nacional por red de abastecimiento (unidades agrupadas por su CEDIS, demanda de cada red y total nacional). Hoja 2: histórico por renglón, nacional y por red. Hoja 3: origen de cada valor. Hoja 4: control de CEDIS (valor del Motor contra la suma de su red).</span></div>
    <div class="ctrl" id="dsPerBox"><label>Periodos</label><span class="chk" id="dsPer"></span><label>Categoría</label><select id="dsCat"><option value="">Todas</option><option value="MED">Medicamentos</option><option value="MQ">Material quirúrgico</option><option value="LAB">Laboratorio y radiología</option></select></div>
    <div class="panel" id="dsUeBox"><div class="ph">Unidades Ejecutoras <small id="dsUeN"></small></div><div class="pb">
     <div class="ctrl"><input id="dsUeQ" placeholder="Buscar unidad" style="width:240px"><label>CEDIS</label><select id="dsUeCed"><option value="">Todos</option></select>
@@ -472,6 +472,8 @@ const hoyPTY=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama
    después "fuera de plazo"; se cierra sola 5 días después de la fecha límite (día 10).
    ABIERTO a mano lo extiende; CERRADO a mano lo cierra antes. */
 const DIAS_GRACIA=5;
+/* Unidades que no reportan en el Registro: el consumo de CEDIS PANAMA lo mantiene la Calculadora */
+const UES_SIN_REGISTRO=['CEDIS PANAMA','CEDIS DIVISA','CEDIS CHIRIQUÍ','CEDIS CHIRIQUI'];const reporta=n=>!UES_SIN_REGISTRO.includes(String(n||'').toUpperCase());
 function cierrePer(P){if(!P||!P.lim)return '';const d=new Date(P.lim+'T12:00:00');d.setDate(d.getDate()+DIAS_GRACIA);return d.toISOString().slice(0,10);}
 function reportable(P){if(!P||P.t!=='MENSUAL')return false;if(P.e==='ABIERTO')return true;if(P.e==='CERRADO')return false;const h=hoyPTY(),c=cierrePer(P);return !!P.fin&&P.fin<h&&(!c||h<=c);}
 function estadoPer(P){if(!P)return '—';if(reportable(P))return 'ABIERTO';if(P.e==='CERRADO')return 'CERRADO';if(P.t==='MENSUAL'&&P.fin&&P.fin<hoyPTY())return 'CERRADO';return P.ini&&P.ini<=hoyPTY()?'EN_CURSO':'PROGRAMADO';}
@@ -510,7 +512,7 @@ function pedirCambioPin(){
   const fin=espera($('pinOk'),'Guardando su PIN…');try{const r=await jsonp({accion:'cambiar_pin',pin:p1,pin2:p2},{reintentos:0,timeout:60000});$('pinOk').textContent='Entrando…';cerrarModal();toast('PIN actualizado');await entrar(r.sesion);}catch(e){fin();err(e);}};});}
 $('lnkOlv').onclick=()=>modal('Olvidé mi PIN','<div class="note" style="font-size:13.5px;line-height:1.6">Para restablecer su PIN, comuníquese con:<br><br><b>Lic. Vladimir De León</b><br>Planificación · Dirección Nacional de Logística<br><a href="mailto:vdeleon@css.gob.pa">vdeleon@css.gob.pa</a><br><br>Indíquele su nombre y su cédula. Cuando lo restablezca, ingrese con su cédula y los <b>últimos 4 dígitos de su cédula</b> como PIN; el sistema le pedirá definir uno nuevo.</div>');
 $('lnkSol').onclick=async()=>{
- let U=[];try{const c=await getJ('catalogo.json');U=c?c.U.map(u=>u[0]):(await jsonp({accion:'ues_publico'})).ues;}catch(e){err(e);return;}
+ let U=[];try{const c=await getJ('catalogo.json');U=(c?c.U.map(u=>u[0]):(await jsonp({accion:'ues_publico'})).ues).filter(reporta);}catch(e){err(e);return;}
  modal('Solicitar acceso','<div class="note" style="font-size:13px">Llene sus datos. Planificación revisará la solicitud y le avisará al teléfono que indique.</div>'+
  '<label>Cédula</label><input id="sCed" placeholder="8-123-4567" value="'+esc(cedTxt($('lgCed').value))+'"><div class="hint">Con guiones, como aparece en su documento.</div>'+
  '<label>Nombre completo</label><input id="sNom"><label>Cargo</label><input id="sCar"><label>Correo institucional</label><input id="sCor" type="email" placeholder="nombre@css.gob.pa"><label>Teléfono de contacto</label><input id="sTel" inputmode="tel" placeholder="6000-0000">'+
@@ -561,7 +563,7 @@ async function rSeg(fresco){
  if(!$('sgPer').options.length){const ms=mensuales().filter(p=>estadoPer(p)!=='PROGRAMADO').reverse(),pa=periodoAbierto();
   $('sgPer').innerHTML=ms.map(p=>'<option value="'+p.p+'"'+(p.p===pa?' selected':'')+'>'+p.p+' · '+(tardePer(p)?'fuera de plazo, cierra '+cierrePer(p).slice(5):({ABIERTO:'abierto',CERRADO:'cerrado',EN_CURSO:'en curso'})[estadoPer(p)])+'</option>').join('');
   $('sgCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(Boolean))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');
-  $('sgUe').innerHTML='<option value="">Todas</option>'+CAT.U.map(u=>u.n).sort((a,b)=>a.localeCompare(b,'es')).map(n=>'<option>'+esc(n)+'</option>').join('');}
+  $('sgUe').innerHTML='<option value="">Todas</option>'+CAT.U.map(u=>u.n).filter(reporta).sort((a,b)=>a.localeCompare(b,'es')).map(n=>'<option>'+esc(n)+'</option>').join('');}
  const per=$('sgPer').value;$('tSeg').innerHTML='<div class="cargando">Cargando…</div>';
  try{const [J,E]=await Promise.all([getJ('estado_'+per+'.json',fresco!==false),getJ('envios_'+per+'.json',fresco!==false)]);
   SG.J=J||{p:per,cats:['MED','MQ','LAB'],generado:null,F:CAT.U.map(u=>[u.n,u.ced,u.cod].concat(...['MED','MQ','LAB'].map(()=>['SIN_REPORTE',''])))};
@@ -572,7 +574,7 @@ function sgFilas(){const J=SG.J,P=PERS.find(p=>p.p===J.p)||{},ced=$('sgCed').val
  const ult={};SG.EN.filter(e=>e.e!=='REEMPLAZADO').forEach(e=>{const k=e.ue+'|'+e.cat;if(!ult[k]||e.ver>ult[k].ver)ult[k]=e;});
  return J.F.map(f=>{const o={ue:f[0],ced:f[1],cod:f[2]};J.cats.forEach((c,i)=>{const e=ult[f[0]+'|'+c],est=e?e.e:f[3+i*2];const fe=e?e.fc:f[4+i*2];
    o[c]={e:est,f:fe||'',id:e?e.id:'',ver:e?e.ver:0,canal:e?e.canal:'',tarde:!!(P.lim&&fe&&String(fe).slice(0,10)>P.lim)};});return o;})
-  .filter(o=>(!ced||o.ced===ced)&&(!fu||o.ue===fu));}
+  .filter(o=>reporta(o.ue)&&(!ced||o.ced===ced)&&(!fu||o.ue===fu));}
 const RANGO={SIN_REPORTE:0,OBSERVADO:1,EN_CORRECCION:1,ENVIADO:2,DEVUELTO:2,VALIDADO:3,APROBADO:4,PUBLICADO:5};
 function reportantes(ue){return USR.filter(u=>u.ue===ue&&u.rol==='CARGA'&&u.act==='SI');}
 function pintarSeg(){if(!SG.J)return;
@@ -654,7 +656,7 @@ function initSelects(){
  $('rPer').innerHTML=PERS.filter(p=>p.t!=='MENSUAL'||estadoPer(p)!=='PROGRAMADO').slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('');
  $('kPer').innerHTML=mens.slice().reverse().map(p=>'<option'+(p.p===pa?' selected':'')+'>'+p.p+'</option>').join('');
  const uesCarga=esAdmin()?CAT.U.map(u=>u.n):ME.ues;
- $('cUe').innerHTML=uesCarga.map(u=>'<option>'+esc(u)+'</option>').join('');$('cUeBox').style.display=uesCarga.length>1?'':'none';
+ $('cUe').innerHTML=uesCarga.filter(reporta).map(u=>'<option>'+esc(u)+'</option>').join('');$('cUeBox').style.display=uesCarga.length>1?'':'none';
  $('rCat').innerHTML='<option value="">Todas mis categorías</option>'+misCats().map(c=>'<option>'+c+'</option>').join('');
  $('rUe').innerHTML='<option value="">Todas</option>'+CAT.U.map(u=>'<option>'+esc(u.n)+'</option>').join('');
  $('kCed').innerHTML='<option value="">Todos</option>'+[...new Set(CAT.U.map(u=>u.ced).filter(String))].sort().map(c=>'<option>'+esc(c)+'</option>').join('');
@@ -1170,58 +1172,106 @@ $('jReg').onclick=async()=>{const b=$('jReg');b.disabled=true;b.textContent='Reg
  catch(e){err(e);}finally{b.disabled=false;b.textContent='Regenerar JSON';}};
 /* ---------- Consolidado para Planificación: renglones x UE + histórico por renglón ---------- */
 async function armarConsolidado(per,fc){
- const ues=CAT.U,J=[];for(let i=0;i<ues.length;i+=12){$('dsInfo').textContent='Leyendo unidades '+(i+1)+' a '+Math.min(i+12,ues.length)+' de '+ues.length+'…';
-  J.push(...await Promise.all(ues.slice(i,i+12).map(u=>getJ('ue/'+u.slug+'.json',true).then(j=>[u,j]).catch(()=>[u,null]))));}
+ // 1. Motor (MAESTRO_CONSUMOS_UE): todas las unidades y los CEDIS
+ $('dsInfo').textContent='Leyendo el consumo vigente del Motor…';
+ const MO=await jsonp({accion:'motor_actual'},{reintentos:1,timeout:120000});
+ // 2. Registro: periodo de cada dato aprobado e histórico por periodo
+ const uesR=CAT.U.filter(u=>reporta(u.n)),J=[];for(let i=0;i<uesR.length;i+=12){$('dsInfo').textContent='Leyendo el Registro: unidades '+(i+1)+' a '+Math.min(i+12,uesR.length)+' de '+uesR.length+'…';
+  J.push(...await Promise.all(uesR.slice(i,i+12).map(u=>getJ('ue/'+u.slug+'.json',true).then(j=>[u,j]).catch(()=>[u,null]))));}
  $('dsInfo').textContent='Armando el consolidado…';
  const PER=PERS.filter(p=>estadoPer(p)!=='PROGRAMADO').map(p=>p.p);
- const vig={},rep={},tot={},nue={},pdd={},uesRep=new Set();
- J.forEach(([u,j])=>{if(!j)return;
-  Object.keys(j.ult||{}).forEach(c=>{if(fc&&tipo(c)!==fc)return;const x=j.ult[c];(vig[c]=vig[c]||{})[u.n]=x[0];(pdd[c]=pdd[c]||{})[u.n]=x[1];if(x[1]===per){(rep[c]=rep[c]||{})[u.n]=1;uesRep.add(u.n);}});
-  Object.keys(j.R||{}).forEach(c=>{if(fc&&tipo(c)!==fc)return;j.P.forEach((p,i)=>{const v=j.R[c][i];if(v==null)return;const t=(tot[c]=tot[c]||{});t[p]=(t[p]||0)+v;if(v>0){const n=(nue[c]=nue[c]||{});n[p]=(n[p]||0)+1;}});});});
- const cods=Object.keys(vig).filter(c=>Object.values(vig[c]).some(v=>v>0)).sort((a,b)=>(tipo(a)+a).localeCompare(tipo(b)+b));
+ const esCedis=n=>/^CEDIS\b/i.test(n);
+ // red de cada unidad = CEDIS que la abastece (MAESTROS_DINALOG)
+ const redDe={};CAT.U.forEach(u=>{redDe[u.n]=u.ced||'SIN CEDIS ASIGNADO';});
+ const pdd={},totR={},nue={},uesRep=new Set();
+ J.forEach(([u,j])=>{if(!j)return;const red=redDe[u.n];
+  Object.keys(j.ult||{}).forEach(c=>{const x=j.ult[c];(pdd[c]=pdd[c]||{})[u.n]=x[1];if(x[1]===per)uesRep.add(u.n);});
+  Object.keys(j.R||{}).forEach(c=>{if(fc&&tipo(c)!==fc)return;j.P.forEach((p,i)=>{const v=j.R[c][i];if(v==null)return;const t=((totR[c]=totR[c]||{})[p]=totR[c][p]||{});t[red]=(t[red]||0)+v;t._n=(t._n||0)+v;if(v>0){const n=(nue[c]=nue[c]||{});n[p]=(n[p]||0)+1;}});});});
+ const mv={},mo={},mf={};
+ MO.filas.forEach(([ue,c,v,o,fe])=>{if(fc&&tipo(c)!==fc)return;(mv[c]=mv[c]||{})[ue]=v;(mo[c]=mo[c]||{})[ue]=o;(mf[c]=mf[c]||{})[ue]=fe;});
+ // unidades (sin CEDIS) agrupadas por red; redes en orden: PANAMA, DIVISA, CHIRIQUÍ, otras
+ const todas=new Set(CAT.U.map(u=>u.n));Object.keys(mv).forEach(c=>Object.keys(mv[c]).forEach(ue=>todas.add(ue)));
+ const UES=[...todas].filter(n=>!esCedis(n));UES.forEach(n=>{if(!redDe[n])redDe[n]='SIN CEDIS ASIGNADO';});
+ const ordenRed=r=>{const k=String(r).toUpperCase();return k.includes('PANAMA')?0:k.includes('DIVISA')?1:k.includes('CHIRIQU')?2:3;};
+ const REDES=[...new Set(UES.map(n=>redDe[n]))].sort((a,b)=>ordenRed(a)-ordenRed(b)||a.localeCompare(b));
+ const CEDS=[...todas].filter(esCedis).sort((a,b)=>ordenRed(a)-ordenRed(b));
+ const cedDeRed=r=>CEDS.find(c=>ordenRed(c)===ordenRed(r)&&ordenRed(r)<3)||null;
+ const porRed={};REDES.forEach(r=>porRed[r]=UES.filter(n=>redDe[n]===r).sort((a,b)=>a.localeCompare(b,'es')));
+ const cods=[...new Set(Object.keys(mv).concat(Object.keys(totR)))].filter(c=>(mv[c]&&Object.entries(mv[c]).some(([u,v])=>!esCedis(u)&&v>0))||(totR[c]&&Object.values(totR[c]).some(t=>t._n>0)))
+  .sort((a,b)=>((tipo(a)||'ZZZ')+a).localeCompare((tipo(b)||'ZZZ')+b));
  const wb=new ExcelJS.Workbook();wb.creator='Dirección Nacional de Logística';const logo=await xlsLogo(wb);
  const cab=(ws,titulo,sub)=>{if(logo!==null)ws.addImage(logo,{tl:{col:0.1,row:0.1},ext:{width:42,height:42}});
   ws.getCell('B1').value='CAJA DE SEGURO SOCIAL · Dirección Nacional de Logística';ws.getCell('B1').font={bold:true,size:10,color:{argb:'FF444444'}};
   ws.getCell('B2').value=titulo;ws.getCell('B2').font={bold:true,size:13,color:{argb:XA}};
-  ws.getCell('B3').value=sub+' · Generado '+new Date().toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16)+' (hora de Panamá) · '+ME.nombre;ws.getCell('B3').font={size:9,color:{argb:'FF555555'}};};
+  ws.getCell('B3').value=sub;ws.getCell('B3').font={size:9,color:{argb:'FF555555'}};
+  ws.getCell('B4').value='Motor leído '+MO.generado+' · Generado por '+ME.nombre+(fc?' · categoría '+fc:'');ws.getCell('B4').font={size:8.5,color:{argb:'FF777777'}};};
  const encab=(row,alto)=>{row.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'},size:9};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:XA}};c.alignment={vertical:'bottom',horizontal:'center',wrapText:true};});row.height=alto;};
- // Hoja 1
- const UN=ues.map(u=>u.n);
- const w1=wb.addWorksheet('Consumo revisado '+per,{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
- cab(w1,'Consumo vigente por renglón y Unidad Ejecutora · periodo revisado '+per,'Consumo mensual en unidades del renglón'+(fc?' · categoría '+fc:'')+' · en verde: reportado y aprobado en '+per+'; sin color: último consumo aprobado de periodos anteriores');
- w1.getRow(6).values=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(UN,['TOTAL_NACIONAL','UE_CON_CONSUMO']);encab(w1.getRow(6),150);
- for(let k=5;k<5+UN.length;k++)w1.getRow(6).getCell(k).alignment={textRotation:90,vertical:'bottom',horizontal:'center'};
- cods.forEach(c=>{const vals=UN.map(n=>vig[c][n]==null?null:vig[c][n]);const t=vals.reduce((a,v)=>a+(v||0),0);
-  const row=w1.addRow([c,desc(c),grupo(c),tipo(c)].concat(vals,[t,vals.filter(v=>v>0).length]));row.font={size:9};
-  UN.forEach((n,k)=>{const cel=row.getCell(5+k);if(cel.value!=null)cel.numFmt='#,##0';if(rep[c]&&rep[c][n])cel.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFDCEBDF'}};});
-  const ct=row.getCell(5+UN.length);ct.numFmt='#,##0';ct.font={bold:true,size:9};});
- [11,44,14,6].concat(UN.map(()=>7),[13,9]).forEach((w,i)=>w1.getColumn(i+1).width=w);
- w1.autoFilter={from:{row:6,column:1},to:{row:6,column:6+UN.length}};
- // Hoja 2
- const w2=wb.addWorksheet('Histórico por renglón',{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
- cab(w2,'Histórico nacional por renglón · ciclo '+PER[0]+' a '+PER[PER.length-1],'Total nacional de consumo mensual por periodo; variación entre los dos últimos periodos con dato; UE que reportaron consumo en cada periodo');
- w2.getRow(6).values=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(PER.map(p=>'TOTAL '+p),['VARIACION ULTIMOS DOS'],PER.map(p=>'UE '+p));encab(w2.getRow(6),34);
- cods.forEach(c=>{const tt=PER.map(p=>tot[c]&&tot[c][p]!=null?tot[c][p]:null),nn=PER.map(p=>nue[c]&&nue[c][p]||0);
-  const con=tt.filter(v=>v!=null&&v>0);let d=null;if(con.length>=2)d=con[con.length-1]/con[con.length-2]-1;
-  const row=w2.addRow([c,desc(c),grupo(c),tipo(c)].concat(tt,[d],nn));row.font={size:9};
-  PER.forEach((p,k)=>{const cel=row.getCell(5+k);if(cel.value!=null)cel.numFmt='#,##0';});
-  const cv=row.getCell(5+PER.length);cv.numFmt='0.0%';if(d!=null&&d>=1)cv.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4DEDD'}};else if(d!=null&&d<=-0.5)cv.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE1EBF7'}};});
- [11,44,14,6].concat(PER.map(()=>13),[12],PER.map(()=>8)).forEach((w,i)=>w2.getColumn(i+1).width=w);
- w2.autoFilter={from:{row:6,column:1},to:{row:6,column:5+PER.length*2}};
- // Hoja 3: de qué periodo es cada consumo vigente de la Hoja 1
- const w3=wb.addWorksheet('Periodo del dato',{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
- cab(w3,'Periodo del dato · de qué periodo viene cada consumo de la hoja 1','Misma matriz que la hoja 1: en cada celda, el periodo del último consumo aprobado. Verde: '+per+'; amarillo: periodo anterior al revisado; gris: más antiguo');
- w3.getRow(6).values=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(UN,['UE_CON_DATO_'+per.replace('-','_')]);encab(w3.getRow(6),150);
- for(let k=5;k<5+UN.length;k++)w3.getRow(6).getCell(k).alignment={textRotation:90,vertical:'bottom',horizontal:'center'};
+ const vert=(row,from,n)=>{for(let k=from;k<from+n;k++)row.getCell(k).alignment={textRotation:90,vertical:'bottom',horizontal:'center',wrapText:true};};
  const ix=PER.indexOf(per),antP=ix>0?PER[ix-1]:null;
- const FILL={a:{type:'pattern',pattern:'solid',fgColor:{argb:'FFDCEBDF'}},b:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF4DC'}},c:{type:'pattern',pattern:'solid',fgColor:{argb:'FFEDEDED'}}};
- cods.forEach(c=>{const ps=UN.map(n=>pdd[c]&&pdd[c][n]?pdd[c][n]:null);
-  const row=w3.addRow([c,desc(c),grupo(c),tipo(c)].concat(ps,[ps.filter(p=>p===per).length]));row.font={size:8.5};
-  UN.forEach((n,k)=>{const p=ps[k],cel=row.getCell(5+k);if(!p)return;cel.alignment={horizontal:'center'};cel.fill=p===per?FILL.a:p===antP?FILL.b:FILL.c;});});
- [11,44,14,6].concat(UN.map(()=>8),[12]).forEach((w,i)=>w3.getColumn(i+1).width=w);
- w3.autoFilter={from:{row:6,column:1},to:{row:6,column:5+UN.length}};
+ const FL=a=>({type:'pattern',pattern:'solid',fgColor:{argb:a}});
+ const F={ok:FL('FFDCEBDF'),ant:FL('FFFFF4DC'),hist:FL('FFEDEDED'),f8:FL('FFF8E1E1'),sub:FL('FFDCE6F4'),tot:FL('FFC9D9EE')};
+ const clase=(c,ue)=>{if(!(mo[c]&&mo[c][ue]!=null))return null;const p=pdd[c]&&pdd[c][ue];if(p)return p===per?'ok':p===antP?'ant':'hist';return 'f8';};
+ const etiqueta=(c,ue)=>{if(!(mo[c]&&mo[c][ue]!=null))return null;const p=pdd[c]&&pdd[c][ue];if(p)return p;const o=mo[c][ue]||'F8';return o+(mf[c]&&mf[c][ue]?' '+mf[c][ue]:'');};
+ const val=(c,ue)=>mv[c]&&mv[c][ue]!=null?mv[c][ue]:null;
+ const LEY='Verde: aprobado en '+per+' · Amarillo: '+(antP||'periodo anterior')+' · Gris: periodos anteriores · Rosa: F8, sin reporte en el Registro · Azul: demanda de cada red (suma de sus unidades) · Azul oscuro: total nacional';
+ // columnas de la hoja 1 y 3: [unidades de la red..., DEMANDA RED] por red, y al final TOTAL NACIONAL
+ const COLS=[];REDES.forEach(r=>{porRed[r].forEach(n=>COLS.push({t:'u',n,r}));COLS.push({t:'s',r});});COLS.push({t:'n'});
+ const nomRed=r=>String(r).replace(/^CEDIS\s*/i,'');
+ // Hoja 1
+ const w1=wb.addWorksheet('Demanda nacional '+per,{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
+ cab(w1,'Demanda nacional por red de abastecimiento · periodo revisado '+per,'Consumo mensual vigente de cada Unidad Ejecutora (MAESTRO_CONSUMOS_UE), agrupado por el CEDIS que la abastece. Demanda de cada red = punto de entrega; total nacional = cuánto comprar. Los CEDIS no se suman: su control está en la hoja 4 · '+LEY);
+ w1.getRow(6).values=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(COLS.map(x=>x.t==='u'?x.n:x.t==='s'?'DEMANDA RED '+nomRed(x.r):'TOTAL NACIONAL'));encab(w1.getRow(6),160);vert(w1.getRow(6),5,COLS.length);
+ COLS.forEach((x,k)=>{const h=w1.getRow(6).getCell(5+k);if(x.t==='s')h.fill=FL('FF1E5A9E');if(x.t==='n')h.fill=FL('FF0A2F57');});
+ cods.forEach(c=>{const fila=[c,desc(c),grupo(c),tipo(c)];const sub={};let nac=0;
+  COLS.forEach(x=>{if(x.t==='u'){const v=val(c,x.n);fila.push(v);sub[x.r]=(sub[x.r]||0)+(v||0);}else if(x.t==='s'){fila.push(sub[x.r]||0);nac+=sub[x.r]||0;}else fila.push(nac);});
+  const row=w1.addRow(fila);row.font={size:9};
+  COLS.forEach((x,k)=>{const cel=row.getCell(5+k);if(cel.value==null)return;cel.numFmt='#,##0';
+   if(x.t==='u'){const cl=clase(c,x.n);if(cl)cel.fill=F[cl];}else{cel.fill=x.t==='s'?F.sub:F.tot;cel.font={bold:true,size:9};}});});
+ [11,44,14,6].concat(COLS.map(x=>x.t==='u'?7:12)).forEach((w,i)=>w1.getColumn(i+1).width=w);
+ w1.autoFilter={from:{row:6,column:1},to:{row:6,column:4+COLS.length}};
+ // Hoja 2: histórico por renglón (Registro) por red y nacional + Motor hoy
+ const w2=wb.addWorksheet('Histórico por renglón',{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
+ cab(w2,'Histórico nacional por renglón · ciclo '+PER[0]+' a '+PER[PER.length-1],'Totales del Registro por periodo (nacional y por red), variación entre los dos últimos periodos y UE que reportaron; al final, la demanda vigente del Motor hoy por red y nacional');
+ const hdr=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(PER.map(p=>'NACIONAL '+p),['VARIACION ULTIMOS DOS'],PER.map(p=>'UE '+p));
+ REDES.forEach(r=>PER.forEach(p=>hdr.push(nomRed(r)+' '+p)));REDES.forEach(r=>hdr.push('MOTOR HOY · RED '+nomRed(r)));hdr.push('MOTOR HOY · NACIONAL');
+ w2.getRow(6).values=hdr;encab(w2.getRow(6),46);
+ cods.forEach(c=>{const tt=PER.map(p=>totR[c]&&totR[c][p]?totR[c][p]._n:null),nn=PER.map(p=>nue[c]&&nue[c][p]||0);
+  const con=tt.filter(v=>v!=null&&v>0);let d=null;if(con.length>=2)d=con[con.length-1]/con[con.length-2]-1;
+  const fila=[c,desc(c),grupo(c),tipo(c)].concat(tt,[d],nn);
+  REDES.forEach(r=>PER.forEach(p=>fila.push(totR[c]&&totR[c][p]&&totR[c][p][r]!=null?totR[c][p][r]:null)));
+  let nac=0;REDES.forEach(r=>{const s=porRed[r].reduce((a,n)=>a+(val(c,n)||0),0);fila.push(s);nac+=s;});fila.push(nac);
+  const row=w2.addRow(fila);row.font={size:9};
+  row.eachCell((cel,k)=>{if(k>4&&typeof cel.value==='number')cel.numFmt='#,##0';});
+  const cv=row.getCell(5+PER.length);cv.numFmt='0.0%';if(d!=null&&d>=1)cv.fill=FL('FFF4DEDD');else if(d!=null&&d<=-0.5)cv.fill=FL('FFE1EBF7');
+  for(let k=0;k<=REDES.length;k++){const cel=row.getCell(fila.length-REDES.length+k);cel.font={bold:true,size:9};cel.fill=k===REDES.length?F.tot:F.sub;}});
+ hdr.forEach((h,i)=>w2.getColumn(i+1).width=i===1?44:i===0?11:i===2?14:i===3?6:12);
+ w2.autoFilter={from:{row:6,column:1},to:{row:6,column:hdr.length}};
+ // Hoja 3: origen de cada valor de la hoja 1
+ const w3=wb.addWorksheet('Origen del dato',{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
+ cab(w3,'Origen del dato · de dónde viene cada consumo de la hoja 1','Misma matriz que la hoja 1 (unidades agrupadas por red): periodo del Registro (p. ej. '+per+') o F8 con su fecha de corte · '+LEY);
+ const UC=COLS.filter(x=>x.t==='u');
+ w3.getRow(6).values=['CODIGO','DESCRIPCION','GRUPO','CAT'].concat(UC.map(x=>x.n),['UE_CON_DATO_'+per.replace('-','_')]);encab(w3.getRow(6),160);vert(w3.getRow(6),5,UC.length);
+ cods.forEach(c=>{const ps=UC.map(x=>etiqueta(c,x.n));
+  const row=w3.addRow([c,desc(c),grupo(c),tipo(c)].concat(ps,[ps.filter(p=>p===per).length]));row.font={size:8};
+  UC.forEach((x,k)=>{const cel=row.getCell(5+k);if(!ps[k])return;cel.alignment={horizontal:'center'};const cl=clase(c,x.n);if(cl)cel.fill=F[cl];});});
+ [11,44,14,6].concat(UC.map(()=>9),[12]).forEach((w,i)=>w3.getColumn(i+1).width=w);
+ w3.autoFilter={from:{row:6,column:1},to:{row:6,column:5+UC.length}};
+ // Hoja 4: control de CEDIS: valor del Motor para el CEDIS vs suma de su red
+ const w4=wb.addWorksheet('Control CEDIS',{views:[{state:'frozen',ySplit:6,xSplit:2,showGridLines:false}]});
+ cab(w4,'Control de CEDIS · valor del Motor contra la demanda de su red','Por renglón: lo que el Motor tiene para cada CEDIS (Calculadora en Panamá, F8 en Divisa y Chiriquí) frente a la suma del consumo de las unidades que abastece. Rojo: diferencia de 20 % o más; revise asignación de unidades al CEDIS o vigencia del valor del Motor.');
+ const RC=REDES.filter(r=>cedDeRed(r));
+ const h4=['CODIGO','DESCRIPCION','GRUPO','CAT'];RC.forEach(r=>{const n=nomRed(r);h4.push('MOTOR '+n,'SUMA RED '+n,'DIFERENCIA '+n,'DIF % '+n);});
+ w4.getRow(6).values=h4;encab(w4.getRow(6),46);
+ let alertas=0;
+ cods.forEach(c=>{const fila=[c,desc(c),grupo(c),tipo(c)],pc=[];
+  RC.forEach(r=>{const ced=cedDeRed(r),m=val(c,ced),s=porRed[r].reduce((a,n)=>a+(val(c,n)||0),0),dif=(m||0)-s,p=s>0?(m||0)/s-1:(m>0?1:null);fila.push(m,s,dif,p);pc.push(p);});
+  const row=w4.addRow(fila);row.font={size:9};
+  RC.forEach((r,k)=>{const b=5+k*4;[0,1,2].forEach(o=>{const cel=row.getCell(b+o);if(typeof cel.value==='number')cel.numFmt='#,##0';});
+   const cp=row.getCell(b+3);cp.numFmt='0.0%';const p=pc[k];if(p!=null&&Math.abs(p)>=0.2){cp.fill=FL('FFF4DEDD');cp.font={bold:true,size:9,color:{argb:'FFB3261E'}};alertas++;}});});
+ h4.forEach((h,i)=>w4.getColumn(i+1).width=i===1?44:i===0?11:i===2?14:i===3?6:13);
+ w4.autoFilter={from:{row:6,column:1},to:{row:6,column:h4.length}};
  const buf=await wb.xlsx.writeBuffer();
- return {buf,nombre:'CONSOLIDADO_CONSUMOS_UE_'+per+(fc?'_'+fc:'')+'_'+new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'})+'.xlsx',resumen:{ues:uesRep.size,total:ues.length,renglones:cods.length}};}
+ return {buf,nombre:'CONSOLIDADO_CONSUMOS_UE_'+per+(fc?'_'+fc:'')+'_'+new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'})+'.xlsx',resumen:{ues:uesRep.size,total:UES.length,redes:REDES.length,renglones:cods.length,alertas}};}
 function b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s);}
 
 $('dsPlanMail').onclick=async()=>{if(typeof ExcelJS==='undefined'){toast('No se pudo cargar el componente de Excel.');return;}
@@ -1241,7 +1291,7 @@ function dsFmt(){const v=document.querySelector('input[name=dsFmt]:checked').val
  $('dsPlanBox').style.display=v==='plan'?'':'none';$('dsPerBox').querySelector('#dsPer').style.display=v==='plan'?'none':'';$('dsPerBox').querySelector('label').style.display=v==='plan'?'none':'';$('dsPlanMail').style.display=v==='plan'?'':'none';
  $('dsOk').textContent=v==='ue'?'Descargar Excel por Unidad Ejecutora':v==='plan'?'Descargar consolidado':'Descargar base completa';}
 document.querySelectorAll('input[name=dsFmt]').forEach(r=>r.onchange=dsFmt);
-function dsVisibles(){const q=$('dsUeQ').value.trim().toLowerCase(),c=$('dsUeCed').value;return CAT.U.filter(u=>(!q||u.n.toLowerCase().includes(q))&&(!c||u.ced===c));}
+function dsVisibles(){const q=$('dsUeQ').value.trim().toLowerCase(),c=$('dsUeCed').value;return CAT.U.filter(u=>reporta(u.n)&&(!q||u.n.toLowerCase().includes(q))&&(!c||u.ced===c));}
 function pintarDsUe(){$('dsUeL').innerHTML=dsVisibles().map(u=>'<label title="'+esc(u.ced)+'"><input type="checkbox" value="'+esc(u.n)+'"'+(DS_SEL.has(u.n)?' checked':'')+'> '+esc(u.n)+'</label>').join('')||'<span class="note">Sin coincidencias</span>';
  $('dsUeL').querySelectorAll('input').forEach(i=>i.onchange=()=>{i.checked?DS_SEL.add(i.value):DS_SEL.delete(i.value);dsCuenta();});dsCuenta();}
 function dsCuenta(){$('dsUeN').textContent=DS_SEL.size+' de '+CAT.U.length+' elegidas'+(DS_SEL.size>25?' · archivo pesado':'');}
