@@ -177,6 +177,7 @@ input[type=range]:active{cursor:grabbing}
     <div class="sub">Dirección Nacional de Logística · CEDIS Panamá, Divisa y Chiriquí</div>
   </div>
   <div class="frescura" id="frescura"><span class="fr">Cargando datos…</span></div>
+  <button class="btn" id="btnExis" style="background:transparent;color:#fff;font-weight:600;border-color:rgba(255,255,255,.6)" title="Enviar el informe semanal de existencias de los CEDIS a las coordinaciones">Informe semanal de existencias</button>
   <button class="btn" id="btnAyuda" style="background:#fff;color:var(--azul);font-weight:700;border-color:#fff">Ayuda y recorrido guiado</button>
 </header>
 
@@ -1193,6 +1194,61 @@ async function iniciar(){
 }
 window.__tablero={st,render,irTab,elegirReng,elegirUE,filtrarTransitoVivo:s=>filtrarTransitoVivo(s)};
 iniciar();
+})();
+</script>
+
+<!-- 10-oct-2026 · Informe semanal de existencias en los CEDIS (lo arma y envía CALCULADORA_REPOSICION) -->
+<div class="modal-bg" id="mbExis" role="dialog" aria-modal="true" aria-labelledby="exTit">
+  <div class="modal" style="max-width:560px">
+    <h2 id="exTit">Informe semanal de existencias en los CEDIS</h2>
+    <p style="margin:0 0 8px">Un correo con tres Excel (medicamentos, insumos médico-quirúrgicos y laboratorio) con las existencias de CEDIS Panamá, Divisa y Chiriquí, ordenadas por saldo de menor a mayor. En CEDIS Panamá se separa lo reservado del disponible.</p>
+    <p style="margin:0 0 10px;color:var(--gris);font-size:12px">Sale solo cada viernes con los saldos del día. Use este botón para enviarlo a mano o para mandarse una prueba.</p>
+    <div id="exEstado" style="background:var(--p-gris);border-radius:3px;padding:8px 10px;font-size:12px;margin-bottom:10px">Consultando el último envío…</div>
+    <div class="campo" style="margin-bottom:10px"><label for="exPin">PIN</label><input type="password" id="exPin" autocomplete="off" style="max-width:180px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn" id="exPrueba">Prueba a mí</button>
+      <button class="btn azul" id="exLista">Enviar a la lista</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="exCerrar">Cerrar</button>
+    </div>
+    <div id="exMsg" style="margin-top:10px;font-size:12.5px" aria-live="polite"></div>
+  </div>
+</div>
+<script>
+(function(){
+  const CALC_URL='https://script.google.com/macros/s/AKfycbzxfCoO5-U008jeE-b99hWwLWFZTZuoxBjR5g225UarppxtptndjB1be_BALEARttlL-w/exec';
+  const $e=id=>document.getElementById(id), mb=$e('mbExis');
+  const jsonp=(api,params,ms)=>new Promise((res,rej)=>{ const cb='__ex'+Math.random().toString(36).slice(2), sc=document.createElement('script'); let done=false;
+    const fin=()=>{ try{delete window[cb];}catch(_){} try{sc.remove();}catch(_){} };
+    const to=setTimeout(()=>{ if(done)return; done=true; fin(); rej(new Error('timeout')); }, ms||30000);
+    window[cb]=d=>{ if(done)return; done=true; clearTimeout(to); fin(); res(d); };
+    sc.onerror=()=>{ if(done)return; done=true; clearTimeout(to); fin(); rej(new Error('red')); };
+    sc.src=api+'?'+Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&')+'&callback='+cb; document.body.appendChild(sc); });
+  let sondeo=null, confirmar=false;
+  const pinta=(t,c)=>{ $e('exMsg').innerHTML=t; $e('exMsg').style.color=c||'inherit'; };
+  const estado=()=>jsonp(CALC_URL,{accion:'exis_estado'},30000).then(r=>{
+    if(!r||r.ok===undefined||r.estado===undefined){ $e('exEstado').textContent='El envío desde el tablero todavía no está activo en el backend.'; return r; }
+    const e=r.estado; $e('exEstado').innerHTML=(r.enCola?'<b>En preparación:</b> '+(r.enCola.modo==='lista'?'envío a la lista':'prueba')+'. Tarda un par de minutos.<br>':'')+
+      (e?'<b>Último:</b> '+e.fecha+' · '+(e.ok?'':'<span style="color:#9b1c1c">error · </span>')+String(e.msg||'').replace(/</g,'&lt;'):'Aún no se ha enviado desde aquí.')+
+      (r.semanaEnviada?'<br>El informe de esta semana ya salió a la lista.':'');
+    return r; }).catch(()=>{ $e('exEstado').textContent='No se pudo consultar el estado (sin conexión con el backend).'; });
+  const abrir=()=>{ mb.classList.add('open'); confirmar=false; $e('exLista').textContent='Enviar a la lista'; pinta(''); estado(); setTimeout(()=>$e('exPin').focus(),50); };
+  const cerrar=()=>{ mb.classList.remove('open'); if(sondeo){ clearInterval(sondeo); sondeo=null; } };
+  const enviar=modo=>{
+    const pin=$e('exPin').value.trim(); if(!pin){ pinta('Escriba el PIN.','#9b1c1c'); $e('exPin').focus(); return; }
+    if(modo==='lista' && !confirmar){ confirmar=true; $e('exLista').textContent='Confirmar envío a la lista'; pinta('Va a las coordinaciones de farmacia (PARA y CC de CONFIG_ALERTAS). Pulse de nuevo para confirmar.','#7a4a00'); return; }
+    confirmar=false; $e('exLista').textContent='Enviar a la lista'; pinta('Enviando el pedido…');
+    jsonp(CALC_URL,{accion:'exis_enviar',modo:modo,pin:pin},30000).then(r=>{
+      if(!r||!r.ok){ pinta((r&&r.error)||'El backend no respondió como se esperaba.','#9b1c1c'); return; }
+      pinta(r.yaEnCola?'Ya hay un envío en preparación; espere a que termine.':(modo==='lista'?'Listo: el informe se está armando y sale a la lista en un par de minutos.':'Listo: la prueba se está armando y le llega en un par de minutos.'),'#1d5a27');
+      if(sondeo) clearInterval(sondeo); let n=0; sondeo=setInterval(()=>{ if(++n>30){ clearInterval(sondeo); sondeo=null; return; } estado().then(x=>{ if(x&&!x.enCola){ clearInterval(sondeo); sondeo=null; } }); },10000);
+    }).catch(()=>pinta('No se pudo contactar al backend. Revise la conexión e intente de nuevo.','#9b1c1c'));
+  };
+  $e('btnExis').addEventListener('click',abrir); $e('exCerrar').addEventListener('click',cerrar);
+  mb.addEventListener('click',e=>{ if(e.target===mb) cerrar(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&mb.classList.contains('open')) cerrar(); });
+  $e('exPrueba').addEventListener('click',()=>enviar('prueba')); $e('exLista').addEventListener('click',()=>enviar('lista'));
+  $e('exPin').addEventListener('keydown',e=>{ if(e.key==='Enter') enviar('prueba'); });
 })();
 </script>
 </body>
