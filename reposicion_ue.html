@@ -98,6 +98,54 @@ tbody tr{cursor:pointer} tbody tr:hover td{background:#f4f7fb}
 .mini-btn{font:inherit;font-size:10.5px;font-weight:700;border:1px solid var(--azul2);background:#fff;color:var(--azul2);border-radius:3px;padding:0 6px;cursor:pointer;line-height:17px}
 .mini-btn:hover{background:var(--azul2);color:#fff}
 .chip.tr{background:#d6efdc;color:#1f6b36;font-weight:600}.chip.tr.atr{background:#fbe8c8;color:#8a5a1a}
+/* ===== 10-oct-2026 · vista inicial con mapa + tabla (mismo patrón del Kanban) ===== */
+.ini-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.seg{display:inline-flex;border:1px solid var(--borde);border-radius:4px;overflow:hidden;background:#fff}
+.seg button{font:inherit;font-size:12.5px;border:0;border-right:1px solid var(--borde);background:#fff;color:var(--tinta);padding:5px 12px;cursor:pointer}
+.seg button:last-child{border-right:0}.seg button.on{background:var(--azul2);color:#fff;font-weight:600}
+.ikpis{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.ikpi{background:var(--bg);border-radius:4px;padding:3px 10px;font-size:11px;line-height:1.25;min-width:96px}
+.ikpi b{display:block;font-family:Consolas,monospace;font-size:15px;color:var(--c,var(--tinta))}
+.ini-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.22fr);gap:10px;min-height:520px}
+@media(max-width:1000px){.ini-main{grid-template-columns:minmax(0,1fr);height:auto!important}.ini-main .ipn{height:560px}}
+@media(max-width:600px){#selUE{min-width:0!important;width:100%}.barra .campo{max-width:100%;min-width:0}.ikpis{margin-left:0}}
+.ipn{background:var(--papel);border:1px solid var(--borde);display:flex;flex-direction:column;min-height:0}
+.iph{display:flex;align-items:baseline;gap:8px;padding:7px 12px;border-bottom:1px solid #e3e6ea}
+.iph h3{margin:0;font-size:14px;color:var(--azul2)}.iph .d{font-size:11.5px;color:var(--gris)}
+#rmMapa{flex:1;min-height:0;background:#eef3f7}
+#rmMapa .leaflet-container{font:12px "Segoe UI",Arial,sans-serif}
+.rm-ley{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:6px 12px;font-size:11px;color:var(--gris);border-top:1px solid #e3e6ea}
+.rm-ley i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-2px;border:1.5px solid}
+.rm-hub{width:14px;height:14px;background:#0C447C;border:2px solid #fff;box-shadow:0 0 0 1px #0C447C;transform:rotate(45deg)}
+.leaflet-tooltip.rm-lab{background:rgba(255,255,255,.9);border:0;box-shadow:none;padding:0 4px;font:700 10.5px "Segoe UI",Arial,sans-serif;color:#0C447C}
+.leaflet-tooltip.rm-lab:before{display:none}
+.rm-pop .leaflet-popup-content{margin:8px 10px;font-size:11.5px;min-width:200px;max-width:250px}
+.rm-pop h4{margin:0 16px 1px 0;color:var(--azul2);font-size:12.5px;line-height:1.25}.rm-pop .g{display:grid;grid-template-columns:1fr auto;gap:0 14px;margin:4px 0 6px;line-height:1.35}
+.rm-pop .g span:nth-child(even){font-family:Consolas,monospace;font-weight:700;text-align:right}
+.itw{flex:1;overflow:auto;min-height:0}
+.it th{background:var(--p-azul);white-space:normal;font-size:11.5px;padding:4px 6px;line-height:1.2;vertical-align:bottom} .it th small{font-size:9.5px} .it td{vertical-align:middle}
+.it tr.sel>td{background:#e3edf8!important}
+.it tr.det>td{background:#f7f9fc;padding:8px 10px 10px;cursor:default}
+.it .ue{min-width:210px}.it .ue b{color:var(--azul2)} .it .ue small{display:block;color:var(--gris);font-size:10.5px;line-height:1.2}.it .ue .chip{font-size:9.5px;padding:0 4px;vertical-align:1px}
+.it td{padding:4px 7px}
+.pct{display:inline-block;min-width:46px;text-align:center;font-family:Consolas,monospace;font-weight:700;font-size:11.5px;padding:1px 6px;border-radius:3px}
+.pct.rojo{background:#f6d5d1;color:#a23224}.pct.ambar{background:#fbe8c8;color:#8a5a1a}.pct.verde{background:#d6efdc;color:#1f6b36}.pct.gris{background:#e2e5e9;color:#5f6b78}
+.top10{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1px solid #dfe3e8}
+.top10 td{padding:4px 7px;border-bottom:1px solid #eef0f3;cursor:pointer}.top10 tr:hover td{background:#eef4fb}
+.det-cab{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px}
+/* renglón: navegación y proyección */
+.rxnav{display:inline-flex;align-items:center;gap:4px}.rxnav .nota{min-width:96px;text-align:center}
+.rxnav button{min-height:26px;padding:2px 10px}
+.gcab{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px;color:var(--gris)}
+.gcab .seg button{font-size:11.5px;padding:3px 10px}
+/* más aire: tarjetas y pasos usan la altura disponible */
+.kpi{padding:8px 12px}.kpi .v{font-size:20px}.kpi .l{font-size:11px}
+.hoy .cel{min-height:68px;padding:6px 10px}.hoy .cel .v{font-size:19px}.hoy .frase{font-size:13.5px;padding:8px 12px}
+.hoy .cel .u{display:block;margin-left:0;font-size:10.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.calc{align-items:stretch}#colIzq{display:flex;flex-direction:column}
+#colIzq .paso{flex:1 1 auto;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 12px}
+.sen{margin:6px 0;grid-template-columns:165px 1fr 80px}.ctl{margin:8px 0}.res .v{font-size:17px}.res div{padding:7px 10px}
+.diagl{display:grid;grid-template-columns:150px 1fr;gap:8px 14px;align-items:start;font-size:13px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -248,22 +296,139 @@ function ajusteDe(u,c){ const a=ajustes(); return a[u]&&a[u][c]||null; }
 function guardarAjuste(u,c,aj){ const a=ajustes(); a[u]=a[u]||{}; if(aj) a[u][c]=aj; else delete a[u][c]; try{ localStorage.setItem(AJK,JSON.stringify(a)); }catch(e){} }
 function zDe(ns){ return {85:1.04,90:1.28,95:1.65,97.5:1.96,99:2.33}[ns]||1.28; }
 
-/* ---------- inicio (sin unidad) ---------- */
+/* ---------- inicio (sin unidad) · 10-oct-2026: mapa + tabla, mismo patrón del Kanban ---------- */
+const NOMC={'CEDIS PANAMA':'CEDIS Panamá','CEDIS DIVISA':'CEDIS Divisa','CEDIS CHIRIQUI':'CEDIS Chiriquí'};
+const RM={mapa:null,capa:null,lineas:null,coord:null,poli:null,cargando:null,mk:{},
+  PORTAL:'https://torredecontrolcss.github.io/SIGUELO_DINALOG/',
+  HUB:{'CEDIS PANAMA':[9.05473,-79.42908],'CEDIS DIVISA':[8.128,-80.682],'CEDIS CHIRIQUI':[8.43,-82.43]},
+  PAIS:[[7.15,-83.05],[9.65,-77.15]],
+  /* Unidades que no están en ue_coordenadas.json del portal (coordenadas dadas por Diego, 10-oct-2026).
+     Se agregan aquí y no en el archivo compartido, para no alterar el cruce de nombres del Kanban. */
+  EXTRA:{'ULAPS N. VEDADO':{lat:8.429980872854221,lng:-82.42424717645503,nombre:'ULAPS Nuevo Vedado (David)'},
+    'ULAPS LAS TABLAS':{lat:9.546000143733288,lng:-82.73865199593253,nombre:'ULAPS Señor Juan Aguilar · Las Tablas, Guabito (Bocas del Toro)'},
+    'Policlínica Dr. Rodrigo Hidalgo González':{lat:8.405715810587925,lng:-82.43306528520422,nombre:'Policlínica Especializada Dr. Rodrigo Hidalgo González (David)'}}};
+st.ini={ced:'',sel:'',sort:{k:'pp',d:-1}};
+/* % de los renglones con dato que deben pedir (críticos + pedir ya) → semáforo del mapa y de la tabla */
+const pctPP=x=>{ const base=(x.tot||0)-(x.s||0); return base>0?((x.r||0)+(x.a||0))/base:null; };
+const clsPct=v=>v==null?'gris':v>=0.5?'rojo':v>=0.3?'ambar':'verde';
+const COLP={rojo:['#f6d5d1','#c0392b'],ambar:['#fbe8c8','#b7791f'],verde:['#d6efdc','#2e7d32'],gris:['#e2e5e9','#8a939d']};
+const ULT='rue_ultima_ue';
+function ultimaUE(){ try{ const u=localStorage.getItem(ULT); return u&&B.idx&&B.idx.ues.some(x=>x.ue===u)?u:''; }catch(e){ return ''; } }
+function listaIni(){ return B.res&&B.res.ues? B.res.ues : B.idx.ues.map(x=>({ue:x.ue,cedis:x.cedis,tot:x.renglones,r:null,a:null,p:null,v:null,s:null,nuevos:0})); }
+function rmCargar(){
+  if(RM.cargando) return RM.cargando;
+  if(!document.getElementById('rmLeafCss')){ const lk=document.createElement('link'); lk.id='rmLeafCss'; lk.rel='stylesheet'; lk.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(lk); }
+  const leaf=new Promise((res,rej)=>{ if(window.L&&window.L.map) return res(); const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; s.onload=res; s.onerror=()=>rej(new Error('no se pudo cargar el mapa')); document.head.appendChild(s); });
+  const poli=new Promise(res=>{ if(typeof PROVINCIAS_POLIGONOS!=='undefined') return res(); const s=document.createElement('script'); s.src=RM.PORTAL+'polygons_provincias.js'; s.onload=res; s.onerror=res; document.head.appendChild(s); });
+  const coord=fetch(RM.PORTAL+'ue_coordenadas.json?t='+Math.floor(Date.now()/60000)).then(r=>r.ok?r.json():{ue:{}}).catch(()=>({ue:{}}));
+  RM.cargando=Promise.all([leaf,coord,poli]).then(r=>{ RM.coord=Object.assign({},RM.EXTRA,(r[1]&&r[1].ue)||{}); try{ RM.poli=PROVINCIAS_POLIGONOS; }catch(e){ RM.poli=[]; } }).catch(e=>{ RM.cargando=null; throw e; });
+  return RM.cargando;
+}
+const xyDe=u=>RM.coord&&RM.coord[u]?[RM.coord[u].lat,RM.coord[u].lng]:null;
 function inicio(){
   $('campoBus').style.display='none'; $('btnInicio').style.display='none';
   try{ history.replaceState(null,'',location.pathname); }catch(e){}
-  const grupos={'CEDIS PANAMA':[],'CEDIS DIVISA':[],'CEDIS CHIRIQUI':[]};
-  const lista=B.res&&B.res.ues? B.res.ues : B.idx.ues.map(x=>({ue:x.ue,cedis:x.cedis,tot:x.renglones,r:null}));
-  lista.forEach(x=>(grupos[x.cedis]||(grupos[x.cedis]=[])).push(x));
-  const NOM={'CEDIS PANAMA':'CEDIS Panamá','CEDIS DIVISA':'CEDIS Divisa','CEDIS CHIRIQUI':'CEDIS Chiriquí'};
-  let h='<div class="panel"><div class="nota" style="margin-bottom:8px">Elija su unidad en la lista de arriba o tóquela aquí. Las unidades están agrupadas por el CEDIS que las abastece y ordenadas por renglones que deben pedir.'+(B.res?'':' (El resumen de estados se está generando; mientras tanto se muestran solo los nombres.)')+'</div>'+(B.res?'<div class="leyenda" style="margin:0 0 8px"><span><i style="background:#c0392b"></i>Críticos</span><span><i style="background:#b7791f"></i>Pedir ya</span><span><i style="background:#c9a227"></i>Pedir pronto</span><span><i style="background:#2e7d32"></i>Con cobertura</span><span>· la cifra a la derecha: renglones que deben pedir hoy</span></div>':'')+'<div class="cedcols">';
-  Object.keys(grupos).forEach(ce=>{ const g=grupos[ce].sort((x,y)=>((y.r||0)+(y.a||0))-((x.r||0)+(x.a||0))||x.ue.localeCompare(y.ue)); const tr=g.reduce((s,x)=>s+(x.r||0)+(x.a||0),0);
-    h+='<div class="cedcol"><h3>'+(NOM[ce]||ce)+'</h3><div class="nota">'+g.length+' unidad'+(g.length===1?'':'es')+(B.res?' · '+fmt(tr)+' renglones por pedir':'')+'</div>'+
-      g.map(x=>{ const t=Math.max(1,x.tot||1); return '<button class="uerow" data-u="'+esc(x.ue)+'"><span><b style="color:#1E5A9E">'+esc(x.ue)+'</b></span>'+
-        (x.r==null?'<span></span><span></span>':'<span class="mini" title="Críticos '+x.r+' · Pedir ya '+x.a+' · Pronto '+x.p+' · Con cobertura '+x.v+'"><i style="width:'+x.r/t*100+'%;background:#c0392b"></i><i style="width:'+x.a/t*100+'%;background:#b7791f"></i><i style="width:'+x.p/t*100+'%;background:#c9a227"></i><i style="width:'+x.v/t*100+'%;background:#2e7d32"></i></span><span class="num" style="text-align:right;color:#c0392b;font-weight:700">'+(x.r+x.a)+'</span>')+'</button>'; }).join('')+'</div>'; });
-  h+='</div></div>';
+  if(RM.mapa){ try{ RM.mapa.remove(); }catch(e){} RM.mapa=null; }
+  const L0=listaIni(), I=st.ini;
+  let h='<div class="ini-top"><div class="seg" id="iCed" role="group" aria-label="Filtrar por CEDIS">'+
+      [['','Todas las unidades'],['CEDIS PANAMA','CEDIS Panamá'],['CEDIS DIVISA','CEDIS Divisa'],['CEDIS CHIRIQUI','CEDIS Chiriquí']].map(c=>'<button data-c="'+c[0]+'"'+(I.ced===c[0]?' class="on"':'')+'>'+c[1]+'</button>').join('')+'</div>'+
+      (ultimaUE()?'<button class="btn azul" id="iUlt" style="min-height:28px;padding:3px 12px" title="La última unidad que abrió en este navegador">Abrir mi unidad: '+esc(ultimaUE())+' ›</button>':'')+
+      '<button class="btn" id="iLimpiar" style="min-height:28px;padding:3px 10px'+(I.sel?'':';display:none')+'">✕ Quitar selección</button>'+
+      '<div class="ikpis" id="iKpis"></div></div>'+
+    '<div class="ini-main" id="iniMain"><div class="ipn"><div class="iph"><h3>Dónde están las unidades</h3><span class="d" id="iMapD"></span></div><div id="rmMapa" role="img" aria-label="Mapa de las Unidades Ejecutoras"><div class="nota" style="padding:14px">Cargando el mapa…</div></div>'+
+      '<div class="rm-ley"><span><i style="background:'+COLP.rojo[0]+';border-color:'+COLP.rojo[1]+'"></i>50% o más por pedir</span><span><i style="background:'+COLP.ambar[0]+';border-color:'+COLP.ambar[1]+'"></i>30% a 49%</span><span><i style="background:'+COLP.verde[0]+';border-color:'+COLP.verde[1]+'"></i>menos de 30%</span><span><i style="background:#0C447C;border-color:#0C447C;border-radius:1px;transform:rotate(45deg);width:9px;height:9px"></i>CEDIS</span><span>· tamaño: renglones por pedir</span></div></div>'+
+    '<div class="ipn"><div class="iph"><h3>Unidades Ejecutoras</h3><span class="d" id="iTabD"></span></div><div class="itw" id="iTw"></div><div class="rm-ley" id="iNota"></div></div></div>';
   $('main').innerHTML=h;
-  $('main').querySelectorAll('.uerow').forEach(r=>r.onclick=()=>abrirUE(r.dataset.u));
+  $('iCed').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; I.ced=b.dataset.c; if(I.sel&&I.ced){ const x=L0.find(y=>y.ue===I.sel); if(x&&x.cedis!==I.ced) I.sel=''; }
+    $('iCed').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.c===I.ced)); iniTabla(); rmDibujar(); rmEncuadrar(); };
+  if($('iUlt')) $('iUlt').onclick=()=>abrirUE(ultimaUE());
+  $('iLimpiar').onclick=()=>{ I.sel=''; $('iLimpiar').style.display='none'; iniTabla(); rmDibujar(); rmEncuadrar(); };
+  iniAltura(); iniTabla();
+  rmCargar().then(()=>{ if(!$('rmMapa')||st.ue) return; rmIniciar(); }).catch(()=>{ if($('rmMapa')) $('rmMapa').innerHTML='<div class="nota" style="padding:14px">No se pudo cargar el mapa (revise la conexión). La tabla funciona igual.</div>'; });
+}
+function iniAltura(){ const m=$('iniMain'); if(!m) return; const top=m.getBoundingClientRect().top+window.scrollY; m.style.height=Math.max(520,window.innerHeight-top-14)+'px'; if(RM.mapa) RM.mapa.invalidateSize(); }
+window.addEventListener('resize',()=>{ if(!st.ue) iniAltura(); });
+/* Totales arriba: siguen al filtro de CEDIS */
+function iniKpis(){ const k=$('iKpis'); if(!k||!B.res) return; const f=iniFiltradas(), sum=c=>f.reduce((a,x)=>a+(x[c]||0),0);
+  const kp=(t,v,bg,c)=>'<div class="ikpi" style="--bg:'+bg+';--c:'+c+'">'+t+'<b>'+fmt(v)+'</b></div>';
+  k.innerHTML=kp('Unidades',f.length,'#e6edf5','#0C447C')+kp('Críticos',sum('r'),EST.rojo.bg,EST.rojo.c)+kp('Pedir ya',sum('a'),EST.ambar.bg,EST.ambar.c)+kp('Pedir pronto',sum('p'),EST.pronto.bg,EST.pronto.c)+kp('Con cobertura',sum('v'),EST.verde.bg,EST.verde.c); }
+function iniFiltradas(){ const I=st.ini; return listaIni().filter(x=>!I.ced||x.cedis===I.ced); }
+function iniTabla(){
+  const I=st.ini, S=I.sort, f=iniFiltradas(); iniKpis(); if($('iLimpiar')) $('iLimpiar').style.display=I.sel?'':'none';
+  const val={ue:x=>x.ue,r:x=>x.r||0,a:x=>x.a||0,p:x=>x.p||0,v:x=>x.v||0,s:x=>x.s||0,pp:x=>(x.r||0)+(x.a||0),pct:x=>pctPP(x)==null?-1:pctPP(x)}[S.k];
+  f.sort((a,b)=>{ const A=val(a),Bv=val(b); return (A<Bv?-1:A>Bv?1:0)*S.d || ((b.r||0)+(b.a||0))-((a.r||0)+(a.a||0)) || a.ue.localeCompare(b.ue); });
+  const th=(k,t,sub,n)=>'<th'+(n?' class="n"':'')+' data-s="'+k+'" title="Ordenar">'+t+(S.k===k?(S.d>0?' ▲':' ▼'):'')+(sub?'<small>'+sub+'</small>':'')+'</th>';
+  let h='<table class="it"><thead><tr>'+th('ue','Unidad Ejecutora',I.ced?NOMC[I.ced]:'y el CEDIS que la abastece')+th('r','Críticos','',1)+th('a','Pedir ya','',1)+th('p','Pedir pronto','',1)+th('v','Con cobertura','',1)+th('s','Sin datos','',1)+th('pp','Por pedir','críticos + pedir ya',1)+th('pct','% por pedir','de los que tienen dato',1)+'</tr></thead><tbody>';
+  f.forEach(x=>{ const pc=pctPP(x), c=clsPct(pc), sel=I.sel===x.ue;
+    h+='<tr data-u="'+esc(x.ue)+'" tabindex="0"'+(sel?' class="sel"':'')+'><td class="ue"><b>'+esc(x.ue)+'</b>'+(I.ced&&!x.nuevos?'':'<small>'+(I.ced?'':(NOMC[x.cedis]||x.cedis))+(x.nuevos?(I.ced?'':' · ')+'<span class="chip nuevo" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+x.nuevos+' nuevos hoy</span>':'')+'</small>')+'</td>'+
+      (x.r==null?'<td colspan="7" class="nota">resumen en preparación</td>':
+      '<td class="n num" style="color:'+EST.rojo.c+';font-weight:700">'+fmt(x.r)+'</td><td class="n num" style="color:'+EST.ambar.c+';font-weight:700">'+fmt(x.a)+'</td><td class="n num">'+fmt(x.p)+'</td><td class="n num">'+fmt(x.v)+'</td><td class="n num" style="color:var(--gris)">'+fmt(x.s)+'</td>'+
+      '<td class="n num" style="font-weight:700;color:#0C447C">'+fmt((x.r||0)+(x.a||0))+'</td><td class="n"><span class="pct '+c+'">'+(pc==null?'·':Math.round(pc*100)+'%')+'</span></td>')+'</tr>'+
+      (sel?'<tr class="det"><td colspan="8" id="iDet"><div class="nota">Cargando los renglones de la unidad…</div></td></tr>':'');
+  });
+  h+='</tbody></table>';
+  $('iTw').innerHTML=h;
+  $('iTabD').textContent=f.length+' unidad'+(f.length===1?'':'es')+' · '+fmt(f.reduce((s,x)=>s+(x.r||0)+(x.a||0),0))+' renglones por pedir · cifras en renglones';
+  $('iTw').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{ const k=t.dataset.s; I.sort={k:k,d:S.k===k?-S.d:(k==='ue'?1:-1)}; iniTabla(); });
+  $('iTw').querySelectorAll('tr[data-u]').forEach(tr=>{ const go=()=>iniElegir(tr.dataset.u,true); tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
+  const sinXY=RM.coord?f.filter(x=>!xyDe(x.ue)).map(x=>x.ue):[];
+  $('iNota').innerHTML='Toque una unidad para ubicarla en el mapa y ver sus 10 renglones más urgentes.'+(sinXY.length?' <span title="Faltan sus coordenadas en ue_coordenadas.json">· Sin ubicación en el mapa: '+sinXY.map(esc).join(', ')+'</span>':'');
+  if(I.sel) iniDetalle(I.sel);
+}
+function iniElegir(u,desdeTabla){
+  const I=st.ini; I.sel=I.sel===u&&desdeTabla?'':u; $('iLimpiar').style.display=I.sel?'':'none';
+  iniTabla(); rmDibujar();
+  if(I.sel){ const tr=$('iTw').querySelector('tr.sel'), tw=$('iTw'); if(tr){ const th=tw.querySelector('thead'); tw.scrollTo({top:Math.max(0,tr.offsetTop-(th?th.offsetHeight:0)),behavior:'smooth'}); } rmIr(I.sel); } else rmEncuadrar();
+}
+async function iniDetalle(u){
+  const x=listaIni().find(y=>y.ue===u);
+  try{ await cargarUEDatos(u); }catch(e){ if($('iDet')) $('iDet').innerHTML='<div class="nota">No se pudieron cargar los renglones ('+esc(e.message)+').</div>'; return; }
+  if(st.ini.sel!==u||!$('iDet')) return;
+  const F=calcUE(u,st.p), urg=F.filter(z=>z.r.estado==='rojo'||z.r.estado==='ambar').sort((a,b)=>EST[a.r.estado].o-EST[b.r.estado].o||b.r.pedir-a.r.pedir), top=urg.slice(0,10);
+  let h='<div class="det-cab"><b style="color:#0C447C">Los '+top.length+' renglones más urgentes</b><span class="nota">de '+fmt(urg.length)+' por pedir · ordenados por estado y cantidad a pedir · toque uno para abrir su calculadora</span><button class="btn azul" id="iAbrir" style="margin-left:auto;min-height:28px">Abrir la unidad completa ›</button></div>';
+  h+=top.length?'<table class="top10"><tbody>'+top.map(z=>'<tr data-c="'+z.c+'"><td style="width:86px"><span class="tag t-'+z.r.estado+'">'+EST[z.r.estado].t+'</span></td><td><b class="mono">'+z.c+'</b>'+(vit(z.c)?' <span class="chip vital">VITAL</span>':'')+' <span class="desc">'+esc(nom(z.c).slice(0,60))+'</span></td><td class="n num" title="Saldo hoy">'+fmt(z.saldo)+'</td><td class="n num" style="font-weight:700;color:#0C447C" title="Pedir">'+fmt(z.r.pedir)+'</td></tr>').join('')+'</tbody></table><div class="nota" style="margin-top:3px">Columnas: estado · renglón · saldo hoy · cantidad a pedir (unidades)</div>':'<div class="nota">Esta unidad no tiene renglones por pedir hoy.</div>';
+  $('iDet').innerHTML=h;
+  $('iAbrir').onclick=()=>abrirUE(u);
+  $('iDet').querySelectorAll('tr[data-c]').forEach(r=>r.onclick=()=>abrirUE(u,r.dataset.c));
+}
+function rmIniciar(){
+  const box=$('rmMapa'); box.innerHTML='';
+  const m=RM.mapa=L.map(box,{zoomControl:true,attributionControl:true,minZoom:6,maxZoom:16});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenStreetMap'}).addTo(m);
+  (RM.poli||[]).forEach(pp=>{ try{ L.geoJSON(pp.geometry,{style:{color:'#8aa4bf',weight:1,fill:false},interactive:false}).addTo(m); }catch(e){} });
+  RM.lineas=L.layerGroup().addTo(m); RM.capa=L.layerGroup().addTo(m);
+  Object.keys(RM.HUB).forEach(k=>L.marker(RM.HUB[k],{icon:L.divIcon({className:'',iconSize:[16,16],iconAnchor:[8,8],html:'<div class="rm-hub"></div>'}),zIndexOffset:1000,interactive:false}).addTo(m).bindTooltip(NOMC[k],{permanent:true,direction:'right',offset:[8,0],className:'rm-lab'}));
+  rmEncuadrar(true); rmDibujar(); iniTabla();
+  if(st.ini.sel) rmIr(st.ini.sel);
+}
+function rmEncuadrar(sinAnim){
+  if(!RM.mapa) return; const I=st.ini; let b;
+  if(!I.ced){ const pts=listaIni().map(x=>xyDe(x.ue)).filter(Boolean).concat(Object.values(RM.HUB)); b=pts.length?L.latLngBounds(pts).pad(0.04):RM.PAIS; } else { const pts=iniFiltradas().map(x=>xyDe(x.ue)).filter(Boolean).concat([RM.HUB[I.ced]]); b=L.latLngBounds(pts).pad(0.08); }
+  if(sinAnim) RM.mapa.fitBounds(b,{padding:[18,18]}); else RM.mapa.flyToBounds(b,{padding:[18,18],duration:.6});
+  $('iMapD').textContent=I.ced?NOMC[I.ced]+' y sus unidades':'País · las 3 redes de CEDIS';
+}
+function rmDibujar(){
+  if(!RM.mapa) return; RM.capa.clearLayers(); RM.lineas.clearLayers(); RM.mk={};
+  const I=st.ini, f=iniFiltradas(), mx=Math.max(1,...f.map(x=>(x.r||0)+(x.a||0)));
+  f.slice().sort((a,b)=>((b.r||0)+(b.a||0))-((a.r||0)+(a.a||0))).forEach(x=>{ const xy=xyDe(x.ue); if(!xy) return;
+    const pp=(x.r||0)+(x.a||0), c=COLP[clsPct(pctPP(x))], sel=I.sel===x.ue, r=5+13*Math.sqrt(pp/mx);
+    if(I.ced||sel) L.polyline([RM.HUB[x.cedis]||RM.HUB['CEDIS PANAMA'],xy],{color:sel?'#1E5A9E':'#7f93a8',weight:sel?3:1,opacity:sel?.9:.35,dashArray:sel?null:'3 5',interactive:false}).addTo(RM.lineas);
+    const mk=L.circleMarker(xy,{radius:r,fillColor:c[0],fillOpacity:.92,color:sel?'#0C447C':c[1],weight:sel?3.5:1.6}).addTo(RM.capa);
+    mk.bindTooltip('<b>'+esc(x.ue)+'</b><br>'+(x.r==null?'':fmt(pp)+' por pedir · '+fmt(x.r)+' críticos'),{direction:'top',offset:[0,-r]});
+    mk.on('click',()=>iniElegir(x.ue,false)); RM.mk[x.ue]=mk;
+    if(sel) mk.bindTooltip(esc(x.ue),{permanent:true,direction:'right',offset:[r+2,0],className:'rm-lab'}).openTooltip();
+  });
+}
+function rmIr(u){
+  if(!RM.mapa) return; const xy=xyDe(u), x=listaIni().find(y=>y.ue===u); if(!xy||!x) return;
+  const pp=(x.r||0)+(x.a||0), pc=pctPP(x);
+  const nf=RM.EXTRA[u]&&RM.EXTRA[u].nombre;
+  const pop='<div><h4>'+esc(u)+'</h4>'+(nf?'<div class="nota" style="font-style:italic">'+esc(nf)+'</div>':'')+'<div class="nota">'+(NOMC[x.cedis]||x.cedis)+' · '+fmt(x.tot)+' renglones</div><div class="g">'+
+    '<span style="color:'+EST.rojo.c+'">Críticos</span><span>'+fmt(x.r)+'</span><span style="color:'+EST.ambar.c+'">Pedir ya</span><span>'+fmt(x.a)+'</span><span>Pedir pronto</span><span>'+fmt(x.p)+'</span><span style="color:'+EST.verde.c+'">Con cobertura</span><span>'+fmt(x.v)+'</span><span>Sin datos</span><span>'+fmt(x.s)+'</span>'+
+    '<span><b>Por pedir</b></span><span>'+fmt(pp)+(pc==null?'':' · '+Math.round(pc*100)+'%')+'</span>'+(x.nuevos?'<span>Nuevos hoy</span><span>'+x.nuevos+'</span>':'')+'</div><button class="btn azul" id="popAbrir" style="width:100%;min-height:28px">Abrir la unidad ›</button></div>';
+  const hub=RM.HUB[x.cedis]||RM.HUB['CEDIS PANAMA'];
+  RM.mapa.once('moveend',()=>{ if(st.ini.sel!==u) return; L.popup({className:'rm-pop',offset:[0,-6],autoPan:true,maxWidth:300}).setLatLng(xy).setContent(pop).openOn(RM.mapa); const b=$('popAbrir'); if(b) b.onclick=()=>abrirUE(u); });
+  RM.mapa.flyToBounds(L.latLngBounds([xy,hub]).pad(0.25),{maxZoom:13,duration:.7,paddingTopLeft:[20,150],paddingBottomRight:[20,20]});
 }
 /* ---------- vista de la unidad ---------- */
 async function abrirUE(u,cod){
@@ -272,19 +437,25 @@ async function abrirUE(u,cod){
   try{ await cargarUEDatos(u); }catch(e){ $('main').innerHTML='<div class="panel">No se pudieron cargar los datos de la unidad ('+esc(e.message)+'). <button class="btn" id="reUE">Reintentar</button></div>'; $('reUE').onclick=()=>abrirUE(u,cod); return; }
   if(st.ue!==u) return;
   try{ history.replaceState(null,'','?ue='+encodeURIComponent(u)); }catch(e){}
+  try{ localStorage.setItem(ULT,u); }catch(e){}
   if(cod) st.cod=cod; FILAS=calcUE(u,st.p); vistaUE(); }
-function vistaUE(){
-  if(st.cod) return vistaRenglon();
+/* La lista tal como la ve el usuario (filtro, búsqueda y orden): la usan la tabla y «Siguiente renglón». */
+function listaUE(){
   const q=st.q.toLowerCase();
-  let f=FILAS.filter(x=>(!st.filtro||x.r.estado===st.filtro)&&(!q||x.c.indexOf(q)>=0||nom(x.c).toLowerCase().indexOf(q)>=0));
+  let f=FILAS.filter(x=>(!st.vit||vit(x.c))&&(!st.filtro||x.r.estado===st.filtro)&&(!q||x.c.indexOf(q)>=0||nom(x.c).toLowerCase().indexOf(q)>=0));
   const S=st.sortUE||{k:'imp',d:1}, val={imp:x=>EST[x.r.estado].o*1e12-x.r.pedir, est:x=>EST[x.r.estado].o, c:x=>x.c, saldo:x=>x.saldo, d:x=>x.b.d||0, diag:x=>DIAG[x.b.diag][0],
     rop:x=>x.r.ROP||0, dias:x=>x.r.diasAROP==null?1e9:x.r.diasAROP, pend:x=>x.r.pend||0, pedir:x=>x.r.pedir||0}[S.k];
   f.sort((a,b)=>{ const A=val(a),Bv=val(b); return (A<Bv?-1:A>Bv?1:0)*S.d || EST[a.r.estado].o-EST[b.r.estado].o || b.r.pedir-a.r.pedir; });
+  return f;
+}
+function vistaUE(){
+  if(st.cod) return vistaRenglon();
+  const f=listaUE(), S=st.sortUE||{k:'imp',d:1};
   const th=(k,t,sub,n)=>'<th'+(n?' class="n"':'')+' data-s="'+k+'" title="Ordenar">'+t+(S.k===k?(S.d>0?' ▲':' ▼'):'')+(sub?'<small>'+sub+'</small>':'')+'</th>';
-  const cnt={}; FILAS.forEach(x=>cnt[x.r.estado]=(cnt[x.r.estado]||0)+1); const nNuevos=FILAS.filter(x=>x.nuevo).length;
+  const base=FILAS.filter(x=>!st.vit||vit(x.c)), cnt={}; base.forEach(x=>cnt[x.r.estado]=(cnt[x.r.estado]||0)+1); const nNuevos=base.filter(x=>x.nuevo).length, nVit=FILAS.filter(x=>vit(x.c)).length;
   let h='<div class="kpis">'+['rojo','ambar','pronto','verde','sin'].map(k=>'<button class="kpi'+(st.filtro===k?' on':'')+'" data-k="'+k+'" style="--bg:'+EST[k].bg+'"><span class="v" style="color:'+EST[k].c+'">'+fmt(cnt[k]||0)+'</span><span class="l">'+EST[k].t+' · '+EST[k].l+'</span></button>').join('')+
-    (nNuevos?'<span class="chip nuevo" style="align-self:center" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+nNuevos+' nuevos hoy</span>':'')+'<button class="btn verde" id="btnPre" style="flex:0 0 auto">Descargar pre-pedido</button></div>';
-  h+='<div class="tw"><table><thead><tr>'+th('est','Estado')+th('c','Renglón')+th('saldo','Saldo hoy','unidades',1)+th('d','Demanda / mes','unidades · base del cálculo',1)+th('diag','Calidad de la señal','diagnóstico')+th('rop','Línea de pedido','unidades',1)+th('dias','Días para la línea de pedido','días que faltan',1)+th('pend','Por recibir','F8 recientes, unidades',1)+th('pedir','Pedir','unidades',1)+'</tr></thead><tbody>';
+    (nNuevos?'<span class="chip nuevo" style="align-self:center" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+nNuevos+' nuevos hoy</span>':'')+'<button class="btn'+(st.vit?' azul':'')+'" id="btnVit" style="flex:0 0 auto;align-self:center" aria-pressed="'+(st.vit?'true':'false')+'" title="Mostrar solo los renglones vitales">'+(st.vit?'✓ ':'')+'Solo vitales ('+fmt(nVit)+')</button><button class="btn verde" id="btnPre" style="flex:0 0 auto">Descargar pre-pedido</button></div>';
+  h+='<div class="tw"><table><thead><tr>'+th('est','Estado')+th('c','Renglón')+th('saldo','Saldo hoy','unidades',1)+th('d','Demanda / mes','unidades · base del cálculo',1)+th('diag','Confiabilidad de la demanda <button class="q" id="qDiag" aria-label="Qué significa la confiabilidad de la demanda">?</button>','qué tan firme es el dato')+th('rop','Línea de pedido','unidades',1)+th('dias','Días para la línea de pedido','días que faltan',1)+th('pend','Por recibir','F8 recientes, unidades',1)+th('pedir','Pedir','unidades',1)+'</tr></thead><tbody>';
   f.slice(0,400).forEach(x=>{ const e=EST[x.r.estado];
     h+='<tr data-c="'+x.c+'" tabindex="0"><td><span class="tag t-'+x.r.estado+'">'+e.t+'</span>'+(x.nuevo?' <span class="chip nuevo" title="Cruzó la línea desde la carga anterior">nuevo hoy</span>':'')+'</td>'+
       '<td><b class="mono">'+x.c+'</b>'+(vit(x.c)?' <span class="chip vital">VITAL</span>':'')+chipTr(x.c)+'<br><span class="desc">'+esc(nom(x.c).slice(0,70))+'</span></td>'+
@@ -297,7 +468,19 @@ function vistaUE(){
   $('main').querySelectorAll('.kpi').forEach(b=>b.onclick=()=>{ st.filtro=st.filtro===b.dataset.k?'':b.dataset.k; vistaUE(); });
   $('main').querySelectorAll('tbody tr').forEach(tr=>{ const go=()=>{ st.cod=tr.dataset.c; vistaUE(); window.scrollTo(0,0); }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
   $('btnPre').onclick=()=>prePedido(st.ue);
+  $('qDiag').onclick=e=>{ e.stopPropagation(); ayudaDiag(); };
+  $('btnVit').onclick=()=>{ st.vit=!st.vit; vistaUE(); };
   $('main').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{ const k=t.dataset.s, cur=st.sortUE||{k:'imp',d:1}; st.sortUE={k:k,d:cur.k===k?-cur.d:(['saldo','d','rop','pend','pedir'].indexOf(k)>=0?-1:1)}; vistaUE(); });
+}
+/* Qué significa «Confiabilidad de la demanda»: un solo lugar, usado por la tabla y por la calculadora. */
+const DIAGX={confiable:'La demanda es firme. Puede pedir con la cantidad sugerida.',divergente:'Revise que su reporte de consumo esté al día: la cantidad sugerida puede cambiar cuando las señales se acerquen.',
+  presion:'La cantidad sugerida no sigue a las Formas 8, sino al consumo. Si su consumo real subió, actualice su reporte de consumo.',truncado:'El inventario estuvo agotado y no se pudo medir el consumo real. Confirme la cantidad con su consumo histórico antes de pedir.',
+  una:'Hay poca información: valide la cantidad antes de pedir.',sin:'No se calcula un pedido. Si el renglón se usa, actualice su reporte de consumo.'};
+function ayudaDiag(){
+  $('modalC').innerHTML='<div class="top"><h2>Confiabilidad de la demanda</h2><button class="btn" id="cerrarM">Cerrar</button></div>'+
+   '<p style="font-size:13.5px;margin:0 0 6px">La demanda mensual de cada renglón se estima con <b>tres señales</b>: lo que bajó su saldo (consumo observado), lo que su unidad reporta consumir (consumo reportado) y lo que pide en Formas 8. Esta columna dice <b>qué tan confiable es esa estimación</b> y, por lo tanto, la cantidad sugerida a pedir.</p>'+
+   '<div class="diagl">'+['confiable','divergente','presion','truncado','una','sin'].map(k=>'<div><span class="chip '+k+'" style="font-size:12px;padding:2px 8px">'+DIAG[k][0]+'</span></div><div>'+DIAG[k][1]+'<br><span class="nota">'+DIAGX[k]+'</span></div>').join('')+'</div>';
+  $('modalC').style.maxWidth='720px'; $('modal').classList.add('open'); $('cerrarM').onclick=()=>{ $('modal').classList.remove('open'); $('modalC').style.maxWidth=''; };
 }
 let _xls=null;
 function libXLS(){ if(window.ExcelJS) return Promise.resolve(); if(_xls) return _xls; _xls=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=res; s.onerror=()=>{ _xls=null; rej(new Error('no se pudo cargar ExcelJS')); }; document.head.appendChild(s); }); return _xls; }
@@ -322,11 +505,11 @@ function aviso(m){ const d=document.createElement('div'); d.textContent=m; d.sty
 let RX=null;
 function vistaRenglon(){
   const x=FILAS.find(f=>f.c===st.cod); if(!x){ st.cod=''; return vistaUE(); }
-  RX=x; RX.p={L:MODELO.L,cubrir:MODELO.CUBRIR};   // simulación local: no cambia la lista ni el correo
+  if(!(RX===x&&RX.p)){ RX=x; RX.p={L:MODELO.L,cubrir:MODELO.CUBRIR}; }   // simulación local: no cambia la lista ni el correo (se conserva al cambiar la vista de la curva)
   const U=B.ues[st.ue];
   const nsDef=vit(x.c)?95:90; if(!RX.ns) RX.ns=nsDef;
   const ced=B.ced[x.c]||[null,null,null], ci={'CEDIS PANAMA':0,'CEDIS DIVISA':1,'CEDIS CHIRIQUI':2}[U.cedis]||0;
-  let h='<div class="panel"><div class="cab"><h2><span class="mono">'+x.c+'</span> · '+esc(nom(x.c))+'</h2>'+(vit(x.c)?'<span class="chip vital">VITAL</span>':'')+'<span id="rxTag"></span>'+chipTr(x.c,true)+'<button class="btn" id="btnImg" style="margin-left:auto;min-height:26px;padding:2px 10px">Descargar imagen</button><button class="btn-volver" id="btnVolver" style="margin-left:0">‹ Volver a la lista</button></div>'+
+  let h='<div class="panel"><div class="cab"><h2><span class="mono">'+x.c+'</span> · '+esc(nom(x.c))+'</h2>'+(vit(x.c)?'<span class="chip vital">VITAL</span>':'')+'<span id="rxTag"></span>'+chipTr(x.c,true)+'<span class="rxnav" id="rxNav" style="margin-left:auto">'+navHTML(x.c)+'</span><button class="btn" id="btnImg" style="min-height:26px;padding:2px 10px">Descargar imagen</button><button class="btn-volver" id="btnVolver" style="margin-left:0">‹ Volver a la lista</button></div>'+
    '<div class="hoy" id="hoyRes"></div>'+
    '<div class="calc"><div id="colIzq">'+
    '<div class="paso"><h3><span>1</span>Consumo mensual de su unidad</h3><div id="p1"></div></div>'+
@@ -334,20 +517,31 @@ function vistaRenglon(){
      ctl('inL','Tiempo de entrega',5,60,1,RX.p.L,'L')+ctl('inC','Días a cubrir',15,90,5,RX.p.cubrir,'C')+ctl('inN','Nivel de servicio',0,4,1,[85,90,95,97.5,99].indexOf(RX.ns),'N')+
      '<div class="res" id="p2"></div></div>'+
    '<div class="nota">Los controles solo simulan este renglón. Pase el cursor sobre la curva para ver el detalle de cada día.</div>'+
-   '</div><div><div id="graf"></div><div class="leyenda"><span><i style="background:#1E5A9E"></i>Saldo</span><span><i style="background:#9aa3ad"></i>Si no pide</span><span><i style="background:#2e7d32"></i>Si pide hoy</span><span><i style="background:#fbe8c8"></i>Zona para pedir</span><span><i style="background:#f6d5d1"></i>Bajo el inventario crítico</span><span><i style="background:#c0392b;width:6px"></i>F8 urgencia</span><span><i style="background:#1E5A9E;width:6px"></i>F8 mensual</span></div></div></div></div>';
+   '</div><div id="colDer"><div class="gcab"><span>Curva de inventario</span><div class="seg" id="gModo" role="group" aria-label="Qué mostrar en la curva"><button data-m="0"'+(st.proy?'':' class="on"')+'>Hasta hoy</button><button data-m="1"'+(st.proy?' class="on"':'')+'>Ver proyección del pedido</button></div><button class="q" data-h="G" aria-label="Qué muestra la proyección">?</button></div><div id="graf"></div><div class="leyenda" id="gLey"><span><i style="background:#1E5A9E"></i>Saldo</span>'+(st.proy?'<span><i style="background:#9aa3ad"></i>Si no pide</span><span><i style="background:#2e7d32"></i>Si pide hoy</span>':'')+'<span><i style="background:#fbe8c8"></i>Zona para pedir</span><span><i style="background:#f6d5d1"></i>Bajo el inventario crítico</span><span><i style="background:#c0392b;width:6px"></i>F8 urgencia</span><span><i style="background:#1E5A9E;width:6px"></i>F8 mensual</span></div></div></div></div>';
   $('main').innerHTML=h;
   $('btnVolver').onclick=()=>{ st.cod=''; vistaUE(); };
+  navActivar();
+  $('gModo').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; st.proy=b.dataset.m==='1'; vistaRenglon(); };
   $('btnImg').onclick=()=>descargarImagen(x.c);
   $('main').querySelectorAll('.q').forEach(q=>q.onclick=()=>ayudaCorta(q.dataset.h));
   ['inL','inC','inN'].forEach(id=>$(id).oninput=()=>{ RX.p.L=+$('inL').value; RX.p.cubrir=+$('inC').value; RX.ns=[85,90,95,97.5,99][+$('inN').value]; actualizar(); });
   actualizar();
 }
+/* Anterior / siguiente renglón: recorre la lista tal como el usuario la tiene filtrada y ordenada. */
+function navLista(){ const l=listaUE().map(x=>x.c); return l.indexOf(st.cod)>=0?l:FILAS.slice().sort((a,b)=>EST[a.r.estado].o-EST[b.r.estado].o||b.r.pedir-a.r.pedir).map(x=>x.c); }
+function navHTML(c){ const l=navLista(), i=l.indexOf(c); return '<button class="btn" id="rxAnt"'+(i>0?'':' disabled')+' title="Renglón anterior (tecla ←)">‹ Anterior</button><span class="nota">'+(i+1)+' de '+fmt(l.length)+'</span><button class="btn azul" id="rxSig"'+(i>=0&&i<l.length-1?'':' disabled')+' title="Siguiente renglón (tecla →)">Siguiente ›</button>'; }
+function navIr(d){ const l=navLista(), i=l.indexOf(st.cod), j=i+d; if(i<0||j<0||j>=l.length) return; st.cod=l[j]; RX=null; vistaRenglon(); }
+function navActivar(){ if($('rxAnt')) $('rxAnt').onclick=()=>navIr(-1); if($('rxSig')) $('rxSig').onclick=()=>navIr(1); }
+document.addEventListener('keydown',e=>{ if(!st.cod||!$('rxNav')||$('tour').classList.contains('open')||$('modal').classList.contains('open')) return;
+  const a=document.activeElement; if(a&&(a.tagName==='INPUT'||a.tagName==='SELECT'||a.tagName==='TEXTAREA')) return;
+  if(e.key==='ArrowRight'){ e.preventDefault(); navIr(1); } else if(e.key==='ArrowLeft'){ e.preventDefault(); navIr(-1); } });
 const AYC={L:['Tiempo de entrega','Días que tarda en llegar un pedido desde que se solicita. Por defecto, 20 días.'],
   C:['Días a cubrir','Días de consumo que quiere tener cubiertos después de recibir el pedido. Por defecto, 30 días.'],
   O:['Consumo observado','Lo que bajó el saldo de su unidad en los últimos 90 días, contando solo los días en que tuvo existencia. Si estuvo en cero más de la mitad del periodo, no se usa (consumo truncado).'],
   R:['Consumo reportado','Lo que su unidad declara consumir al mes en el reporte de consumos.'],
   F:['Formas 8','Lo que su unidad pidió en Formas 8 (urgencia y mensual), promedio mensual de los últimos 90 días.'],
   D:['Demanda usada','La mediana de las señales disponibles: si una está inflada o truncada, no arrastra el resultado. Con esta demanda se calcula la línea de pedido.'],
+  G:['Hasta hoy y proyección','«Hasta hoy» muestra solo lo que ya pasó: el saldo real de su unidad hasta la última carga y sus Formas 8. «Ver proyección del pedido» agrega una estimación: cómo bajaría el saldo si no pide y cómo subiría si pide hoy, suponiendo que el pedido llega en el tiempo de entrega elegido y que el consumo sigue igual. Es una simulación, no una fecha de entrega comprometida.'],
   N:['Nivel de servicio','Probabilidad de no quedarse sin inventario mientras llega el pedido. A mayor nivel, más inventario crítico. Por defecto: 95% para vitales, 90% para el resto.']};
 function ctl(id,lbl,mn,mx,stp,val,k){ return '<div class="ctl"><label for="'+id+'">'+lbl+' <button class="q" data-h="'+k+'" aria-label="Qué es '+lbl+'">?</button></label><input type="range" id="'+id+'" min="'+mn+'" max="'+mx+'" step="'+stp+'" value="'+val+'"><b id="v'+id.slice(2)+'"></b></div>'; }
 function ayudaCorta(k){ $('modalC').innerHTML='<div class="top"><h2>'+AYC[k][0]+'</h2><button class="btn" id="cerrarM">Cerrar</button></div><p style="font-size:13.5px;max-width:520px">'+AYC[k][1]+'</p>'; $('modalC').style.maxWidth='560px'; $('modal').classList.add('open'); $('cerrarM').onclick=()=>{ $('modal').classList.remove('open'); $('modalC').style.maxWidth=''; }; }
@@ -375,8 +569,8 @@ function actualizar(){
   const mx=Math.max(1,...vals.map(v=>v[1]||0),b.d||0);
   let h1=vals.map(v=>'<div class="sen"><span>'+v[0]+' <button class="q" data-h="'+v[2]+'" aria-label="Qué es '+v[0]+'">?</button></span><div class="pista">'+(v[1]?'<i style="width:'+(v[1]/mx*100)+'%"></i>':'')+'</div><span class="val">'+(v[1]?fmt(v[1]):'sin dato')+'</span></div>').join('');
   h1+='<div class="sen base"><span class="base-lbl">Demanda usada <button class="q" data-h="D" aria-label="Qué es la demanda usada">?</button></span><div class="pista"><i style="width:'+((b.d||0)/mx*100)+'%"></i></div><span class="val base-lbl">'+(b.d?fmt(b.d):'·')+'</span></div>';
-  h1+='<div class="nota" style="margin-top:4px"><span class="chip '+b.diag+'">'+DIAG[b.diag][0]+'</span> '+DIAG[b.diag][1]+'</div>';
-  $('p1').innerHTML=h1; $('p1').querySelectorAll('.q').forEach(q=>q.onclick=()=>ayudaCorta(q.dataset.h));
+  h1+='<div class="nota" style="margin-top:4px"><span class="chip '+b.diag+'">'+DIAG[b.diag][0]+'</span> <button class="q" id="qDiag2" aria-label="Qué significa la confiabilidad de la demanda">?</button> '+DIAG[b.diag][1]+'</div>';
+  $('p1').innerHTML=h1; $('p1').querySelectorAll('.q[data-h]').forEach(q=>q.onclick=()=>ayudaCorta(q.dataset.h)); $('qDiag2').onclick=ayudaDiag;
   if(!b.d){ $('p2').innerHTML=''; $('hoyRes').innerHTML='<div class="frase" style="grid-column:1/-1">Sin demanda registrada no se puede calcular un pedido.</div>'; $('graf').innerHTML=''; $('rxTag').innerHTML='<span class="tag t-sin">Sin datos</span>'; return; }
   const dd=b.d/30, Z=zDe(ns), cvu=s.cv!=null?s.cv:MODELO.CV_DEF, sd=(cvu*7*dd)/Math.sqrt(7), L=RX.p.L;
   const pe=pendienteF8(x.v,B.ues[st.ue].fechas,B.ues[st.ue].f8[x.c],L);
@@ -403,9 +597,9 @@ function actualizar(){
                : cel('Pre-pedido','Sugerido','',null,'');
   const guardar=puedeGuardar?'<button class="mini-btn" id="btnGuardar" title="Guardar esta cantidad en su pre-pedido">Guardar</button>':'';
   $('hoyRes').innerHTML='<div class="frase '+(est==='rojo'?'rojo':est==='ambar'?'ambar':'verde')+'">'+frase+'</div><div class="tarj">'+
-    (accion? cel('Pedir hoy',fmt(pedir),'unidades','#d7e5f4',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+cel('Llegaría',fC(dLlega),'en '+L+' días')
+    (accion? cel('Pedir hoy',fmt(pedir),'unidades','#d7e5f4',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+(st.proy?cel('Llegaría',fC(dLlega),'en '+L+' días'):cel('Su inventario alcanza',fmt(alcanza),'días sin pedir'))
             : cel('Pedir el',fC(cruza),'hoy no',  '#d6efdc',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+cel('Línea de pedido',fmt(ROP),'unidades'))+
-    cel('Le alcanza hasta',accion?fC(hasta):fC(hoy+Math.round(x.saldo/dd)*DIA),accion?'con pedido':'sin pedir')+pre+
+    (accion&&!st.proy? cel('Línea de pedido',fmt(ROP),'unidades') : cel('Le alcanza hasta',accion?fC(hasta):fC(hoy+Math.round(x.saldo/dd)*DIA),accion?'con pedido':'sin pedir'))+pre+
     (function(){ const U=B.ues[st.ue], ci={'CEDIS PANAMA':0,'CEDIS DIVISA':1,'CEDIS CHIRIQUI':2}[U.cedis]||0, cd=B.ced[x.c], nomC={0:'CEDIS Panamá',1:'CEDIS Divisa',2:'CEDIS Chiriquí'}[ci];
       const v=cd?cd[ci]:null, extra=ci&&cd?' title="CEDIS Panamá tiene '+fmt(cd[0])+' unidades"':'';
       return '<div class="cel"'+(v===0?' style="--bg:#f6d5d1"':'')+extra+'><span class="l"><span>'+nomC+' tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">unidades</span></span></div>'; })()+'</div>';
@@ -414,21 +608,24 @@ function actualizar(){
   if($('btnRest')) $('btnRest').onclick=()=>{ guardarAjuste(st.ue,x.c,null); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Listo: vuelve a la cantidad sugerida.'); };
   const kk={dd,SS,ROP,OBJ,pedir,L,hoy,est};
   $('graf').innerHTML=grafico(x,kk); activarVentana();
-  // Alto de la curva = alto de la columna izquierda (sin espacio vacío).
-  const izq=$('colIzq'), g=$('graf'), ley=g&&g.nextElementSibling;
-  if(izq&&g&&g.clientWidth&&izq.offsetHeight){ const nh=Math.max(300,Math.min(640,Math.round(760*(izq.offsetHeight-(ley?ley.offsetHeight:0)-6)/g.clientWidth)));
+  // Alto de la curva: usa el alto disponible de la pantalla (y nunca menos que la columna izquierda);
+  // la columna izquierda se estira a la misma altura, así no queda espacio vacío abajo.
+  const g=$('graf'), ley=$('gLey'), cab=$('main').querySelector('.gcab');
+  if(g&&g.clientWidth){ const top=g.getBoundingClientRect().top+window.scrollY, disp=window.innerHeight-top-(ley?ley.offsetHeight:0)-30;
+    const izq=$('colIzq'); izq.style.minHeight=''; const minIzq=izq.offsetHeight-(ley?ley.offsetHeight:0)-(cab?cab.offsetHeight+4:0)-6;
+    const px=Math.max(360,Math.min(760,Math.max(disp,minIzq))), nh=Math.round(760*px/g.clientWidth);
     if(Math.abs(nh-GH)>6){ GH=nh; $('graf').innerHTML=grafico(x,kk); activarVentana(); } }
 }
 let GX=null, GH=380;
 function grafico(x,k){
   const U=B.ues[st.ue], F=U.fechas, W=760,H=GH,ml=60,mr=16,mt=16,mb=34;
-  const t0=dISO(F[0]), t1=k.hoy+75*DIA;
+  const t0=dISO(F[0]), t1=st.proy? k.hoy+75*DIA : k.hoy+Math.max(3,Math.round((k.hoy-t0)/DIA*0.03))*DIA;
   const pts=x.v.map(([i,v])=>[dISO(F[i]),v]);
-  const proySin=[], proyCon=[], conPedido=k.pedir>0&&k.est!=='verde';
+  const proySin=[], proyCon=[], conPedido=st.proy&&k.pedir>0&&k.est!=='verde';
   for(let d=0;d<=75;d++){ const t=k.hoy+d*DIA; proySin.push([t,Math.max(0,x.saldo-k.dd*d)]); let vv=x.saldo-k.dd*d; if(d>=k.L&&conPedido) vv+=k.pedir; proyCon.push([t,Math.max(0,vv)]); }
   const ev=(U.f8[x.c]||[]).filter(e=>dISO(e[0])>=t0);
   // Una sola escala: el saldo y lo pedido en Formas 8 en las mismas unidades.
-  const ymax=Math.max(k.OBJ,...pts.map(p=>p[1]),...proyCon.map(p=>p[1]),...ev.map(e=>(e[1]||0)+(e[2]||0)))*1.08||1;
+  const ymax=Math.max(k.OBJ,...pts.map(p=>p[1]),...(st.proy?proyCon.map(p=>p[1]):[]),...ev.map(e=>(e[1]||0)+(e[2]||0)))*1.08||1;
   const X=t=>ml+(t-t0)/(t1-t0)*(W-ml-mr), Y=v=>mt+(1-v/ymax)*(H-mt-mb), Y2=Y;
   const path=(a,step)=>a.map((p,i)=>(i?(step?'H'+X(p[0]).toFixed(1)+' V':'L'+X(p[0]).toFixed(1)+' '):'M'+X(p[0]).toFixed(1)+' ')+Y(p[1]).toFixed(1)).join(' ');
   const k1=v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?Math.round(v/1e3)+'k':Math.round(v);
@@ -439,14 +636,14 @@ function grafico(x,k){
   [0,.25,.5,.75,1].forEach(f=>{ s+='<text x="'+(ml-6)+'" y="'+(Y(ymax*f)+4)+'" text-anchor="end" font-size="10.5" font-family="Consolas" fill="#1E5A9E">'+k1(ymax*f)+'</text>';
   });
   s+='<text x="14" y="'+(mt+(H-mt-mb)/2)+'" transform="rotate(-90 14 '+(mt+(H-mt-mb)/2)+')" text-anchor="middle" font-size="10.5" fill="#1E5A9E">Unidades</text>';
-  for(let t=t0;t<=t1;t+=15*DIA){ s+='<text x="'+X(t)+'" y="'+(H-12)+'" text-anchor="middle" font-size="10.5" fill="#5f6b78">'+fC(t)+'</text>'; }
+  for(let t=t0;t<=t1-4*DIA;t+=15*DIA){ s+='<text x="'+X(t)+'" y="'+(H-12)+'" text-anchor="middle" font-size="10.5" fill="#5f6b78">'+fC(t)+'</text>'; }
   ev.forEach(([f,u,m])=>{ const t=dISO(f), xx=X(t);
     if(u) s+='<rect x="'+(xx-3)+'" y="'+Y2(u)+'" width="6" height="'+(Y2(0)-Y2(u))+'" fill="#c0392b" opacity=".75"/>';
     if(m) s+='<rect x="'+(xx-3)+'" y="'+Y2((u||0)+m)+'" width="6" height="'+(Y2(0)-Y2(m))+'" fill="#1E5A9E" opacity=".6"/>'; });
   const linea=(v,col,dash,lbl)=>'<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="'+col+'" stroke-width="1.6" '+(dash?'stroke-dasharray="6 4"':'')+'/><text x="'+(W-mr-4)+'" y="'+(Y(v)-4)+'" text-anchor="end" font-size="11" font-weight="700" fill="'+col+'" paint-order="stroke" stroke="#fff" stroke-width="3">'+lbl+' '+fmt(v)+'</text>';
   s+=linea(k.OBJ,'#2e7d32',true,'Nivel objetivo')+linea(k.ROP,'#b7791f',false,'Línea de pedido')+linea(k.SS,'#c0392b',true,'Inventario crítico');
   s+='<path d="'+path(pts,true)+'" fill="none" stroke="#1E5A9E" stroke-width="2.4"/>';
-  s+='<path d="'+path(proySin)+'" fill="none" stroke="#9aa3ad" stroke-width="2" stroke-dasharray="5 4"/>';
+  if(st.proy) s+='<path d="'+path(proySin)+'" fill="none" stroke="#9aa3ad" stroke-width="2" stroke-dasharray="5 4"/>';
   if(conPedido) s+='<path d="'+path(proyCon)+'" fill="none" stroke="#2e7d32" stroke-width="2.2" stroke-dasharray="7 3"/><circle cx="'+X(k.hoy+k.L*DIA)+'" cy="'+Y(proyCon[k.L][1])+'" r="4.5" fill="#2e7d32"/><text x="'+(X(k.hoy+k.L*DIA)+6)+'" y="'+(Y(proyCon[k.L][1])-6)+'" font-size="11" fill="#2e7d32" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">llega el pedido</text>';
   s+='<line x1="'+X(k.hoy)+'" x2="'+X(k.hoy)+'" y1="'+mt+'" y2="'+Y(0)+'" stroke="#0C447C" stroke-width="1.4"/><text x="'+(X(k.hoy)+4)+'" y="'+(mt+11)+'" font-size="11" fill="#0C447C" font-weight="700">Hoy</text>';
   s+='<line id="gCur" x1="0" x2="0" y1="'+mt+'" y2="'+Y(0)+'" stroke="#0C447C" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>';
@@ -459,7 +656,7 @@ function activarVentana(){
   const svg=$('svgG'), hit=$('gHit'), tip=$('gTip'), cur=$('gCur'); if(!svg) return;
   const mover=e=>{ const r=svg.getBoundingClientRect(); if(!r.width) return; const vx=(e.clientX-r.left)/r.width*GX.W;
     const t=GX.t0+(vx-GX.ml)/(GX.W-GX.ml-GX.mr)*(GX.t1-GX.t0), dia=Math.round((t-GX.t0)/DIA)*DIA+GX.t0;
-    if(dia<GX.t0||dia>GX.t1){ tip.style.display='none'; cur.setAttribute('visibility','hidden'); return; }
+    if(dia<GX.t0||dia>GX.t1||(!st.proy&&dia>GX.k.hoy)){ tip.style.display='none'; cur.setAttribute('visibility','hidden'); return; }
     cur.setAttribute('x1',GX.X(dia)); cur.setAttribute('x2',GX.X(dia)); cur.setAttribute('visibility','visible');
     const iso=new Date(dia).toISOString().slice(0,10), k=GX.k, fut=dia>k.hoy;
     let h='<div class="t">'+fL(dia)+(fut?' · proyección':'')+'</div>';
@@ -503,13 +700,15 @@ function ayuda(){
 function demoUE(){ if(st.ue) return st.ue; const l=(B.res&&B.res.ues)||[]; const x=l.slice().sort((a,b)=>(b.r+b.a)-(a.r+a.a))[0]; return x?x.ue:B.idx.ues[0].ue; }
 function demoR(){ const f=FILAS.filter(x=>x.r.estado==='rojo'||x.r.estado==='ambar').sort((a,b)=>b.r.pedir-a.r.pedir)[0]||FILAS[0]; return f?f.c:''; }
 const TOUR=[
+ {sel:'#iniMain',t:'Todas las unidades, en el mapa y en la tabla',x:'Cada círculo es una Unidad Ejecutora: su tamaño es la cantidad de renglones por pedir y su color, qué proporción de sus renglones debe pedir. Arriba filtra por CEDIS. Toque una unidad en la tabla o en el mapa: el mapa la ubica y la tabla muestra sus 10 renglones más urgentes.',prep:()=>{ if(st.ue){ st.ue='';st.cod='';st.q='';st.filtro=''; $('selUE').value=''; $('bus').value=''; inicio(); } }},
  {sel:'.barra',t:'Elija su unidad',x:'Todo empieza aquí. Con la unidad elegida, el buscador de la derecha encuentra un renglón por código o nombre.',prep:()=>{ if(st.ue&&st.cod){ st.cod=''; vistaUE(); } }},
  {sel:'.kpis',t:'Cómo está su unidad hoy',x:'Cada tarjeta cuenta renglones por estado y sirve de filtro: tóquela para ver solo esos. A la derecha, el pre-pedido en Excel. Toque un encabezado de la tabla para ordenar.',prep:async()=>{ const u=demoUE(); if(st.ue!==u||!FILAS.length) await abrirUE(u); st.cod=''; vistaUE(); }},
  {sel:'.tw',t:'Sus renglones, por urgencia',x:'Primero los críticos, luego los que ya cruzaron la línea de pedido. "Pedir" es la cantidad sugerida. Toque un renglón para abrir su calculadora.'},
  {sel:'#hoyRes',t:'Qué hacer hoy',x:'Lo primero en un renglón: si debe pedir, cuánto, cuándo llegaría y hasta cuándo le alcanza. Si hay una orden de compra en camino a CEDIS Panamá, la etiqueta verde junto al nombre lo indica. Con «Descargar imagen» guarda esta vista tal como la ve.',prep:()=>{ st.cod=demoR(); vistaUE(); }},
  {sel:'#p1',t:'1 · Cuánto consume',x:'Tres señales de demanda. Se usa la mediana para que una señal inflada o truncada no desvíe el cálculo. Los signos ? explican cada una.'},
  {sel:'#p2',t:'2 · Línea de pedido',x:'Mueva el tiempo de entrega, los días a cubrir o el nivel de servicio y vea cómo cambian la línea de pedido, el inventario crítico y el nivel objetivo. Solo simula: la lista y el aviso usan los valores institucionales.'},
- {sel:'#graf',t:'La curva',x:'El saldo de su unidad, las franjas verde, amarilla y roja, qué pasa si no pide y si pide hoy, y sus Formas 8 con su propia escala a la derecha. Pase el cursor para ver cada día.'},
+ {sel:'#colDer',t:'La curva',x:'El saldo real de su unidad hasta hoy, las franjas verde, amarilla y roja y sus Formas 8. Con «Ver proyección del pedido» se agrega la simulación: qué pasa si no pide y si pide hoy. Pase el cursor para ver cada día.'},
+ {sel:'#rxNav',t:'Siguiente renglón',x:'Pase al renglón anterior o al siguiente de su lista sin volver atrás. También funciona con las flechas ← → del teclado.'},
  {sel:'#btnVolver',t:'Volver',x:'Regresa a la lista de renglones de su unidad.'}
 ];
 let tourI=0;
@@ -527,7 +726,7 @@ document.addEventListener('keydown',e=>{ if(!$('tour').classList.contains('open'
 $('selUE').onchange=e=>{ st.q=''; $('bus').value=''; if(e.target.value) abrirUE(e.target.value); else { st.ue=''; inicio(); } };
 $('bus').oninput=e=>{ st.q=e.target.value.trim(); st.cod=''; vistaUE(); };
 $('btnInicio').onclick=()=>{ st.ue='';st.cod='';st.q='';st.filtro=''; $('selUE').value=''; $('bus').value=''; inicio(); };
-$('btnLimpiar').onclick=()=>{ st.q='';st.filtro='';st.cod=''; $('bus').value=''; if(st.ue) vistaUE(); else inicio(); };
+$('btnLimpiar').onclick=()=>{ st.q='';st.filtro='';st.cod='';st.vit=false; $('bus').value=''; if(st.ue) vistaUE(); else inicio(); };
 $('btnAyuda').onclick=ayuda;
 $('modal').onclick=e=>{ if(e.target.id==='modal') $('modal').classList.remove('open'); };
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('modal').classList.remove('open'); });
