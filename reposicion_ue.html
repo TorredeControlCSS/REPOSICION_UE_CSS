@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Calculadora de Reposición · CSS</title>
+<title>Calculadora de Reposición Sugerida · CSS</title>
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <style>
 :root{--azul:#0C447C;--azul2:#1E5A9E;--fondo:#ececec;--borde:#a8a8a8;--papel:#fff;--tinta:#1d2733;--gris:#5f6b78;
@@ -108,7 +108,20 @@ tbody tr{cursor:pointer} tbody tr:hover td{background:#f4f7fb}
 .ikpi b{display:block;font-family:Consolas,monospace;font-size:15px;color:var(--c,var(--tinta))}
 .ini-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.22fr);gap:10px;min-height:520px}
 @media(max-width:1000px){.ini-main{grid-template-columns:minmax(0,1fr);height:auto!important}.ini-main .ipn{height:560px}}
-@media(max-width:600px){#selUE{min-width:0!important;width:100%}.barra .campo{max-width:100%;min-width:0}.ikpis{margin-left:0}}
+@media(max-width:600px){.ikpis{margin-left:0}}
+/* 10-oct-2026 v2: barra de herramientas dentro de cada panel, encabezado de la unidad, tarjetas más bajas */
+.itools{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px 10px;border-bottom:1px solid #e3e6ea;background:#fafbfc}
+.itools .seg{flex-wrap:wrap}.itools .seg button{font-size:11.5px;padding:3px 8px;white-space:nowrap}.itools select,.itools input{min-height:28px;font-size:12.5px}
+.it tr.grp th{background:#eaf1f9;font-size:10.5px;color:var(--gris);font-weight:600;cursor:default;padding:3px 6px;border-bottom:0;position:static}
+.it tr.grp th.gc{text-align:center;border-left:1px solid #d5dfeb;border-right:1px solid #d5dfeb}
+.ini-top{margin-bottom:6px}.ikpis{margin-left:0;align-items:stretch}
+.ucab{display:flex;align-items:center;gap:12px;margin:-2px 0 8px;flex-wrap:wrap}.ucab h2{margin:0;font-size:16px;color:var(--azul)}.ucab .btn-volver{margin-left:auto}
+.ubar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.ubar input{flex:1;min-width:220px;max-width:460px}
+.kpi{padding:4px 10px!important}.kpi .v{font-size:17px!important}.kpi .l{font-size:10.5px!important}
+.kpi.kvit{flex:0 1 190px}
+.hoy .cel{min-height:52px!important;padding:4px 9px!important}
+#colIzq .paso{padding:6px 12px!important;margin-bottom:6px}.sen{margin:3px 0!important}.ctl{margin:4px 0!important}.res div{padding:5px 9px!important}.res .v{font-size:16px!important}
+header h1{font-size:16.5px}header{padding:6px 18px}.hoy .cel .v{font-size:17px!important}.hoy .frase{font-size:13px!important;padding:6px 10px!important}
 .ipn{background:var(--papel);border:1px solid var(--borde);display:flex;flex-direction:column;min-height:0}
 .iph{display:flex;align-items:baseline;gap:8px;padding:7px 12px;border-bottom:1px solid #e3e6ea}
 .iph h3{margin:0;font-size:14px;color:var(--azul2)}.iph .d{font-size:11.5px;color:var(--gris)}
@@ -151,15 +164,9 @@ tbody tr{cursor:pointer} tbody tr:hover td{background:#f4f7fb}
 <body>
 <header>
   <img src="icons/icon-192.png" alt="CSS">
-  <div><h1>Calculadora de Reposición</h1><div class="sub">Caja de Seguro Social · Dirección Nacional de Logística · para las Unidades Ejecutoras</div></div>
+  <div><h1>Calculadora de Reposición Sugerida</h1><div class="sub">Caja de Seguro Social · Dirección Nacional de Logística · herramienta de apoyo: las cantidades son sugerencias, no órdenes de pedido</div></div>
   <div class="der"><span class="fr">Saldos al <b id="frS"></b></span><span class="fr">Publicado <b id="frP"></b></span><button class="hbtn" id="btnAyuda">Ayuda y recorrido guiado</button></div>
 </header>
-<div class="barra">
-  <div class="campo"><label for="selUE">Su Unidad Ejecutora</label><select id="selUE" style="min-width:330px"><option value="">Seleccione su unidad…</option></select></div>
-  <div class="campo" id="campoBus" style="display:none;flex:1;max-width:420px"><label for="bus">Buscar un renglón de su unidad</label><input type="text" id="bus" placeholder="Código o nombre del renglón"></div>
-  <button class="btn" id="btnLimpiar" style="align-self:flex-end">Limpiar filtros</button>
-  <button class="btn-volver" id="btnInicio" style="align-self:flex-end;display:none">‹ Todas las unidades</button>
-</div>
 <main id="main"></main>
 <div class="tour-bg" id="tour"><div class="tour-hl" id="tourHl"></div><div class="tour-box" id="tourBox"></div></div>
 <div class="modal-bg" id="modal"><div class="modal" role="dialog" aria-modal="true" id="modalC"></div></div>
@@ -175,7 +182,7 @@ async function cargarUEDatos(u){
   if(B.ues[u]) return B.ues[u];
   const meta=B.idx.ues.find(x=>x.ue===u); if(!meta) throw new Error('Unidad sin datos publicados');
   const [s,f8,co]=await Promise.all([traer(meta.archivo),B.f8idx[u]?traer(B.f8idx[u],true):null,traer(meta.archivo.replace(/^series_saldos_/,'consumo_reportado_'),true)]);
-  B.ues[u]={cedis:s.cedis||meta.cedis,fechas:s.fechas,f:(s.f||[]).map(x=>[String(x.c),x.v||[]]),cons:co&&co.c?co.c:null,f8:(f8&&f8.f)||{}};
+  B.ues[u]={cedis:s.cedis||meta.cedis,fechas:s.fechas,f:(s.f||[]).map(x=>[String(x.c),x.v||[]]),cons:co&&co.c?co.c:null,consCorte:co&&co.corte||'',consPer:co&&co.p||null,f8:(f8&&f8.f)||{}};
   return B.ues[u];
 }
 /* ===== Modelo de reposición (acordado 30-sep-2026, alineado con la Evaluación Técnica del P-240) =====
@@ -263,8 +270,8 @@ const fC=t=>{ const d=new Date(t); return d.getDate()+'-'+MES[d.getMonth()]; };
 const nom=c=>(B.dic[c]&&B.dic[c][0])||c, vit=c=>!!(B.dic[c]&&B.dic[c][1]);
 const trn=c=>B.tr&&B.tr[c]?{q:B.tr[c][0],f:B.tr[c][1]}:null;
 const chipTr=(c,largo)=>{ const t=trn(c); if(!t) return ''; const hoy=Date.now(), atr=t.f&&dISO(t.f)<hoy; return ' <span class="chip tr'+(atr?' atr':'')+'" title="Orden de compra en camino a CEDIS Panamá'+(t.f?' · entrega '+t.f:'')+'">'+(largo?'OC en camino a CEDIS Panamá · '+fmt(t.q)+' u'+(t.f?' · entrega '+fC(dISO(t.f))+(atr?' (atrasada)':''):''):'OC en camino')+'</span>'; };
-const EST={rojo:{t:'Crítico',l:'Bajo el inventario crítico',bg:'#f6d5d1',c:'#c0392b',o:0},ambar:{t:'Pedir ya',l:'Cruzó la línea de pedido',bg:'#fbe8c8',c:'#b7791f',o:1},
-  pronto:{t:'Pedir pronto',l:'Llega a la línea en 7 días o menos',bg:'#f5ecc6',c:'#8a6d0b',o:2},verde:{t:'Con cobertura',l:'Sobre la línea de pedido',bg:'#d6efdc',c:'#2e7d32',o:3},sin:{t:'Sin datos',l:'Sin consumo, reporte ni F8',bg:'#e2e5e9',c:'#5f6b78',o:4}};
+const EST={rojo:{t:'Crítico',l:'Bajo el inventario crítico',bg:'#f6d5d1',c:'#c0392b',o:0},ambar:{t:'Bajo la línea',l:'Cruzó la línea de pedido',bg:'#fbe8c8',c:'#b7791f',o:1},
+  pronto:{t:'Cerca de la línea',l:'La alcanzaría en 7 días o menos',bg:'#f5ecc6',c:'#8a6d0b',o:2},verde:{t:'Con cobertura',l:'Sobre la línea de pedido',bg:'#d6efdc',c:'#2e7d32',o:3},sin:{t:'Sin datos',l:'Sin consumo, reporte ni F8',bg:'#e2e5e9',c:'#5f6b78',o:4}};
 const DIAG={confiable:['Señal confiable','Las tres señales coinciden: la demanda es clara.'],presion:['Efecto presión','Se pide más de lo que se consume (F8 > 1.5 × consumo). El F8 está inflado y no se usa solo.'],
   truncado:['Consumo truncado','El renglón estuvo en cero más de la mitad del periodo: lo que bajó el saldo no refleja la demanda real, se usan las otras señales.'],
   divergente:['Señales divergentes','Las señales no coinciden: se usa la mediana para no depender de una sola.'],una:['Una sola señal','Solo hay una fuente de demanda: úsela con cautela.'],sin:['Sin datos','No hay consumo, reporte ni F8 en 90 días.']};
@@ -302,12 +309,15 @@ const RM={mapa:null,capa:null,lineas:null,coord:null,poli:null,cargando:null,mk:
   PORTAL:'https://torredecontrolcss.github.io/SIGUELO_DINALOG/',
   HUB:{'CEDIS PANAMA':[9.05473,-79.42908],'CEDIS DIVISA':[8.128,-80.682],'CEDIS CHIRIQUI':[8.43,-82.43]},
   PAIS:[[7.15,-83.05],[9.65,-77.15]],
+  /* Vistas por región: las cuatro del Kanban (kanban_tablero.html) más las dos redes del interior. */
+  VIS:{pais:['País',[[7.15,-83.05],[9.65,-77.15]]],metro:['Metropolitana',[[8.95,-79.62],[9.12,-79.33]]],pancol:['Panamá – Colón',[[8.93,-79.95],[9.40,-79.30]]],
+    oeste:['Panamá Oeste',[[8.45,-80.15],[9.02,-79.55]]],centro:['Centrales y Azuero',[[7.20,-81.40],[8.75,-79.95]]],occ:['Chiriquí y Bocas',[[7.90,-83.05],[9.65,-81.45]]]},
   /* Unidades que no están en ue_coordenadas.json del portal (coordenadas dadas por Diego, 10-oct-2026).
      Se agregan aquí y no en el archivo compartido, para no alterar el cruce de nombres del Kanban. */
   EXTRA:{'ULAPS N. VEDADO':{lat:8.429980872854221,lng:-82.42424717645503,nombre:'ULAPS Nuevo Vedado (David)'},
     'ULAPS LAS TABLAS':{lat:9.546000143733288,lng:-82.73865199593253,nombre:'ULAPS Señor Juan Aguilar · Las Tablas, Guabito (Bocas del Toro)'},
     'Policlínica Dr. Rodrigo Hidalgo González':{lat:8.405715810587925,lng:-82.43306528520422,nombre:'Policlínica Especializada Dr. Rodrigo Hidalgo González (David)'}}};
-st.ini={ced:'',sel:'',sort:{k:'pp',d:-1}};
+st.ini={ced:'',sel:'',q:'',vis:'pais',sort:{k:'pp',d:-1}};
 /* % de los renglones con dato que deben pedir (críticos + pedir ya) → semáforo del mapa y de la tabla */
 const pctPP=x=>{ const base=(x.tot||0)-(x.s||0); return base>0?((x.r||0)+(x.a||0))/base:null; };
 const clsPct=v=>v==null?'gris':v>=0.5?'rojo':v>=0.3?'ambar':'verde';
@@ -326,67 +336,79 @@ function rmCargar(){
 }
 const xyDe=u=>RM.coord&&RM.coord[u]?[RM.coord[u].lat,RM.coord[u].lng]:null;
 function inicio(){
-  $('campoBus').style.display='none'; $('btnInicio').style.display='none';
   try{ history.replaceState(null,'',location.pathname); }catch(e){}
   if(RM.mapa){ try{ RM.mapa.remove(); }catch(e){} RM.mapa=null; }
-  const L0=listaIni(), I=st.ini;
-  let h='<div class="ini-top"><div class="seg" id="iCed" role="group" aria-label="Filtrar por CEDIS">'+
-      [['','Todas las unidades'],['CEDIS PANAMA','CEDIS Panamá'],['CEDIS DIVISA','CEDIS Divisa'],['CEDIS CHIRIQUI','CEDIS Chiriquí']].map(c=>'<button data-c="'+c[0]+'"'+(I.ced===c[0]?' class="on"':'')+'>'+c[1]+'</button>').join('')+'</div>'+
-      (ultimaUE()?'<button class="btn azul" id="iUlt" style="min-height:28px;padding:3px 12px" title="La última unidad que abrió en este navegador">Abrir mi unidad: '+esc(ultimaUE())+' ›</button>':'')+
-      '<button class="btn" id="iLimpiar" style="min-height:28px;padding:3px 10px'+(I.sel?'':';display:none')+'">✕ Quitar selección</button>'+
-      '<div class="ikpis" id="iKpis"></div></div>'+
-    '<div class="ini-main" id="iniMain"><div class="ipn"><div class="iph"><h3>Dónde están las unidades</h3><span class="d" id="iMapD"></span></div><div id="rmMapa" role="img" aria-label="Mapa de las Unidades Ejecutoras"><div class="nota" style="padding:14px">Cargando el mapa…</div></div>'+
-      '<div class="rm-ley"><span><i style="background:'+COLP.rojo[0]+';border-color:'+COLP.rojo[1]+'"></i>50% o más por pedir</span><span><i style="background:'+COLP.ambar[0]+';border-color:'+COLP.ambar[1]+'"></i>30% a 49%</span><span><i style="background:'+COLP.verde[0]+';border-color:'+COLP.verde[1]+'"></i>menos de 30%</span><span><i style="background:#0C447C;border-color:#0C447C;border-radius:1px;transform:rotate(45deg);width:9px;height:9px"></i>CEDIS</span><span>· tamaño: renglones por pedir</span></div></div>'+
-    '<div class="ipn"><div class="iph"><h3>Unidades Ejecutoras</h3><span class="d" id="iTabD"></span></div><div class="itw" id="iTw"></div><div class="rm-ley" id="iNota"></div></div></div>';
+  const I=st.ini;
+  const opt=listaIni().slice().sort((a,b)=>a.ue.localeCompare(b.ue)).map(x=>'<option value="'+esc(x.ue)+'">').join('');
+  let h='<div class="ini-top"><div class="ikpis" id="iKpis"></div>'+
+      (ultimaUE()?'<button class="btn azul" id="iUlt" style="margin-left:auto;min-height:28px;padding:3px 12px" title="La última unidad que abrió en este navegador">Abrir mi unidad: '+esc(ultimaUE())+' ›</button>':'')+'</div>'+
+    '<div class="ini-main" id="iniMain"><div class="ipn"><div class="iph"><h3>Dónde están las unidades</h3><span class="d" id="iMapD"></span></div>'+
+      '<div class="itools"><span class="nota">Vista</span><div class="seg" id="iVis" role="group" aria-label="Región del mapa">'+Object.keys(RM.VIS).map(k=>'<button data-v="'+k+'"'+(I.vis===k?' class="on"':'')+'>'+RM.VIS[k][0]+'</button>').join('')+'</div></div>'+
+      '<div id="rmMapa" role="img" aria-label="Mapa de las Unidades Ejecutoras"><div class="nota" style="padding:14px">Cargando el mapa…</div></div>'+
+      '<div class="rm-ley"><span><i style="background:'+COLP.rojo[0]+';border-color:'+COLP.rojo[1]+'"></i>50% o más de sus renglones con pedido sugerido</span><span><i style="background:'+COLP.ambar[0]+';border-color:'+COLP.ambar[1]+'"></i>30% a 49%</span><span><i style="background:'+COLP.verde[0]+';border-color:'+COLP.verde[1]+'"></i>menos de 30%</span><span><i style="background:#0C447C;border-color:#0C447C;border-radius:1px;transform:rotate(45deg);width:9px;height:9px"></i>CEDIS</span><span>· tamaño: renglones con pedido sugerido</span></div></div>'+
+    '<div class="ipn"><div class="iph"><h3>Unidades Ejecutoras</h3><span class="d" id="iTabD"></span></div>'+
+      '<div class="itools" id="iTools"><input type="text" id="iBus" list="iUEs" placeholder="Buscar su unidad…" value="'+esc(I.q||'')+'" aria-label="Buscar unidad ejecutora" style="flex:1;min-width:180px"><datalist id="iUEs">'+opt+'</datalist>'+
+        '<select id="iCed" aria-label="Filtrar por CEDIS">'+[['','Todos los CEDIS'],['CEDIS PANAMA','CEDIS Panamá'],['CEDIS DIVISA','CEDIS Divisa'],['CEDIS CHIRIQUI','CEDIS Chiriquí']].map(c=>'<option value="'+c[0]+'"'+(I.ced===c[0]?' selected':'')+'>'+c[1]+'</option>').join('')+'</select>'+
+        '<button class="btn" id="iLimpiar" style="min-height:30px;padding:3px 10px">✕ Limpiar</button></div>'+
+      '<div class="itw" id="iTw"></div><div class="rm-ley" id="iNota"></div></div></div>';
   $('main').innerHTML=h;
-  $('iCed').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; I.ced=b.dataset.c; if(I.sel&&I.ced){ const x=L0.find(y=>y.ue===I.sel); if(x&&x.cedis!==I.ced) I.sel=''; }
-    $('iCed').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.c===I.ced)); iniTabla(); rmDibujar(); rmEncuadrar(); };
+  $('iCed').onchange=e=>{ I.ced=e.target.value; iniSelValida(); iniRefrescar(true); };
+  $('iVis').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; I.vis=b.dataset.v; $('iVis').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.v===I.vis)); iniSelValida(); iniRefrescar(true); };
+  $('iBus').oninput=e=>{ const v=e.target.value.trim(); I.q=v; const u=listaIni().find(x=>x.ue.toLowerCase()===v.toLowerCase());
+    if(u){ I.q=''; e.target.value=u.ue; I.ced=''; I.vis='pais'; $('iCed').value=''; $('iVis').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.v==='pais')); iniElegir(u.ue,false,true); return; }
+    iniTabla(); rmDibujar(); };
+  $('iLimpiar').onclick=()=>{ I.sel='';I.q='';I.ced='';I.vis='pais'; inicio(); };
   if($('iUlt')) $('iUlt').onclick=()=>abrirUE(ultimaUE());
-  $('iLimpiar').onclick=()=>{ I.sel=''; $('iLimpiar').style.display='none'; iniTabla(); rmDibujar(); rmEncuadrar(); };
   iniAltura(); iniTabla();
   rmCargar().then(()=>{ if(!$('rmMapa')||st.ue) return; rmIniciar(); }).catch(()=>{ if($('rmMapa')) $('rmMapa').innerHTML='<div class="nota" style="padding:14px">No se pudo cargar el mapa (revise la conexión). La tabla funciona igual.</div>'; });
 }
-function iniAltura(){ const m=$('iniMain'); if(!m) return; const top=m.getBoundingClientRect().top+window.scrollY; m.style.height=Math.max(520,window.innerHeight-top-14)+'px'; if(RM.mapa) RM.mapa.invalidateSize(); }
+function iniSelValida(){ const I=st.ini; if(I.sel&&!iniFiltradas().some(x=>x.ue===I.sel)){ I.sel=''; if(RM.mapa) RM.mapa.closePopup(); } }
+function iniRefrescar(encuadrar){ iniTabla(); rmDibujar(); if(encuadrar) rmEncuadrar(); }
+function iniAltura(){ const m=$('iniMain'); if(!m) return; const top=m.getBoundingClientRect().top+window.scrollY; m.style.height=Math.max(520,window.innerHeight-top-12)+'px'; if(RM.mapa) RM.mapa.invalidateSize(); }
 window.addEventListener('resize',()=>{ if(!st.ue) iniAltura(); });
-/* Totales arriba: siguen al filtro de CEDIS */
+/* Totales arriba: siguen a los filtros de la tabla */
 function iniKpis(){ const k=$('iKpis'); if(!k||!B.res) return; const f=iniFiltradas(), sum=c=>f.reduce((a,x)=>a+(x[c]||0),0);
   const kp=(t,v,bg,c)=>'<div class="ikpi" style="--bg:'+bg+';--c:'+c+'">'+t+'<b>'+fmt(v)+'</b></div>';
-  k.innerHTML=kp('Unidades',f.length,'#e6edf5','#0C447C')+kp('Críticos',sum('r'),EST.rojo.bg,EST.rojo.c)+kp('Pedir ya',sum('a'),EST.ambar.bg,EST.ambar.c)+kp('Pedir pronto',sum('p'),EST.pronto.bg,EST.pronto.c)+kp('Con cobertura',sum('v'),EST.verde.bg,EST.verde.c); }
-function iniFiltradas(){ const I=st.ini; return listaIni().filter(x=>!I.ced||x.cedis===I.ced); }
+  k.innerHTML='<span class="nota" style="align-self:center">Renglones en '+(f.length===listaIni().length?'todas las unidades':f.length+' unidad'+(f.length===1?'':'es'))+':</span>'+kp('Críticos',sum('r'),EST.rojo.bg,EST.rojo.c)+kp('Bajo la línea',sum('a'),EST.ambar.bg,EST.ambar.c)+kp('Cerca de la línea',sum('p'),EST.pronto.bg,EST.pronto.c)+kp('Con cobertura',sum('v'),EST.verde.bg,EST.verde.c); }
+function enVista(x){ const v=st.ini.vis; if(!v||v==='pais') return true; const xy=xyDe(x.ue); if(!xy) return false; const b=RM.VIS[v][1]; return xy[0]>=b[0][0]&&xy[0]<=b[1][0]&&xy[1]>=b[0][1]&&xy[1]<=b[1][1]; }
+function iniFiltradas(){ const I=st.ini, q=(I.q||'').toLowerCase(); return listaIni().filter(x=>(!I.ced||x.cedis===I.ced)&&enVista(x)&&(!q||x.ue.toLowerCase().indexOf(q)>=0)); }
 function iniTabla(){
-  const I=st.ini, S=I.sort, f=iniFiltradas(); iniKpis(); if($('iLimpiar')) $('iLimpiar').style.display=I.sel?'':'none';
+  const I=st.ini, S=I.sort, f=iniFiltradas(); iniKpis();
   const val={ue:x=>x.ue,r:x=>x.r||0,a:x=>x.a||0,p:x=>x.p||0,v:x=>x.v||0,s:x=>x.s||0,pp:x=>(x.r||0)+(x.a||0),pct:x=>pctPP(x)==null?-1:pctPP(x)}[S.k];
   f.sort((a,b)=>{ const A=val(a),Bv=val(b); return (A<Bv?-1:A>Bv?1:0)*S.d || ((b.r||0)+(b.a||0))-((a.r||0)+(a.a||0)) || a.ue.localeCompare(b.ue); });
   const th=(k,t,sub,n)=>'<th'+(n?' class="n"':'')+' data-s="'+k+'" title="Ordenar">'+t+(S.k===k?(S.d>0?' ▲':' ▼'):'')+(sub?'<small>'+sub+'</small>':'')+'</th>';
-  let h='<table class="it"><thead><tr>'+th('ue','Unidad Ejecutora',I.ced?NOMC[I.ced]:'y el CEDIS que la abastece')+th('r','Críticos','',1)+th('a','Pedir ya','',1)+th('p','Pedir pronto','',1)+th('v','Con cobertura','',1)+th('s','Sin datos','',1)+th('pp','Por pedir','críticos + pedir ya',1)+th('pct','% por pedir','de los que tienen dato',1)+'</tr></thead><tbody>';
+  let h='<table class="it"><thead><tr class="grp"><th></th><th colspan="5" class="gc">Cantidad de renglones por estado</th><th colspan="2" class="gc">Renglones con pedido sugerido</th></tr><tr>'+th('ue','Unidad Ejecutora','y el CEDIS que la abastece')+th('r','Críticos','',1)+th('a','Bajo la línea','',1)+th('p','Cerca de la línea','',1)+th('v','Con cobertura','',1)+th('s','Sin datos','',1)+th('pp','Renglones','críticos + bajo la línea',1)+th('pct','%','de los que tienen dato',1)+'</tr></thead><tbody>';
   f.forEach(x=>{ const pc=pctPP(x), c=clsPct(pc), sel=I.sel===x.ue;
-    h+='<tr data-u="'+esc(x.ue)+'" tabindex="0"'+(sel?' class="sel"':'')+'><td class="ue"><b>'+esc(x.ue)+'</b>'+(I.ced&&!x.nuevos?'':'<small>'+(I.ced?'':(NOMC[x.cedis]||x.cedis))+(x.nuevos?(I.ced?'':' · ')+'<span class="chip nuevo" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+x.nuevos+' nuevos hoy</span>':'')+'</small>')+'</td>'+
+    h+='<tr data-u="'+esc(x.ue)+'" tabindex="0"'+(sel?' class="sel"':'')+'><td class="ue"><b>'+esc(x.ue)+'</b><small>'+(NOMC[x.cedis]||x.cedis)+(x.nuevos?' · <span class="chip nuevo" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+x.nuevos+' nuevos hoy</span>':'')+'</small></td>'+
       (x.r==null?'<td colspan="7" class="nota">resumen en preparación</td>':
       '<td class="n num" style="color:'+EST.rojo.c+';font-weight:700">'+fmt(x.r)+'</td><td class="n num" style="color:'+EST.ambar.c+';font-weight:700">'+fmt(x.a)+'</td><td class="n num">'+fmt(x.p)+'</td><td class="n num">'+fmt(x.v)+'</td><td class="n num" style="color:var(--gris)">'+fmt(x.s)+'</td>'+
       '<td class="n num" style="font-weight:700;color:#0C447C">'+fmt((x.r||0)+(x.a||0))+'</td><td class="n"><span class="pct '+c+'">'+(pc==null?'·':Math.round(pc*100)+'%')+'</span></td>')+'</tr>'+
       (sel?'<tr class="det"><td colspan="8" id="iDet"><div class="nota">Cargando los renglones de la unidad…</div></td></tr>':'');
   });
+  if(!f.length) h+='<tr><td colspan="8" class="nota" style="padding:14px">Ninguna unidad coincide con la búsqueda o los filtros.</td></tr>';
   h+='</tbody></table>';
   $('iTw').innerHTML=h;
-  $('iTabD').textContent=f.length+' unidad'+(f.length===1?'':'es')+' · '+fmt(f.reduce((s,x)=>s+(x.r||0)+(x.a||0),0))+' renglones por pedir · cifras en renglones';
+  $('iTabD').textContent=f.length+' unidad'+(f.length===1?'':'es')+' · '+fmt(f.reduce((s,x)=>s+(x.r||0)+(x.a||0),0))+' renglones con pedido sugerido';
+  $('iLimpiar').style.display=(I.sel||I.q||I.ced||(I.vis&&I.vis!=='pais'))?'':'none';
   $('iTw').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{ const k=t.dataset.s; I.sort={k:k,d:S.k===k?-S.d:(k==='ue'?1:-1)}; iniTabla(); });
   $('iTw').querySelectorAll('tr[data-u]').forEach(tr=>{ const go=()=>iniElegir(tr.dataset.u,true); tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
   const sinXY=RM.coord?f.filter(x=>!xyDe(x.ue)).map(x=>x.ue):[];
-  $('iNota').innerHTML='Toque una unidad para ubicarla en el mapa y ver sus 10 renglones más urgentes.'+(sinXY.length?' <span title="Faltan sus coordenadas en ue_coordenadas.json">· Sin ubicación en el mapa: '+sinXY.map(esc).join(', ')+'</span>':'');
+  $('iNota').innerHTML='Las cifras de la tabla son cantidades de <b>renglones</b>. Toque una unidad para ubicarla en el mapa y ver sus 10 renglones más urgentes.'+(sinXY.length?' · Sin ubicación en el mapa: '+sinXY.map(esc).join(', '):'');
   if(I.sel) iniDetalle(I.sel);
 }
-function iniElegir(u,desdeTabla){
-  const I=st.ini; I.sel=I.sel===u&&desdeTabla?'':u; $('iLimpiar').style.display=I.sel?'':'none';
+function iniElegir(u,desdeTabla,forzar){
+  const I=st.ini; I.sel=(I.sel===u&&desdeTabla&&!forzar)?'':u;
   iniTabla(); rmDibujar();
-  if(I.sel){ const tr=$('iTw').querySelector('tr.sel'), tw=$('iTw'); if(tr){ const th=tw.querySelector('thead'); tw.scrollTo({top:Math.max(0,tr.offsetTop-(th?th.offsetHeight:0)),behavior:'smooth'}); } rmIr(I.sel); } else rmEncuadrar();
+  if(I.sel){ const tr=$('iTw').querySelector('tr.sel'), tw=$('iTw'); if(tr){ const th=tw.querySelector('thead'); tw.scrollTo({top:Math.max(0,tr.offsetTop-(th?th.offsetHeight:0)),behavior:'smooth'}); } rmIr(I.sel); }
+  else { if(RM.mapa) RM.mapa.closePopup(); rmEncuadrar(); }
 }
 async function iniDetalle(u){
   const x=listaIni().find(y=>y.ue===u);
   try{ await cargarUEDatos(u); }catch(e){ if($('iDet')) $('iDet').innerHTML='<div class="nota">No se pudieron cargar los renglones ('+esc(e.message)+').</div>'; return; }
   if(st.ini.sel!==u||!$('iDet')) return;
   const F=calcUE(u,st.p), urg=F.filter(z=>z.r.estado==='rojo'||z.r.estado==='ambar').sort((a,b)=>EST[a.r.estado].o-EST[b.r.estado].o||b.r.pedir-a.r.pedir), top=urg.slice(0,10);
-  let h='<div class="det-cab"><b style="color:#0C447C">Los '+top.length+' renglones más urgentes</b><span class="nota">de '+fmt(urg.length)+' por pedir · ordenados por estado y cantidad a pedir · toque uno para abrir su calculadora</span><button class="btn azul" id="iAbrir" style="margin-left:auto;min-height:28px">Abrir la unidad completa ›</button></div>';
-  h+=top.length?'<table class="top10"><tbody>'+top.map(z=>'<tr data-c="'+z.c+'"><td style="width:86px"><span class="tag t-'+z.r.estado+'">'+EST[z.r.estado].t+'</span></td><td><b class="mono">'+z.c+'</b>'+(vit(z.c)?' <span class="chip vital">VITAL</span>':'')+' <span class="desc">'+esc(nom(z.c).slice(0,60))+'</span></td><td class="n num" title="Saldo hoy">'+fmt(z.saldo)+'</td><td class="n num" style="font-weight:700;color:#0C447C" title="Pedir">'+fmt(z.r.pedir)+'</td></tr>').join('')+'</tbody></table><div class="nota" style="margin-top:3px">Columnas: estado · renglón · saldo hoy · cantidad a pedir (unidades)</div>':'<div class="nota">Esta unidad no tiene renglones por pedir hoy.</div>';
+  let h='<div class="det-cab"><b style="color:#0C447C">Los '+top.length+' renglones más urgentes</b><span class="nota">de '+fmt(urg.length)+' con pedido sugerido · toque uno para abrir su calculadora</span><button class="btn azul" id="iAbrir" style="margin-left:auto;min-height:26px;padding:2px 12px;white-space:nowrap">Abrir unidad ›</button></div>';
+  h+=top.length?'<table class="top10"><tbody>'+top.map(z=>'<tr data-c="'+z.c+'"><td style="width:86px"><span class="tag t-'+z.r.estado+'">'+EST[z.r.estado].t+'</span></td><td><b class="mono">'+z.c+'</b>'+(vit(z.c)?' <span class="chip vital">VITAL</span>':'')+' <span class="desc">'+esc(nom(z.c).slice(0,60))+'</span></td><td class="n num" title="Saldo hoy">'+fmt(z.saldo)+'</td><td class="n num" style="font-weight:700;color:#0C447C" title="Cantidad sugerida">'+fmt(z.r.pedir)+'</td></tr>').join('')+'</tbody></table><div class="nota" style="margin-top:3px">Columnas: estado · renglón · saldo hoy · cantidad sugerida (unidades)</div>':'<div class="nota">Esta unidad no tiene renglones por pedir hoy.</div>';
   $('iDet').innerHTML=h;
   $('iAbrir').onclick=()=>abrirUE(u);
   $('iDet').querySelectorAll('tr[data-c]').forEach(r=>r.onclick=()=>abrirUE(u,r.dataset.c));
@@ -403,18 +425,20 @@ function rmIniciar(){
 }
 function rmEncuadrar(sinAnim){
   if(!RM.mapa) return; const I=st.ini; let b;
-  if(!I.ced){ const pts=listaIni().map(x=>xyDe(x.ue)).filter(Boolean).concat(Object.values(RM.HUB)); b=pts.length?L.latLngBounds(pts).pad(0.04):RM.PAIS; } else { const pts=iniFiltradas().map(x=>xyDe(x.ue)).filter(Boolean).concat([RM.HUB[I.ced]]); b=L.latLngBounds(pts).pad(0.08); }
+  if(I.vis&&I.vis!=='pais') b=RM.VIS[I.vis][1];
+  else if(I.ced){ const pts=iniFiltradas().map(x=>xyDe(x.ue)).filter(Boolean).concat([RM.HUB[I.ced]]); b=L.latLngBounds(pts).pad(0.08); }
+  else { const pts=listaIni().map(x=>xyDe(x.ue)).filter(Boolean).concat(Object.values(RM.HUB)); b=pts.length?L.latLngBounds(pts).pad(0.04):RM.PAIS; }
   if(sinAnim) RM.mapa.fitBounds(b,{padding:[18,18]}); else RM.mapa.flyToBounds(b,{padding:[18,18],duration:.6});
-  $('iMapD').textContent=I.ced?NOMC[I.ced]+' y sus unidades':'País · las 3 redes de CEDIS';
+  $('iMapD').textContent=(I.vis&&I.vis!=='pais'?RM.VIS[I.vis][0]:'País')+(I.ced?' · '+NOMC[I.ced]:'');
 }
 function rmDibujar(){
-  if(!RM.mapa) return; RM.capa.clearLayers(); RM.lineas.clearLayers(); RM.mk={};
+  if(!RM.mapa) return; if(!st.ini.sel) RM.mapa.closePopup(); RM.capa.clearLayers(); RM.lineas.clearLayers(); RM.mk={};
   const I=st.ini, f=iniFiltradas(), mx=Math.max(1,...f.map(x=>(x.r||0)+(x.a||0)));
   f.slice().sort((a,b)=>((b.r||0)+(b.a||0))-((a.r||0)+(a.a||0))).forEach(x=>{ const xy=xyDe(x.ue); if(!xy) return;
     const pp=(x.r||0)+(x.a||0), c=COLP[clsPct(pctPP(x))], sel=I.sel===x.ue, r=5+13*Math.sqrt(pp/mx);
     if(I.ced||sel) L.polyline([RM.HUB[x.cedis]||RM.HUB['CEDIS PANAMA'],xy],{color:sel?'#1E5A9E':'#7f93a8',weight:sel?3:1,opacity:sel?.9:.35,dashArray:sel?null:'3 5',interactive:false}).addTo(RM.lineas);
     const mk=L.circleMarker(xy,{radius:r,fillColor:c[0],fillOpacity:.92,color:sel?'#0C447C':c[1],weight:sel?3.5:1.6}).addTo(RM.capa);
-    mk.bindTooltip('<b>'+esc(x.ue)+'</b><br>'+(x.r==null?'':fmt(pp)+' por pedir · '+fmt(x.r)+' críticos'),{direction:'top',offset:[0,-r]});
+    mk.bindTooltip('<b>'+esc(x.ue)+'</b><br>'+(x.r==null?'':fmt(pp)+' renglones con pedido sugerido · '+fmt(x.r)+' críticos'),{direction:'top',offset:[0,-r]});
     mk.on('click',()=>iniElegir(x.ue,false)); RM.mk[x.ue]=mk;
     if(sel) mk.bindTooltip(esc(x.ue),{permanent:true,direction:'right',offset:[r+2,0],className:'rm-lab'}).openTooltip();
   });
@@ -424,15 +448,15 @@ function rmIr(u){
   const pp=(x.r||0)+(x.a||0), pc=pctPP(x);
   const nf=RM.EXTRA[u]&&RM.EXTRA[u].nombre;
   const pop='<div><h4>'+esc(u)+'</h4>'+(nf?'<div class="nota" style="font-style:italic">'+esc(nf)+'</div>':'')+'<div class="nota">'+(NOMC[x.cedis]||x.cedis)+' · '+fmt(x.tot)+' renglones</div><div class="g">'+
-    '<span style="color:'+EST.rojo.c+'">Críticos</span><span>'+fmt(x.r)+'</span><span style="color:'+EST.ambar.c+'">Pedir ya</span><span>'+fmt(x.a)+'</span><span>Pedir pronto</span><span>'+fmt(x.p)+'</span><span style="color:'+EST.verde.c+'">Con cobertura</span><span>'+fmt(x.v)+'</span><span>Sin datos</span><span>'+fmt(x.s)+'</span>'+
-    '<span><b>Por pedir</b></span><span>'+fmt(pp)+(pc==null?'':' · '+Math.round(pc*100)+'%')+'</span>'+(x.nuevos?'<span>Nuevos hoy</span><span>'+x.nuevos+'</span>':'')+'</div><button class="btn azul" id="popAbrir" style="width:100%;min-height:28px">Abrir la unidad ›</button></div>';
+    '<span style="color:'+EST.rojo.c+'">Críticos</span><span>'+fmt(x.r)+'</span><span style="color:'+EST.ambar.c+'">Bajo la línea</span><span>'+fmt(x.a)+'</span><span>Cerca de la línea</span><span>'+fmt(x.p)+'</span><span style="color:'+EST.verde.c+'">Con cobertura</span><span>'+fmt(x.v)+'</span><span>Sin datos</span><span>'+fmt(x.s)+'</span>'+
+    '<span><b>Con pedido sugerido</b></span><span>'+fmt(pp)+(pc==null?'':' · '+Math.round(pc*100)+'%')+'</span>'+(x.nuevos?'<span>Nuevos hoy</span><span>'+x.nuevos+'</span>':'')+'</div><button class="btn azul" id="popAbrir" style="width:100%;min-height:26px">Abrir unidad ›</button></div>';
   const hub=RM.HUB[x.cedis]||RM.HUB['CEDIS PANAMA'];
   RM.mapa.once('moveend',()=>{ if(st.ini.sel!==u) return; L.popup({className:'rm-pop',offset:[0,-6],autoPan:true,maxWidth:300}).setLatLng(xy).setContent(pop).openOn(RM.mapa); const b=$('popAbrir'); if(b) b.onclick=()=>abrirUE(u); });
   RM.mapa.flyToBounds(L.latLngBounds([xy,hub]).pad(0.25),{maxZoom:13,duration:.7,paddingTopLeft:[20,150],paddingBottomRight:[20,20]});
 }
 /* ---------- vista de la unidad ---------- */
 async function abrirUE(u,cod){
-  st.ue=u; st.cod=''; st.filtro=''; $('campoBus').style.display=''; $('btnInicio').style.display=''; $('selUE').value=u;
+  st.ue=u; st.cod=''; st.filtro=''; st.q='';
   $('main').innerHTML='<div class="panel nota">Cargando los datos de '+esc(u)+'…</div>';
   try{ await cargarUEDatos(u); }catch(e){ $('main').innerHTML='<div class="panel">No se pudieron cargar los datos de la unidad ('+esc(e.message)+'). <button class="btn" id="reUE">Reintentar</button></div>'; $('reUE').onclick=()=>abrirUE(u,cod); return; }
   if(st.ue!==u) return;
@@ -448,14 +472,20 @@ function listaUE(){
   f.sort((a,b)=>{ const A=val(a),Bv=val(b); return (A<Bv?-1:A>Bv?1:0)*S.d || EST[a.r.estado].o-EST[b.r.estado].o || b.r.pedir-a.r.pedir; });
   return f;
 }
+/* Encabezado de la unidad: reemplaza la barra superior (la herramienta se usa desde una unidad). */
+function cabUE(){ const U=B.ues[st.ue]; return '<div class="ucab"><div><h2>'+esc(st.ue)+'</h2><span class="nota">'+(NOMC[U.cedis]||U.cedis||'')+' · '+fmt(FILAS.length)+' renglones · saldos al '+fL(dISO(U.fechas.slice(-1)[0]))+'</span></div><button class="btn-volver" id="btnInicio" title="Ver todas las unidades en el mapa">‹ Todas las unidades</button></div>'; }
 function vistaUE(){
   if(st.cod) return vistaRenglon();
   const f=listaUE(), S=st.sortUE||{k:'imp',d:1};
   const th=(k,t,sub,n)=>'<th'+(n?' class="n"':'')+' data-s="'+k+'" title="Ordenar">'+t+(S.k===k?(S.d>0?' ▲':' ▼'):'')+(sub?'<small>'+sub+'</small>':'')+'</th>';
   const base=FILAS.filter(x=>!st.vit||vit(x.c)), cnt={}; base.forEach(x=>cnt[x.r.estado]=(cnt[x.r.estado]||0)+1); const nNuevos=base.filter(x=>x.nuevo).length, nVit=FILAS.filter(x=>vit(x.c)).length;
-  let h='<div class="kpis">'+['rojo','ambar','pronto','verde','sin'].map(k=>'<button class="kpi'+(st.filtro===k?' on':'')+'" data-k="'+k+'" style="--bg:'+EST[k].bg+'"><span class="v" style="color:'+EST[k].c+'">'+fmt(cnt[k]||0)+'</span><span class="l">'+EST[k].t+' · '+EST[k].l+'</span></button>').join('')+
-    (nNuevos?'<span class="chip nuevo" style="align-self:center" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+nNuevos+' nuevos hoy</span>':'')+'<button class="btn'+(st.vit?' azul':'')+'" id="btnVit" style="flex:0 0 auto;align-self:center" aria-pressed="'+(st.vit?'true':'false')+'" title="Mostrar solo los renglones vitales">'+(st.vit?'✓ ':'')+'Solo vitales ('+fmt(nVit)+')</button><button class="btn verde" id="btnPre" style="flex:0 0 auto">Descargar pre-pedido</button></div>';
-  h+='<div class="tw"><table><thead><tr>'+th('est','Estado')+th('c','Renglón')+th('saldo','Saldo hoy','unidades',1)+th('d','Demanda / mes','unidades · base del cálculo',1)+th('diag','Confiabilidad de la demanda <button class="q" id="qDiag" aria-label="Qué significa la confiabilidad de la demanda">?</button>','qué tan firme es el dato')+th('rop','Línea de pedido','unidades',1)+th('dias','Días para la línea de pedido','días que faltan',1)+th('pend','Por recibir','F8 recientes, unidades',1)+th('pedir','Pedir','unidades',1)+'</tr></thead><tbody>';
+  let h=cabUE()+'<div class="kpis">'+['rojo','ambar','pronto','verde','sin'].map(k=>'<button class="kpi'+(st.filtro===k?' on':'')+'" data-k="'+k+'" style="--bg:'+EST[k].bg+'"><span class="v" style="color:'+EST[k].c+'">'+fmt(cnt[k]||0)+'</span><span class="l">'+EST[k].t+' · '+EST[k].l+'</span></button>').join('')+
+    '<button class="kpi kvit'+(st.vit?' on':'')+'" id="btnVit" aria-pressed="'+(st.vit?'true':'false')+'" title="Mostrar solo los renglones vitales" style="--bg:#fdecea"><span class="v" style="color:#a23224">'+(st.vit?'✓ ':'')+fmt(nVit)+'</span><span class="l">Vitales · '+(st.vit?'mostrando solo vitales':'toque para ver solo vitales')+'</span></button></div>';
+  h+='<div class="ubar"><input type="text" id="bus" placeholder="Buscar un renglón por código o nombre" value="'+esc(st.q)+'" aria-label="Buscar un renglón">'+
+    ((st.q||st.filtro||st.vit)?'<button class="btn" id="btnLimpiar">✕ Limpiar filtros</button>':'')+
+    (nNuevos?'<span class="chip nuevo" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+nNuevos+' nuevos hoy</span>':'')+
+    '<button class="btn verde" id="btnPre" style="margin-left:auto" title="Excel con las cantidades sugeridas (referenciales)">Descargar sugerencia (Excel)</button></div>';
+  h+='<div class="tw"><table><thead><tr>'+th('est','Estado')+th('c','Renglón')+th('saldo','Saldo hoy','unidades',1)+th('d','Demanda / mes','unidades · base del cálculo',1)+th('diag','Confiabilidad de la demanda <button class="q" id="qDiag" aria-label="Qué significa la confiabilidad de la demanda">?</button>','qué tan firme es el dato')+th('rop','Línea de pedido','unidades',1)+th('dias','Días para la línea de pedido','días que faltan',1)+th('pend','Por recibir','F8 recientes, unidades',1)+th('pedir','Sugerido','unidades',1)+'</tr></thead><tbody>';
   f.slice(0,400).forEach(x=>{ const e=EST[x.r.estado];
     h+='<tr data-c="'+x.c+'" tabindex="0"><td><span class="tag t-'+x.r.estado+'">'+e.t+'</span>'+(x.nuevo?' <span class="chip nuevo" title="Cruzó la línea desde la carga anterior">nuevo hoy</span>':'')+'</td>'+
       '<td><b class="mono">'+x.c+'</b>'+(vit(x.c)?' <span class="chip vital">VITAL</span>':'')+chipTr(x.c)+'<br><span class="desc">'+esc(nom(x.c).slice(0,70))+'</span></td>'+
@@ -463,15 +493,21 @@ function vistaUE(){
       '<td class="n num">'+(x.b.d?fmt(x.r.ROP):'·')+'</td><td class="n num">'+(x.r.diasAROP==null?'·':x.r.diasAROP<=0?'<b style="color:#c0392b">ya cruzó</b>':Math.round(x.r.diasAROP))+'</td>'+
       '<td class="n num">'+(x.r.pend>0?fmt(x.r.pend):'·')+'</td>'+
       '<td class="n num"'+(x.r.pedir>0?' style="font-weight:700;color:#0C447C"':'')+'>'+((x.r.pedir>0&&(x.r.estado!=='verde'||x.r.aj))?fmt(x.r.pedir):'·')+(x.r.aj?' <span class="chip" title="Cantidad ajustada por el usuario">ajustado</span>':'')+'</td></tr>'; });
-  h+='</tbody></table></div><div class="nota" style="margin-top:4px">'+(f.length>400?'Mostrando 400 de '+fmt(f.length)+'. ':fmt(f.length)+' renglones. ')+(S.k==='imp'?'Ordenados por urgencia y, dentro de cada estado, por la cantidad a pedir. ':'')+'Toque un encabezado para ordenar y un renglón para abrir la calculadora.</div>';
+  h+='</tbody></table></div><div class="nota" style="margin-top:4px">'+(f.length>400?'Mostrando 400 de '+fmt(f.length)+'. ':fmt(f.length)+' renglones. ')+(S.k==='imp'?'Ordenados por urgencia y, dentro de cada estado, por la cantidad sugerida. ':'')+'Toque un encabezado para ordenar y un renglón para abrir la calculadora. '+AVISO_REF+'</div>';
   $('main').innerHTML='<div class="panel">'+h+'</div>';
-  $('main').querySelectorAll('.kpi').forEach(b=>b.onclick=()=>{ st.filtro=st.filtro===b.dataset.k?'':b.dataset.k; vistaUE(); });
+  $('main').querySelectorAll('.kpi[data-k]').forEach(b=>b.onclick=()=>{ st.filtro=st.filtro===b.dataset.k?'':b.dataset.k; vistaUE(); });
   $('main').querySelectorAll('tbody tr').forEach(tr=>{ const go=()=>{ st.cod=tr.dataset.c; vistaUE(); window.scrollTo(0,0); }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
   $('btnPre').onclick=()=>prePedido(st.ue);
   $('qDiag').onclick=e=>{ e.stopPropagation(); ayudaDiag(); };
   $('btnVit').onclick=()=>{ st.vit=!st.vit; vistaUE(); };
+  $('btnInicio').onclick=irInicio;
+  if($('btnLimpiar')) $('btnLimpiar').onclick=()=>{ st.q='';st.filtro='';st.vit=false; vistaUE(); };
+  const bus=$('bus'); bus.oninput=e=>{ st.q=e.target.value.trim(); clearTimeout(bus._t); bus._t=setTimeout(()=>{ const pos=bus.selectionStart; vistaUE(); const b2=$('bus'); b2.focus(); try{ b2.setSelectionRange(pos,pos); }catch(e){} },180); };
   $('main').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{ const k=t.dataset.s, cur=st.sortUE||{k:'imp',d:1}; st.sortUE={k:k,d:cur.k===k?-cur.d:(['saldo','d','rop','pend','pedir'].indexOf(k)>=0?-1:1)}; vistaUE(); });
 }
+function irInicio(){ st.ue='';st.cod='';st.q='';st.filtro=''; inicio(); window.scrollTo(0,0); }
+/* Texto de respaldo (P-240): la herramienta sugiere, no ordena. */
+const AVISO_REF='Las cantidades son sugerencias de apoyo calculadas con los datos institucionales a la fecha de corte indicada y pueden variar; no constituyen Forma 8, orden de pedido ni instrucción, y no sustituyen los instrumentos oficiales del Procedimiento P-240 (rev. 7.0).';
 /* Qué significa «Confiabilidad de la demanda»: un solo lugar, usado por la tabla y por la calculadora. */
 const DIAGX={confiable:'La demanda es firme. Puede pedir con la cantidad sugerida.',divergente:'Revise que su reporte de consumo esté al día: la cantidad sugerida puede cambiar cuando las señales se acerquen.',
   presion:'La cantidad sugerida no sigue a las Formas 8, sino al consumo. Si su consumo real subió, actualice su reporte de consumo.',truncado:'El inventario estuvo agotado y no se pudo medir el consumo real. Confirme la cantidad con su consumo histórico antes de pedir.',
@@ -488,17 +524,18 @@ function filasPre(u){ return (u===st.ue?FILAS:calcUE(u,st.p)).filter(x=>(['rojo'
 async function prePedido(u){
   try{ await libXLS(); }catch(e){ aviso('No se pudo cargar el generador de Excel.'); return; }
   const f=filasPre(u), fecha=B.ues[u].fechas.slice(-1)[0];
-  const wb=new ExcelJS.Workbook(), ws=wb.addWorksheet('Pre-pedido');
-  ws.mergeCells('A1:J1'); ws.getCell('A1').value='CAJA DE SEGURO SOCIAL · PRE-PEDIDO DE REPOSICIÓN'; ws.getCell('A1').font={bold:true,size:13,color:{argb:'FF0C447C'}};
+  const wb=new ExcelJS.Workbook(), ws=wb.addWorksheet('Sugerencia');
+  ws.mergeCells('A1:J1'); ws.getCell('A1').value='CAJA DE SEGURO SOCIAL · SUGERENCIA DE REPOSICIÓN (REFERENCIAL)'; ws.getCell('A1').font={bold:true,size:13,color:{argb:'FF0C447C'}};
   const nAj=f.filter(x=>x.r.aj).length;
   ws.mergeCells('A2:J2'); ws.getCell('A2').value=u+' · saldos al '+fecha+' · sugerido con 20 días de entrega y 30 de cobertura'+(nAj?' · incluye '+nAj+' cantidades ajustadas por el usuario':''); ws.getCell('A2').font={size:10,color:{argb:'FF555555'}};
-  const cab=['Renglón','Descripción','Vital','Estado','Saldo','Demanda / mes','Línea de pedido','Por recibir (F8 recientes)','Cantidad a pedir','Origen de la cantidad'];
-  ws.addRow([]); const hr=ws.addRow(cab); hr.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A9E'}}; c.alignment={wrapText:true,vertical:'middle'}; });
+  const cab=['Renglón','Descripción','Vital','Estado','Saldo','Demanda / mes','Línea de pedido','Por recibir (F8 recientes)','Cantidad sugerida','Origen de la cantidad'];
+  ws.mergeCells('A3:J3'); ws.getCell('A3').value=AVISO_REF; ws.getCell('A3').font={size:9,italic:true,color:{argb:'FF8A5A1A'}}; ws.getCell('A3').alignment={wrapText:true}; ws.getRow(3).height=30;
+  const hr=ws.addRow(cab); hr.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A9E'}}; c.alignment={wrapText:true,vertical:'middle'}; });
   f.forEach(x=>ws.addRow([x.c,nom(x.c),vit(x.c)?'Sí':'',EST[x.r.estado].t,Math.round(x.saldo),Math.round(x.b.d),Math.round(x.r.ROP),Math.round(x.r.pend||0),x.r.pedir,x.r.aj?'Ajustado por el usuario ('+x.r.aj.L+' d entrega · '+x.r.aj.cubrir+' d · '+x.r.aj.ns+'%) el '+x.r.aj.fecha:'Sugerido']));
   [12,55,7,14,12,14,14,16,14,40].forEach((w,i)=>ws.getColumn(i+1).width=w); [5,6,7,8,9].forEach(i=>ws.getColumn(i).numFmt='#,##0');
   ws.views=[{state:'frozen',ySplit:4}]; ws.autoFilter={from:'A4',to:'J4'};
   const buf=await wb.xlsx.writeBuffer(), a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-  a.download='PrePedido_'+u.replace(/[^A-Za-z0-9]+/g,'_')+'_'+fecha+'.xlsx'; document.body.appendChild(a); a.click(); a.remove();
+  a.download='Sugerencia_'+u.replace(/[^A-Za-z0-9]+/g,'_')+'_'+fecha+'.xlsx'; document.body.appendChild(a); a.click(); a.remove();
 }
 function aviso(m){ const d=document.createElement('div'); d.textContent=m; d.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#263238;color:#fff;padding:8px 14px;font-size:12px;z-index:60'; document.body.appendChild(d); setTimeout(()=>d.remove(),3200); }
 /* ---------- calculadora de un renglón ---------- */
@@ -509,17 +546,18 @@ function vistaRenglon(){
   const U=B.ues[st.ue];
   const nsDef=vit(x.c)?95:90; if(!RX.ns) RX.ns=nsDef;
   const ced=B.ced[x.c]||[null,null,null], ci={'CEDIS PANAMA':0,'CEDIS DIVISA':1,'CEDIS CHIRIQUI':2}[U.cedis]||0;
-  let h='<div class="panel"><div class="cab"><h2><span class="mono">'+x.c+'</span> · '+esc(nom(x.c))+'</h2>'+(vit(x.c)?'<span class="chip vital">VITAL</span>':'')+'<span id="rxTag"></span>'+chipTr(x.c,true)+'<span class="rxnav" id="rxNav" style="margin-left:auto">'+navHTML(x.c)+'</span><button class="btn" id="btnImg" style="min-height:26px;padding:2px 10px">Descargar imagen</button><button class="btn-volver" id="btnVolver" style="margin-left:0">‹ Volver a la lista</button></div>'+
+  let h='<div class="panel"><div class="nota" style="margin:-2px 0 2px"><a href="#" id="rxUE" style="color:#1E5A9E">'+esc(st.ue)+'</a> › renglón</div><div class="cab"><h2><span class="mono">'+x.c+'</span> · '+esc(nom(x.c))+'</h2>'+(vit(x.c)?'<span class="chip vital">VITAL</span>':'')+'<span id="rxTag"></span>'+chipTr(x.c,true)+'<span class="rxnav" id="rxNav" style="margin-left:auto">'+navHTML(x.c)+'</span><button class="btn" id="btnImg" style="min-height:26px;padding:2px 10px">Descargar imagen</button><button class="btn-volver" id="btnVolver" style="margin-left:0">‹ Volver a la lista</button></div>'+
    '<div class="hoy" id="hoyRes"></div>'+
    '<div class="calc"><div id="colIzq">'+
    '<div class="paso"><h3><span>1</span>Consumo mensual de su unidad</h3><div id="p1"></div></div>'+
    '<div class="paso"><h3><span>2</span>Línea de pedido</h3>'+
-     ctl('inL','Tiempo de entrega',5,60,1,RX.p.L,'L')+ctl('inC','Días a cubrir',15,90,5,RX.p.cubrir,'C')+ctl('inN','Nivel de servicio',0,4,1,[85,90,95,97.5,99].indexOf(RX.ns),'N')+
+     ctl('inL','Tiempo de reposición',5,60,1,RX.p.L,'L')+ctl('inC','Días a cubrir',15,90,5,RX.p.cubrir,'C')+ctl('inN','Nivel de servicio',0,4,1,[85,90,95,97.5,99].indexOf(RX.ns),'N')+
      '<div class="res" id="p2"></div></div>'+
    '<div class="nota">Los controles solo simulan este renglón. Pase el cursor sobre la curva para ver el detalle de cada día.</div>'+
    '</div><div id="colDer"><div class="gcab"><span>Curva de inventario</span><div class="seg" id="gModo" role="group" aria-label="Qué mostrar en la curva"><button data-m="0"'+(st.proy?'':' class="on"')+'>Hasta hoy</button><button data-m="1"'+(st.proy?' class="on"':'')+'>Ver proyección del pedido</button></div><button class="q" data-h="G" aria-label="Qué muestra la proyección">?</button></div><div id="graf"></div><div class="leyenda" id="gLey"><span><i style="background:#1E5A9E"></i>Saldo</span>'+(st.proy?'<span><i style="background:#9aa3ad"></i>Si no pide</span><span><i style="background:#2e7d32"></i>Si pide hoy</span>':'')+'<span><i style="background:#fbe8c8"></i>Zona para pedir</span><span><i style="background:#f6d5d1"></i>Bajo el inventario crítico</span><span><i style="background:#c0392b;width:6px"></i>F8 urgencia</span><span><i style="background:#1E5A9E;width:6px"></i>F8 mensual</span></div></div></div></div>';
   $('main').innerHTML=h;
   $('btnVolver').onclick=()=>{ st.cod=''; vistaUE(); };
+  $('rxUE').onclick=e=>{ e.preventDefault(); st.cod=''; vistaUE(); };
   navActivar();
   $('gModo').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; st.proy=b.dataset.m==='1'; vistaRenglon(); };
   $('btnImg').onclick=()=>descargarImagen(x.c);
@@ -535,10 +573,10 @@ function navActivar(){ if($('rxAnt')) $('rxAnt').onclick=()=>navIr(-1); if($('rx
 document.addEventListener('keydown',e=>{ if(!st.cod||!$('rxNav')||$('tour').classList.contains('open')||$('modal').classList.contains('open')) return;
   const a=document.activeElement; if(a&&(a.tagName==='INPUT'||a.tagName==='SELECT'||a.tagName==='TEXTAREA')) return;
   if(e.key==='ArrowRight'){ e.preventDefault(); navIr(1); } else if(e.key==='ArrowLeft'){ e.preventDefault(); navIr(-1); } });
-const AYC={L:['Tiempo de entrega','Días que tarda en llegar un pedido desde que se solicita. Por defecto, 20 días.'],
+const AYC={L:['Tiempo de reposición','Días que se suponen para el cálculo entre que se pide y se recibe. Por defecto, 20 días. Es un parámetro de simulación, no un plazo de entrega comprometido.'],
   C:['Días a cubrir','Días de consumo que quiere tener cubiertos después de recibir el pedido. Por defecto, 30 días.'],
   O:['Consumo observado','Lo que bajó el saldo de su unidad en los últimos 90 días, contando solo los días en que tuvo existencia. Si estuvo en cero más de la mitad del periodo, no se usa (consumo truncado).'],
-  R:['Consumo reportado','Lo que su unidad declara consumir al mes en el reporte de consumos.'],
+  R:['Consumo reportado','El consumo mensual que su unidad reportó y que está publicado en MAESTRO_CONSUMOS_UE (el mismo del tablero de Consumos Reportados). Junto al nombre se indica el periodo al que corresponde ese dato o, si no está disponible, la fecha de corte del maestro.'],
   F:['Formas 8','Lo que su unidad pidió en Formas 8 (urgencia y mensual), promedio mensual de los últimos 90 días.'],
   D:['Demanda usada','La mediana de las señales disponibles: si una está inflada o truncada, no arrastra el resultado. Con esta demanda se calcula la línea de pedido.'],
   G:['Hasta hoy y proyección','«Hasta hoy» muestra solo lo que ya pasó: el saldo real de su unidad hasta la última carga y sus Formas 8. «Ver proyección del pedido» agrega una estimación: cómo bajaría el saldo si no pide y cómo subiría si pide hoy, suponiendo que el pedido llega en el tiempo de entrega elegido y que el consumo sigue igual. Es una simulación, no una fecha de entrega comprometida.'],
@@ -565,9 +603,10 @@ function actualizar(){
   const x=RX, s=x.s, b=x.b, ns=RX.ns;
   $('vL').textContent=RX.p.L+' d'; $('vC').textContent=RX.p.cubrir+' d'; $('vN').textContent=ns+'%';
   // paso 1: las tres señales
-  const vals=[['Consumo observado'+(s.truncado?' (truncado)':''),s.truncado?null:s.dObs,'O'],['Consumo reportado',s.dRep,'R'],['Formas 8',s.dReq,'F']];
+  const Uc=B.ues[st.ue], perC=Uc.consPer&&Uc.consPer[x.c], extRep=perC?'periodo '+esc(perC):Uc.consCorte?'corte '+fC(dISO(Uc.consCorte)):'';
+  const vals=[['Consumo observado'+(s.truncado?' (truncado)':''),s.truncado?null:s.dObs,'O',''],['Consumo reportado',s.dRep,'R',extRep],['Formas 8',s.dReq,'F','']];
   const mx=Math.max(1,...vals.map(v=>v[1]||0),b.d||0);
-  let h1=vals.map(v=>'<div class="sen"><span>'+v[0]+' <button class="q" data-h="'+v[2]+'" aria-label="Qué es '+v[0]+'">?</button></span><div class="pista">'+(v[1]?'<i style="width:'+(v[1]/mx*100)+'%"></i>':'')+'</div><span class="val">'+(v[1]?fmt(v[1]):'sin dato')+'</span></div>').join('');
+  let h1=vals.map(v=>'<div class="sen"><span>'+v[0]+' <button class="q" data-h="'+v[2]+'" aria-label="Qué es '+v[0]+'">?</button>'+(v[3]?'<small class="nota" style="display:block;line-height:1.1">'+v[3]+'</small>':'')+'</span><div class="pista">'+(v[1]?'<i style="width:'+(v[1]/mx*100)+'%"></i>':'')+'</div><span class="val">'+(v[1]?fmt(v[1]):'sin dato')+'</span></div>').join('');
   h1+='<div class="sen base"><span class="base-lbl">Demanda usada <button class="q" data-h="D" aria-label="Qué es la demanda usada">?</button></span><div class="pista"><i style="width:'+((b.d||0)/mx*100)+'%"></i></div><span class="val base-lbl">'+(b.d?fmt(b.d):'·')+'</span></div>';
   h1+='<div class="nota" style="margin-top:4px"><span class="chip '+b.diag+'">'+DIAG[b.diag][0]+'</span> <button class="q" id="qDiag2" aria-label="Qué significa la confiabilidad de la demanda">?</button> '+DIAG[b.diag][1]+'</div>';
   $('p1').innerHTML=h1; $('p1').querySelectorAll('.q[data-h]').forEach(q=>q.onclick=()=>ayudaCorta(q.dataset.h)); $('qDiag2').onclick=ayudaDiag;
@@ -588,23 +627,23 @@ function actualizar(){
   const hasta=pedir>0? hoy+Math.round((Math.max(0,alLlegar)+pedir)/dd)*DIA+L*DIA : null;
   const accion=(est==='rojo'||est==='ambar');
   const alcanza=Math.round(x.saldo/dd), sinInv=Math.max(0,L-alcanza);
-  const frase=accion?'Tiene <b class="num">'+fmt(x.saldo)+'</b> unidades en inventario, por debajo de su línea de pedido (<b class="num">'+fmt(ROP)+'</b> unidades): <b>pida hoy</b>.'+(sinInv?' Su inventario alcanza para unos <b>'+alcanza+' días</b> y el pedido tarda '+L+': quedaría unos <b>'+sinInv+' días</b> sin inventario mientras llega.':'')
-    :'Tiene <b class="num">'+fmt(x.saldo)+'</b> unidades en inventario, por encima de su línea de pedido (<b class="num">'+fmt(ROP)+'</b> unidades). La alcanzará alrededor del <b>'+fL(cruza)+'</b>: ese día debe pedir.';
+  const frase=accion?'Saldo de <b class="num">'+fmt(x.saldo)+'</b> unidades, por debajo de la línea de pedido (<b class="num">'+fmt(ROP)+'</b>). <b>Se sugiere valorar un pedido</b> de unas <b class="num">'+fmt(pedir)+'</b> unidades.'
+    :'Saldo de <b class="num">'+fmt(x.saldo)+'</b> unidades, por encima de la línea de pedido (<b class="num">'+fmt(ROP)+'</b>). Al consumo actual la alcanzaría alrededor del <b>'+fL(cruza)+'</b>.';
   const aj=ajusteDe(st.ue,x.c), dist=(L!==MODELO.L||RX.p.cubrir!==MODELO.CUBRIR||ns!==(vit(x.c)?95:90));
   const puedeGuardar=(dist||aj)&&!(aj&&aj.pedir===pedir);
   const cel=(lbl,v,u,bg,extra)=>'<div class="cel"'+(bg?' style="--bg:'+bg+'"':'')+'><span class="l"><span>'+lbl+'</span>'+(extra||'')+'</span><span><span class="v">'+v+'</span><span class="u">'+u+'</span></span></div>';
-  const pre=aj? cel('Pre-pedido',fmt(aj.pedir),'ajustado','#d7e5f4','<button class="mini-btn" id="btnRest" title="Ajustado el '+aj.fecha+'. Volver a la cantidad sugerida">Restablecer</button>')
-               : cel('Pre-pedido','Sugerido','',null,'');
-  const guardar=puedeGuardar?'<button class="mini-btn" id="btnGuardar" title="Guardar esta cantidad en su pre-pedido">Guardar</button>':'';
+  const pre=aj? cel('Su ajuste',fmt(aj.pedir),'unidades · ajustado','#d7e5f4','<button class="mini-btn" id="btnRest" title="Ajustado el '+aj.fecha+'. Volver a la cantidad sugerida">Restablecer</button>')
+               : cel('Su ajuste','Ninguno','usa la sugerencia',null,'');
+  const guardar=puedeGuardar?'<button class="mini-btn" id="btnGuardar" title="Guardar esta cantidad en su Excel de sugerencia">Guardar</button>':'';
   $('hoyRes').innerHTML='<div class="frase '+(est==='rojo'?'rojo':est==='ambar'?'ambar':'verde')+'">'+frase+'</div><div class="tarj">'+
-    (accion? cel('Pedir hoy',fmt(pedir),'unidades','#d7e5f4',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+(st.proy?cel('Llegaría',fC(dLlega),'en '+L+' días'):cel('Su inventario alcanza',fmt(alcanza),'días sin pedir'))
-            : cel('Pedir el',fC(cruza),'hoy no',  '#d6efdc',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+cel('Línea de pedido',fmt(ROP),'unidades'))+
-    (accion&&!st.proy? cel('Línea de pedido',fmt(ROP),'unidades') : cel('Le alcanza hasta',accion?fC(hasta):fC(hoy+Math.round(x.saldo/dd)*DIA),accion?'con pedido':'sin pedir'))+pre+
+    (accion? cel('Cantidad sugerida',fmt(pedir),'unidades','#d7e5f4',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+(st.proy?cel('Llegaría (estimado)',fC(dLlega),'si se pide hoy'):cel('Le alcanza para',fmt(alcanza),'días (consumo actual)'))
+            : cel('Fecha sugerida',fC(cruza),'para valorar un pedido','#d6efdc',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+cel('Línea de pedido',fmt(ROP),'unidades'))+
+    (accion&&!st.proy? cel('Línea de pedido',fmt(ROP),'unidades') : cel('Le alcanzaría hasta',accion?fC(hasta):fC(hoy+Math.round(x.saldo/dd)*DIA),accion?'si se pide hoy (estimado)':'al consumo actual'))+pre+
     (function(){ const U=B.ues[st.ue], ci={'CEDIS PANAMA':0,'CEDIS DIVISA':1,'CEDIS CHIRIQUI':2}[U.cedis]||0, cd=B.ced[x.c], nomC={0:'CEDIS Panamá',1:'CEDIS Divisa',2:'CEDIS Chiriquí'}[ci];
       const v=cd?cd[ci]:null, extra=ci&&cd?' title="CEDIS Panamá tiene '+fmt(cd[0])+' unidades"':'';
       return '<div class="cel"'+(v===0?' style="--bg:#f6d5d1"':'')+extra+'><span class="l"><span>'+nomC+' tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">unidades</span></span></div>'; })()+'</div>';
   if($('qRec')) $('qRec').onclick=()=>{ AYC.PR=['Por recibir','Lo que ya pidió en Formas 8 en los últimos '+L+' días y todavía no ha entrado a su saldo. Pidió '+fmt(pe.pedido)+'; desde entonces entraron '+fmt(pe.recibido)+'; quedan '+fmt(pe.pend)+' por recibir. Se descuentan del pedido sugerido para no pedir dos veces.']; ayudaCorta('PR'); };
-  if($('btnGuardar')) $('btnGuardar').onclick=()=>{ guardarAjuste(st.ue,x.c,{pedir,L,cubrir:RX.p.cubrir,ns,fecha:fC(Date.now())}); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Guardado: su pre-pedido lleva '+fmt(pedir)+' unidades de este renglón.'); };
+  if($('btnGuardar')) $('btnGuardar').onclick=()=>{ guardarAjuste(st.ue,x.c,{pedir,L,cubrir:RX.p.cubrir,ns,fecha:fC(Date.now())}); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Guardado: su Excel de sugerencia lleva '+fmt(pedir)+' unidades de este renglón.'); };
   if($('btnRest')) $('btnRest').onclick=()=>{ guardarAjuste(st.ue,x.c,null); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Listo: vuelve a la cantidad sugerida.'); };
   const kk={dd,SS,ROP,OBJ,pedir,L,hoy,est};
   $('graf').innerHTML=grafico(x,kk); activarVentana();
@@ -613,7 +652,7 @@ function actualizar(){
   const g=$('graf'), ley=$('gLey'), cab=$('main').querySelector('.gcab');
   if(g&&g.clientWidth){ const top=g.getBoundingClientRect().top+window.scrollY, disp=window.innerHeight-top-(ley?ley.offsetHeight:0)-30;
     const izq=$('colIzq'); izq.style.minHeight=''; const minIzq=izq.offsetHeight-(ley?ley.offsetHeight:0)-(cab?cab.offsetHeight+4:0)-6;
-    const px=Math.max(360,Math.min(760,Math.max(disp,minIzq))), nh=Math.round(760*px/g.clientWidth);
+    const px=Math.max(340,Math.min(720,Math.max(disp*0.95,minIzq))), nh=Math.round(760*px/g.clientWidth);
     if(Math.abs(nh-GH)>6){ GH=nh; $('graf').innerHTML=grafico(x,kk); activarVentana(); } }
 }
 let GX=null, GH=380;
@@ -687,12 +726,13 @@ function correoPreview(){
   $('modal').classList.add('open'); $('cerrarM').onclick=()=>$('modal').classList.remove('open'); $('adjPre').onclick=e=>{ e.preventDefault(); prePedido(u); };
 }
 function ayuda(){
-  $('modalC').innerHTML='<div class="top"><h2>Cómo funciona la calculadora</h2><button class="btn azul" id="btnTour">▶ Iniciar recorrido guiado</button><button class="btn" id="cerrarM">Cerrar</button></div><div class="cols">'+
-  '<h4>La idea</h4><p>Cada renglón tiene una <b>línea de pedido</b>: la cantidad que su unidad consume mientras llega un pedido, más un <b>inventario crítico</b> de protección. Cuando su saldo baja de esa línea, es momento de pedir.</p>'+
-  '<h4>1. ¿Cuánto consume?</h4><p>Se miran tres señales: lo que bajó su saldo (sin contar los días en cero), lo que reporta consumir y lo que pide en Formas 8. Ninguna es perfecta, así que se usa la <b>mediana</b> de las tres. Si pide mucho más de lo que consume (<b>efecto presión</b>) o estuvo en cero mucho tiempo (<b>consumo truncado</b>), se le avisa.</p>'+
-  '<h4>2. ¿Cuándo pedir?</h4><p>Línea de pedido = demanda diaria × tiempo de entrega + inventario crítico. El tiempo de entrega es <b>20 días</b>: la norma es 15, pero hoy la entrega real tarda 24. El inventario crítico depende de qué tan variable es su consumo y de la criticidad: 95% de nivel de servicio para vitales, 90% para el resto.</p>'+
-  '<h4>3. ¿Cuánto pedir?</h4><p>Lo necesario para llegar al <b>nivel objetivo</b>: lo que consumirá mientras llega el pedido, más los días que quiere cubrir (30 por defecto), más el inventario crítico.</p>'+
-  '<h4>Los colores</h4><ul><li><b style="color:#c0392b">Crítico</b>: bajo el inventario crítico. Pida ya.</li><li><b style="color:#b7791f">Pedir ya</b>: cruzó la línea de pedido.</li><li><b style="color:#8a6d0b">Pedir pronto</b>: la cruzará en 7 días o menos.</li><li><b style="color:#2e7d32">Con cobertura</b>: sobre la línea.</li></ul>'+
+  $('modalC').innerHTML='<div class="top"><h2>Cómo funciona la calculadora</h2><button class="btn azul" id="btnTour">▶ Iniciar recorrido guiado</button><button class="btn" id="cerrarM">Cerrar</button></div>'+
+  '<div class="frase ambar" style="margin:0 0 10px">'+AVISO_REF+'</div><div class="cols">'+
+  '<h4>La idea</h4><p>Cada renglón tiene una <b>línea de pedido</b>: lo que su unidad consumiría durante el tiempo de reposición, más un <b>inventario crítico</b> de protección. Cuando el saldo baja de esa línea, la calculadora <b>sugiere valorar un pedido</b>.</p>'+
+  '<h4>1. ¿Cuánto consume?</h4><p>Se miran tres señales: lo que bajó su saldo (sin contar los días en cero), el consumo que su unidad reportó en MAESTRO_CONSUMOS_UE y lo que pidió en Formas 8. Ninguna es perfecta, así que se usa la <b>mediana</b>. Si se pide mucho más de lo que se consume (<b>efecto presión</b>) o el renglón estuvo en cero mucho tiempo (<b>consumo truncado</b>), se indica.</p>'+
+  '<h4>2. La línea de pedido</h4><p>Línea de pedido = demanda diaria × tiempo de reposición + inventario crítico. Para el cálculo se usa un tiempo de reposición de referencia de <b>20 días</b>; es un parámetro de cálculo, no un plazo de entrega comprometido. El inventario crítico depende de qué tan variable es el consumo y de la criticidad: 95% de nivel de servicio para vitales, 90% para el resto.</p>'+
+  '<h4>3. La cantidad sugerida</h4><p>Lo necesario para llegar al <b>nivel objetivo</b>: el consumo durante el tiempo de reposición, más los días a cubrir (30 por defecto), más el inventario crítico, menos lo que ya pidió en Formas 8 recientes y aún no ha recibido.</p>'+
+  '<h4>Los colores</h4><ul><li><b style="color:#c0392b">Crítico</b>: saldo bajo el inventario crítico.</li><li><b style="color:#b7791f">Bajo la línea</b>: cruzó la línea de pedido.</li><li><b style="color:#8a6d0b">Cerca de la línea</b>: la alcanzaría en 7 días o menos.</li><li><b style="color:#2e7d32">Con cobertura</b>: sobre la línea.</li></ul>'+
   '<h4>El aviso diario</h4><p>Un solo correo al día por unidad, cuando se cargan los saldos, y solo si tiene renglones bajo la línea de pedido. Marca los que la cruzaron desde la carga anterior.</p></div>';
   $('modal').classList.add('open'); $('cerrarM').onclick=()=>$('modal').classList.remove('open'); $('btnTour').onclick=()=>{ $('modal').classList.remove('open'); iniciarTour(); };
 }
@@ -700,14 +740,15 @@ function ayuda(){
 function demoUE(){ if(st.ue) return st.ue; const l=(B.res&&B.res.ues)||[]; const x=l.slice().sort((a,b)=>(b.r+b.a)-(a.r+a.a))[0]; return x?x.ue:B.idx.ues[0].ue; }
 function demoR(){ const f=FILAS.filter(x=>x.r.estado==='rojo'||x.r.estado==='ambar').sort((a,b)=>b.r.pedir-a.r.pedir)[0]||FILAS[0]; return f?f.c:''; }
 const TOUR=[
- {sel:'#iniMain',t:'Todas las unidades, en el mapa y en la tabla',x:'Cada círculo es una Unidad Ejecutora: su tamaño es la cantidad de renglones por pedir y su color, qué proporción de sus renglones debe pedir. Arriba filtra por CEDIS. Toque una unidad en la tabla o en el mapa: el mapa la ubica y la tabla muestra sus 10 renglones más urgentes.',prep:()=>{ if(st.ue){ st.ue='';st.cod='';st.q='';st.filtro=''; $('selUE').value=''; $('bus').value=''; inicio(); } }},
- {sel:'.barra',t:'Elija su unidad',x:'Todo empieza aquí. Con la unidad elegida, el buscador de la derecha encuentra un renglón por código o nombre.',prep:()=>{ if(st.ue&&st.cod){ st.cod=''; vistaUE(); } }},
- {sel:'.kpis',t:'Cómo está su unidad hoy',x:'Cada tarjeta cuenta renglones por estado y sirve de filtro: tóquela para ver solo esos. A la derecha, el pre-pedido en Excel. Toque un encabezado de la tabla para ordenar.',prep:async()=>{ const u=demoUE(); if(st.ue!==u||!FILAS.length) await abrirUE(u); st.cod=''; vistaUE(); }},
- {sel:'.tw',t:'Sus renglones, por urgencia',x:'Primero los críticos, luego los que ya cruzaron la línea de pedido. "Pedir" es la cantidad sugerida. Toque un renglón para abrir su calculadora.'},
- {sel:'#hoyRes',t:'Qué hacer hoy',x:'Lo primero en un renglón: si debe pedir, cuánto, cuándo llegaría y hasta cuándo le alcanza. Si hay una orden de compra en camino a CEDIS Panamá, la etiqueta verde junto al nombre lo indica. Con «Descargar imagen» guarda esta vista tal como la ve.',prep:()=>{ st.cod=demoR(); vistaUE(); }},
+ {sel:'#iniMain',t:'Todas las unidades, en el mapa y en la tabla',x:'Cada círculo es una Unidad Ejecutora: su tamaño es la cantidad de renglones con pedido sugerido y su color, qué proporción de sus renglones lo tiene. Arriba del mapa elige la región; arriba de la tabla busca su unidad o filtra por CEDIS. Las cifras de la tabla son renglones.',prep:()=>{ if(st.ue){ irInicio(); } }},
+ {sel:'#iTools',t:'Busque su unidad',x:'Escriba el nombre de su unidad: el mapa la ubica y la tabla muestra sus 10 renglones más urgentes. Con «Abrir unidad» entra a todos sus renglones.'},
+ {sel:'.kpis',t:'Cómo está su unidad hoy',x:'Cada tarjeta cuenta renglones por estado y sirve de filtro: tóquela para ver solo esos. La tarjeta «Vitales» muestra solo los renglones vitales.',prep:async()=>{ const u=demoUE(); if(st.ue!==u||!FILAS.length) await abrirUE(u); st.cod=''; vistaUE(); }},
+ {sel:'.ubar',t:'Buscar y descargar',x:'Busque un renglón por código o nombre. «Descargar sugerencia» genera el Excel con las cantidades sugeridas, que son referenciales.'},
+ {sel:'.tw',t:'Sus renglones, por urgencia',x:'Primero los críticos, luego los que cruzaron la línea de pedido. «Sugerido» es la cantidad que la calculadora sugiere valorar. Toque un renglón para abrir su calculadora.'},
+ {sel:'#hoyRes',t:'Resumen del renglón',x:'El saldo frente a la línea de pedido y la cantidad sugerida. Si hay una orden de compra en camino a CEDIS Panamá, la etiqueta junto al nombre lo indica. Con «Descargar imagen» guarda esta vista tal como la ve.',prep:()=>{ st.cod=demoR(); vistaUE(); }},
  {sel:'#p1',t:'1 · Cuánto consume',x:'Tres señales de demanda. Se usa la mediana para que una señal inflada o truncada no desvíe el cálculo. Los signos ? explican cada una.'},
- {sel:'#p2',t:'2 · Línea de pedido',x:'Mueva el tiempo de entrega, los días a cubrir o el nivel de servicio y vea cómo cambian la línea de pedido, el inventario crítico y el nivel objetivo. Solo simula: la lista y el aviso usan los valores institucionales.'},
- {sel:'#colDer',t:'La curva',x:'El saldo real de su unidad hasta hoy, las franjas verde, amarilla y roja y sus Formas 8. Con «Ver proyección del pedido» se agrega la simulación: qué pasa si no pide y si pide hoy. Pase el cursor para ver cada día.'},
+ {sel:'#p2',t:'2 · Línea de pedido',x:'Mueva el tiempo de reposición, los días a cubrir o el nivel de servicio y vea cómo cambian la línea de pedido, el inventario crítico y el nivel objetivo. Solo simula: la lista y el aviso usan los valores institucionales.'},
+ {sel:'#colDer',t:'La curva',x:'El saldo real de su unidad hasta hoy, las franjas verde, amarilla y roja y sus Formas 8. Con «Ver proyección del pedido» se agrega una simulación de qué pasaría si no pide y si pide hoy. Pase el cursor para ver cada día.'},
  {sel:'#rxNav',t:'Siguiente renglón',x:'Pase al renglón anterior o al siguiente de su lista sin volver atrás. También funciona con las flechas ← → del teclado.'},
  {sel:'#btnVolver',t:'Volver',x:'Regresa a la lista de renglones de su unidad.'}
 ];
@@ -723,10 +764,6 @@ function cerrarTour(){ $('tour').classList.remove('open'); }
 document.addEventListener('keydown',e=>{ if(!$('tour').classList.contains('open')) return; if(e.key==='Escape') cerrarTour(); if(e.key==='ArrowRight'&&$('tSig')) $('tSig').click(); if(e.key==='ArrowLeft'&&$('tAnt')) $('tAnt').click(); });
 /* ---------- controles ---------- */
 
-$('selUE').onchange=e=>{ st.q=''; $('bus').value=''; if(e.target.value) abrirUE(e.target.value); else { st.ue=''; inicio(); } };
-$('bus').oninput=e=>{ st.q=e.target.value.trim(); st.cod=''; vistaUE(); };
-$('btnInicio').onclick=()=>{ st.ue='';st.cod='';st.q='';st.filtro=''; $('selUE').value=''; $('bus').value=''; inicio(); };
-$('btnLimpiar').onclick=()=>{ st.q='';st.filtro='';st.cod='';st.vit=false; $('bus').value=''; if(st.ue) vistaUE(); else inicio(); };
 $('btnAyuda').onclick=ayuda;
 $('modal').onclick=e=>{ if(e.target.id==='modal') $('modal').classList.remove('open'); };
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('modal').classList.remove('open'); });
@@ -740,7 +777,6 @@ window.__rue={st,abrirUE,vistaUE,FILAS:()=>FILAS,iniciarTour,TOUR,B};
     if(dic&&dic.r) Object.keys(dic.r).forEach(k=>B.dic[k]=[dic.r[k].n,dic.r[k].vit?1:0]);
     if(res&&res.tr) B.tr=res.tr;
     B.gen=(res&&res.generado)||idx.generado||'';
-    idx.ues.slice().sort((x,y)=>x.ue.localeCompare(y.ue)).forEach(u=>{ const o=document.createElement('option'); o.value=u.ue; o.textContent=u.ue+' ('+u.renglones+' renglones)'; $('selUE').appendChild(o); });
     $('frS').textContent=fL(dISO(idx.fechas[idx.fechas.length-1]));
     $('frP').textContent=B.gen?(new Date(B.gen).toLocaleString('es-PA',{timeZone:'America/Panama',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' PTY'):'·';
     // inventario de los CEDIS (para "le surte…"), en segundo plano
