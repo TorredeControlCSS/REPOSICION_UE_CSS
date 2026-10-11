@@ -158,6 +158,13 @@ header h1{font-size:16.5px}header{padding:6px 18px}.hoy .cel .v{font-size:17px!i
 .calc{align-items:stretch}#colIzq{display:flex;flex-direction:column}
 #colIzq .paso{flex:1 1 auto;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 12px}
 .sen{margin:6px 0;grid-template-columns:165px 1fr 80px}.ctl{margin:8px 0}.res .v{font-size:17px}.res div{padding:7px 10px}
+.combo{position:relative}.combo input{width:100%}
+.combo-list{position:absolute;top:100%;left:0;right:0;background:var(--papel);border:1px solid var(--borde);max-height:340px;overflow:auto;display:none;z-index:40;box-shadow:0 4px 10px rgba(0,0,0,.18)}
+.combo-list.open{display:block}.combo-item{padding:6px 9px;cursor:pointer;border-bottom:1px solid var(--fondo);font-size:12.5px}
+.combo-item.act,.combo-item:hover{background:var(--p-azul)}.combo-item small{display:block;color:var(--gris);font-size:10.5px}.combo-vacio{padding:8px 10px;color:var(--gris);font-size:12px}
+.migas{font-size:12px;margin:-2px 0 4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.migas a{color:#1E5A9E;text-decoration:none}.migas a:hover{text-decoration:underline}
+.migas .casa{display:inline-flex;align-items:center;gap:4px;border:1px solid #1E5A9E;border-radius:3px;padding:1px 8px;font-weight:600}
+#p1 .sen{grid-template-columns:200px 1fr 80px!important;margin:9px 0!important;align-items:center}#p1 .sen>span:first-child{line-height:1.25}
 .diagl{display:grid;grid-template-columns:150px 1fr;gap:8px 14px;align-items:start;font-size:13px;margin-top:8px}
 </style>
 </head>
@@ -340,7 +347,6 @@ function inicio(){
   try{ history.replaceState(null,'',location.pathname); }catch(e){}
   if(RM.mapa){ try{ RM.mapa.remove(); }catch(e){} RM.mapa=null; }
   const I=st.ini;
-  const opt=listaIni().slice().sort((a,b)=>a.ue.localeCompare(b.ue)).map(x=>'<option value="'+esc(x.ue)+'">').join('');
   let h='<div class="ini-top"><div class="ikpis" id="iKpis"></div>'+
       (ultimaUE()?'<button class="btn azul" id="iUlt" style="margin-left:auto;min-height:28px;padding:3px 12px" title="La última unidad que abrió en este navegador">Abrir mi unidad: '+esc(ultimaUE())+' ›</button>':'')+'</div>'+
     '<div class="ini-main" id="iniMain"><div class="ipn"><div class="iph"><h3>Dónde están las unidades</h3><span class="d" id="iMapD"></span></div>'+
@@ -348,16 +354,19 @@ function inicio(){
       '<div id="rmMapa" role="img" aria-label="Mapa de las Unidades Ejecutoras"><div class="nota" style="padding:14px">Cargando el mapa…</div></div>'+
       '<div class="rm-ley"><span><i style="background:'+COLP.rojo[0]+';border-color:'+COLP.rojo[1]+'"></i>50% o más de sus renglones con pedido sugerido</span><span><i style="background:'+COLP.ambar[0]+';border-color:'+COLP.ambar[1]+'"></i>30% a 49%</span><span><i style="background:'+COLP.verde[0]+';border-color:'+COLP.verde[1]+'"></i>menos de 30%</span><span><i style="background:#0C447C;border-color:#0C447C;border-radius:1px;transform:rotate(45deg);width:9px;height:9px"></i>CEDIS</span><span>· tamaño: renglones con pedido sugerido</span></div></div>'+
     '<div class="ipn"><div class="iph"><h3>Unidades Ejecutoras</h3><span class="d" id="iTabD"></span></div>'+
-      '<div class="itools" id="iTools"><input type="text" id="iBus" list="iUEs" placeholder="Buscar su unidad…" value="'+esc(I.q||'')+'" aria-label="Buscar unidad ejecutora" style="flex:1;min-width:180px"><datalist id="iUEs">'+opt+'</datalist>'+
+      '<div class="itools" id="iTools"><div class="combo" style="flex:1;min-width:200px"><input type="text" id="iBus" placeholder="Buscar su unidad: toque para ver la lista o escriba" value="'+esc(I.q||'')+'" aria-label="Buscar unidad ejecutora"><div class="combo-list" id="iBusL"></div></div>'+
         '<select id="iCed" aria-label="Filtrar por CEDIS">'+[['','Todos los CEDIS'],['CEDIS PANAMA','CEDIS Panamá'],['CEDIS DIVISA','CEDIS Divisa'],['CEDIS CHIRIQUI','CEDIS Chiriquí']].map(c=>'<option value="'+c[0]+'"'+(I.ced===c[0]?' selected':'')+'>'+c[1]+'</option>').join('')+'</select>'+
         '<button class="btn" id="iLimpiar" style="min-height:30px;padding:3px 10px">✕ Limpiar</button></div>'+
       '<div class="itw" id="iTw"></div><div class="rm-ley" id="iNota"></div></div></div>';
   $('main').innerHTML=h;
-  $('iCed').onchange=e=>{ I.ced=e.target.value; iniSelValida(); iniRefrescar(true); };
-  $('iVis').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; I.vis=b.dataset.v; $('iVis').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.v===I.vis)); iniSelValida(); iniRefrescar(true); };
-  $('iBus').oninput=e=>{ const v=e.target.value.trim(); I.q=v; const u=listaIni().find(x=>x.ue.toLowerCase()===v.toLowerCase());
-    if(u){ I.q=''; e.target.value=u.ue; I.ced=''; I.vis='pais'; $('iCed').value=''; $('iVis').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.v==='pais')); iniElegir(u.ue,false,true); return; }
-    iniTabla(); rmDibujar(); };
+  /* Cambiar de CEDIS o de región quita la unidad elegida y cierra su ventana en el mapa. */
+  const soltar=()=>{ I.sel=''; if(RM.mapa) RM.mapa.closePopup(); };
+  $('iCed').onchange=e=>{ I.ced=e.target.value; soltar(); iniRefrescar(true); };
+  $('iVis').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; I.vis=b.dataset.v; $('iVis').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.v===I.vis)); soltar(); iniRefrescar(true); };
+  combo($('iBus'),$('iBusL'),{ max:90,
+    items:()=>listaIni().slice().sort((a,b)=>a.ue.localeCompare(b.ue)).map(x=>({v:x.ue,t:x.ue+' '+(NOMC[x.cedis]||''),h:'<b>'+esc(x.ue)+'</b><small>'+(NOMC[x.cedis]||x.cedis)+(x.r!=null?' · '+fmt((x.r||0)+(x.a||0))+' renglones con pedido sugerido':'')+'</small>'})),
+    pick:u=>{ I.q=''; $('iBus').value=u; I.ced=''; I.vis='pais'; $('iCed').value=''; $('iVis').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.v==='pais')); iniElegir(u,false,true); },
+    type:q=>{ I.q=q; soltar(); iniTabla(); rmDibujar(); } });
   $('iLimpiar').onclick=()=>{ I.sel='';I.q='';I.ced='';I.vis='pais'; inicio(); };
   if($('iUlt')) $('iUlt').onclick=()=>abrirUE(ultimaUE());
   iniAltura(); iniTabla();
@@ -502,20 +511,55 @@ function crChip(u,largo){
   const tit='Consumo de '+B.cr.p+' en el Registro de Consumos · MED: '+(e||'—').toLowerCase().replace('_',' ')+(f?' ('+f+')':'')+(otras?' · '+otras:'');
   return '<span class="chip" style="background:'+d[1]+';color:'+d[2]+';font-weight:600" title="'+esc(tit)+'">'+d[0]+(largo?' '+B.cr.p:'')+(e==='PUBLICADO'&&f?' · '+fC(dISO(f.slice(0,10))):'')+'</span>';
 }
+/* ---------- Buscador desplegable propio (no el del navegador), igual al de simulador_reposicion.html:
+   al tocarlo despliega la lista; al escribir la filtra; flechas, Enter y Esc. ---------- */
+const sinAc=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+function combo(inp,lst,o){
+  let act=-1, vis=[];
+  const pintar=()=>{ const q=sinAc(inp.value.trim()); vis=o.items().filter(x=>!q||sinAc(x.t).indexOf(q)>=0).slice(0,o.max||80); act=-1;
+    lst.innerHTML=vis.length?vis.map((x,i)=>'<div class="combo-item" data-i="'+i+'">'+x.h+'</div>').join(''):'<div class="combo-vacio">Sin coincidencias</div>';
+    lst.classList.add('open'); lst.querySelectorAll('[data-i]').forEach(e=>e.onmousedown=ev=>{ ev.preventDefault(); elegir(vis[+e.dataset.i]); }); };
+  const cerrar=()=>lst.classList.remove('open');
+  const elegir=x=>{ cerrar(); if(x) o.pick(x.v); };
+  inp.setAttribute('autocomplete','off');
+  inp.onfocus=pintar; inp.onclick=()=>{ if(!lst.classList.contains('open')) pintar(); };
+  inp.oninput=()=>{ pintar(); if(o.type) o.type(inp.value.trim()); };
+  inp.onkeydown=e=>{ const it=lst.querySelectorAll('[data-i]');
+    if(e.key==='ArrowDown'){ if(!lst.classList.contains('open')) pintar(); act=Math.min(act+1,it.length-1); }
+    else if(e.key==='ArrowUp') act=Math.max(act-1,0);
+    else if(e.key==='Enter'){ e.preventDefault(); if(act>=0&&vis[act]) elegir(vis[act]); else if(vis.length===1) elegir(vis[0]); else cerrar(); return; }
+    else if(e.key==='Escape'){ cerrar(); inp.blur(); return; } else return;
+    e.preventDefault(); it.forEach((x,i)=>x.classList.toggle('act',i===act)); if(it[act]) it[act].scrollIntoView({block:'nearest'}); };
+  inp.onblur=()=>setTimeout(cerrar,150);
+}
 /* Encabezado de la unidad: reemplaza la barra superior (la herramienta se usa desde una unidad). */
-function cabUE(){ const U=B.ues[st.ue]; return '<div class="ucab"><div><h2>'+esc(st.ue)+'</h2><span class="nota">'+(NOMC[U.cedis]||U.cedis||'')+' · '+fmt(FILAS.length)+' renglones · saldos al '+fL(dISO(U.fechas.slice(-1)[0]))+'</span>'+(B.cr?'<div style="margin-top:3px;font-size:12px">Consumo de medicamentos de <b>'+B.cr.p+'</b> en el Registro de Consumos: '+crChip(st.ue)+(crDe(st.ue)&&(crDe(st.ue).MED||[])[0]!=='PUBLICADO'?' <span class="nota">la calculadora usa el último consumo aprobado de cada renglón</span>':'')+'</div>':'')+'</div><button class="btn-volver" id="btnInicio" title="Ver todas las unidades en el mapa">‹ Todas las unidades</button></div>'; }
+function cabUE(){ const U=B.ues[st.ue]; return '<div class="migas"><a href="#" class="casa irInicio" title="Volver a la vista principal (mapa y todas las unidades)">⌂ Inicio</a><span>›</span><span>'+esc(st.ue)+'</span></div><div class="ucab"><div><h2>'+esc(st.ue)+'</h2><span class="nota">'+(NOMC[U.cedis]||U.cedis||'')+' · '+fmt(FILAS.length)+' renglones · saldos al '+fL(dISO(U.fechas.slice(-1)[0]))+'</span>'+(B.cr?'<div style="margin-top:3px;font-size:12px">Consumo de medicamentos de <b>'+B.cr.p+'</b> en el Registro de Consumos: '+crChip(st.ue)+(crDe(st.ue)&&(crDe(st.ue).MED||[])[0]!=='PUBLICADO'?' <span class="nota">la calculadora usa el último consumo aprobado de cada renglón</span>':'')+'</div>':'')+'</div></div>'; }
 function vistaUE(){
   if(st.cod) return vistaRenglon();
-  const f=listaUE(), S=st.sortUE||{k:'imp',d:1};
-  const th=(k,t,sub,n)=>'<th'+(n?' class="n"':'')+' data-s="'+k+'" title="Ordenar">'+t+(S.k===k?(S.d>0?' ▲':' ▼'):'')+(sub?'<small>'+sub+'</small>':'')+'</th>';
   const base=FILAS.filter(x=>!st.vit||vit(x.c)), cnt={}; base.forEach(x=>cnt[x.r.estado]=(cnt[x.r.estado]||0)+1); const nNuevos=base.filter(x=>x.nuevo).length, nVit=FILAS.filter(x=>vit(x.c)).length;
   let h=cabUE()+'<div class="kpis">'+['rojo','ambar','pronto','verde','sin'].map(k=>'<button class="kpi'+(st.filtro===k?' on':'')+'" data-k="'+k+'" style="--bg:'+EST[k].bg+'"><span class="v" style="color:'+EST[k].c+'">'+fmt(cnt[k]||0)+'</span><span class="l">'+EST[k].t+' · '+EST[k].l+'</span></button>').join('')+
     '<button class="kpi kvit'+(st.vit?' on':'')+'" id="btnVit" aria-pressed="'+(st.vit?'true':'false')+'" title="Mostrar solo los renglones vitales" style="--bg:#fdecea"><span class="v" style="color:#a23224">'+(st.vit?'✓ ':'')+fmt(nVit)+'</span><span class="l">Vitales · '+(st.vit?'mostrando solo vitales':'toque para ver solo vitales')+'</span></button></div>';
-  h+='<div class="ubar"><input type="text" id="bus" placeholder="Buscar un renglón por código o nombre" value="'+esc(st.q)+'" aria-label="Buscar un renglón">'+
-    ((st.q||st.filtro||st.vit)?'<button class="btn" id="btnLimpiar">✕ Limpiar filtros</button>':'')+
+  h+='<div class="ubar"><div class="combo" style="flex:1;min-width:240px;max-width:480px"><input type="text" id="bus" placeholder="Buscar un renglón: toque para ver la lista o escriba código o nombre" value="'+esc(st.q)+'" aria-label="Buscar un renglón"><div class="combo-list" id="busL"></div></div>'+
+    '<button class="btn" id="btnLimpiar"'+((st.q||st.filtro||st.vit)?'':' style="display:none"')+'>✕ Limpiar filtros</button>'+
     (nNuevos?'<span class="chip nuevo" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+nNuevos+' nuevos hoy</span>':'')+
-    '<button class="btn verde" id="btnPre" style="margin-left:auto" title="Excel con las cantidades sugeridas (referenciales)">Descargar sugerencia (Excel)</button></div>';
-  h+='<div class="tw"><table><thead><tr>'+th('est','Estado')+th('c','Renglón')+th('saldo','Saldo hoy','unidades',1)+th('d','Demanda / mes','unidades · base del cálculo',1)+th('diag','Confiabilidad de la demanda <button class="q" id="qDiag" aria-label="Qué significa la confiabilidad de la demanda">?</button>','qué tan firme es el dato')+th('rop','Línea de pedido','unidades',1)+th('dias','Días para la línea de pedido','días que faltan',1)+th('pend','Por recibir','F8 recientes, unidades',1)+th('pedir','Sugerido','unidades',1)+'</tr></thead><tbody>';
+    '<button class="btn verde" id="btnPre" style="margin-left:auto" title="Excel con las cantidades sugeridas (referenciales)">Descargar sugerencia (Excel)</button></div><div id="uTab"></div>';
+  $('main').innerHTML='<div class="panel">'+h+'</div>';
+  $('main').querySelectorAll('.kpi[data-k]').forEach(b=>b.onclick=()=>{ st.filtro=st.filtro===b.dataset.k?'':b.dataset.k; vistaUE(); });
+  $('btnPre').onclick=()=>prePedido(st.ue);
+  $('btnVit').onclick=()=>{ st.vit=!st.vit; vistaUE(); };
+  $('main').querySelectorAll('.irInicio').forEach(a=>a.onclick=e=>{ e.preventDefault(); irInicio(); });
+  $('btnLimpiar').onclick=()=>{ st.q='';st.filtro='';st.vit=false; vistaUE(); };
+  combo($('bus'),$('busL'),{ max:60,
+    items:()=>FILAS.filter(x=>(!st.vit||vit(x.c))&&(!st.filtro||x.r.estado===st.filtro)).map(x=>({v:x.c,t:x.c+' '+nom(x.c),h:'<b class="mono">'+x.c+'</b> <span class="tag t-'+x.r.estado+'" style="font-size:9.5px">'+EST[x.r.estado].t+'</span>'+(vit(x.c)?' <span class="chip vital">VITAL</span>':'')+'<small>'+esc(nom(x.c).slice(0,90))+'</small>'})),
+    pick:c=>{ st.q=''; st.cod=c; vistaUE(); window.scrollTo(0,0); },
+    type:q=>{ st.q=q; $('btnLimpiar').style.display=(st.q||st.filtro||st.vit)?'':'none'; tablaUE(); } });
+  tablaUE();
+}
+/* Solo la tabla: se repinta al escribir sin reconstruir el buscador. */
+function tablaUE(){
+  const f=listaUE(), S=st.sortUE||{k:'imp',d:1};
+  const th=(k,t,sub,n)=>'<th'+(n?' class="n"':'')+' data-s="'+k+'" title="Ordenar">'+t+(S.k===k?(S.d>0?' ▲':' ▼'):'')+(sub?'<small>'+sub+'</small>':'')+'</th>';
+  let h='<div class="tw"><table><thead><tr>'+th('est','Estado')+th('c','Renglón')+th('saldo','Saldo hoy','unidades',1)+th('d','Demanda / mes','unidades · base del cálculo',1)+th('diag','Confiabilidad de la demanda <button class="q" id="qDiag" aria-label="Qué significa la confiabilidad de la demanda">?</button>','qué tan firme es el dato')+th('rop','Línea de pedido','unidades',1)+th('dias','Días para la línea de pedido','días que faltan',1)+th('pend','Por recibir','F8 recientes, unidades',1)+th('pedir','Sugerido','unidades',1)+'</tr></thead><tbody>';
   f.slice(0,400).forEach(x=>{ const e=EST[x.r.estado];
     h+='<tr data-c="'+x.c+'" tabindex="0"><td><span class="tag t-'+x.r.estado+'">'+e.t+'</span>'+(x.nuevo?' <span class="chip nuevo" title="Cruzó la línea desde la carga anterior">nuevo hoy</span>':'')+'</td>'+
       '<td><b class="mono">'+x.c+'</b>'+(vit(x.c)?' <span class="chip vital">VITAL</span>':'')+chipTr(x.c)+'<br><span class="desc">'+esc(nom(x.c).slice(0,70))+'</span></td>'+
@@ -523,17 +567,12 @@ function vistaUE(){
       '<td class="n num">'+(x.b.d?fmt(x.r.ROP):'·')+'</td><td class="n num">'+(x.r.diasAROP==null?'·':x.r.diasAROP<=0?'<b style="color:#c0392b">ya cruzó</b>':Math.round(x.r.diasAROP))+'</td>'+
       '<td class="n num">'+(x.r.pend>0?fmt(x.r.pend):'·')+'</td>'+
       '<td class="n num"'+(x.r.pedir>0?' style="font-weight:700;color:#0C447C"':'')+'>'+((x.r.pedir>0&&(x.r.estado!=='verde'||x.r.aj))?fmt(x.r.pedir):'·')+(x.r.aj?' <span class="chip" title="Cantidad ajustada por el usuario">ajustado</span>':'')+'</td></tr>'; });
+  if(!f.length) h+='<tr><td colspan="9" class="nota" style="padding:14px">Ningún renglón coincide con la búsqueda o los filtros.</td></tr>';
   h+='</tbody></table></div><div class="nota" style="margin-top:4px">'+(f.length>400?'Mostrando 400 de '+fmt(f.length)+'. ':fmt(f.length)+' renglones. ')+(S.k==='imp'?'Ordenados por urgencia y, dentro de cada estado, por la cantidad sugerida. ':'')+'Toque un encabezado para ordenar y un renglón para abrir la calculadora. '+AVISO_REF+'</div>';
-  $('main').innerHTML='<div class="panel">'+h+'</div>';
-  $('main').querySelectorAll('.kpi[data-k]').forEach(b=>b.onclick=()=>{ st.filtro=st.filtro===b.dataset.k?'':b.dataset.k; vistaUE(); });
-  $('main').querySelectorAll('tbody tr').forEach(tr=>{ const go=()=>{ st.cod=tr.dataset.c; vistaUE(); window.scrollTo(0,0); }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
-  $('btnPre').onclick=()=>prePedido(st.ue);
+  $('uTab').innerHTML=h;
+  $('uTab').querySelectorAll('tbody tr[data-c]').forEach(tr=>{ const go=()=>{ st.cod=tr.dataset.c; vistaUE(); window.scrollTo(0,0); }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
   $('qDiag').onclick=e=>{ e.stopPropagation(); ayudaDiag(); };
-  $('btnVit').onclick=()=>{ st.vit=!st.vit; vistaUE(); };
-  $('btnInicio').onclick=irInicio;
-  if($('btnLimpiar')) $('btnLimpiar').onclick=()=>{ st.q='';st.filtro='';st.vit=false; vistaUE(); };
-  const bus=$('bus'); bus.oninput=e=>{ st.q=e.target.value.trim(); clearTimeout(bus._t); bus._t=setTimeout(()=>{ const pos=bus.selectionStart; vistaUE(); const b2=$('bus'); b2.focus(); try{ b2.setSelectionRange(pos,pos); }catch(e){} },180); };
-  $('main').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{ const k=t.dataset.s, cur=st.sortUE||{k:'imp',d:1}; st.sortUE={k:k,d:cur.k===k?-cur.d:(['saldo','d','rop','pend','pedir'].indexOf(k)>=0?-1:1)}; vistaUE(); });
+  $('uTab').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{ const k=t.dataset.s, cur=st.sortUE||{k:'imp',d:1}; st.sortUE={k:k,d:cur.k===k?-cur.d:(['saldo','d','rop','pend','pedir'].indexOf(k)>=0?-1:1)}; tablaUE(); });
 }
 function irInicio(){ st.ue='';st.cod='';st.q='';st.filtro=''; inicio(); window.scrollTo(0,0); }
 /* Texto de respaldo (P-240): la herramienta sugiere, no ordena. */
@@ -576,7 +615,7 @@ function vistaRenglon(){
   const U=B.ues[st.ue];
   const nsDef=vit(x.c)?95:90; if(!RX.ns) RX.ns=nsDef;
   const ced=B.ced[x.c]||[null,null,null], ci={'CEDIS PANAMA':0,'CEDIS DIVISA':1,'CEDIS CHIRIQUI':2}[U.cedis]||0;
-  let h='<div class="panel"><div class="nota" style="margin:-2px 0 2px"><a href="#" id="rxUE" style="color:#1E5A9E">'+esc(st.ue)+'</a> › renglón</div><div class="cab"><h2><span class="mono">'+x.c+'</span> · '+esc(nom(x.c))+'</h2>'+(vit(x.c)?'<span class="chip vital">VITAL</span>':'')+'<span id="rxTag"></span>'+chipTr(x.c,true)+'<span class="rxnav" id="rxNav" style="margin-left:auto">'+navHTML(x.c)+'</span><button class="btn" id="btnImg" style="min-height:26px;padding:2px 10px">Descargar imagen</button><button class="btn-volver" id="btnVolver" style="margin-left:0">‹ Volver a la lista</button></div>'+
+  let h='<div class="panel"><div class="migas"><a href="#" class="casa irInicio" title="Volver a la vista principal (mapa y todas las unidades)">⌂ Inicio</a><span>›</span><a href="#" id="rxUE">'+esc(st.ue)+'</a><span>›</span><span>renglón</span></div><div class="cab"><h2><span class="mono">'+x.c+'</span> · '+esc(nom(x.c))+'</h2>'+(vit(x.c)?'<span class="chip vital">VITAL</span>':'')+'<span id="rxTag"></span>'+chipTr(x.c,true)+'<span class="rxnav" id="rxNav" style="margin-left:auto">'+navHTML(x.c)+'</span><button class="btn" id="btnImg" style="min-height:26px;padding:2px 10px">Descargar imagen</button><button class="btn-volver" id="btnVolver" style="margin-left:0">‹ Volver a la lista</button></div>'+
    '<div class="hoy" id="hoyRes"></div>'+
    '<div class="calc"><div id="colIzq">'+
    '<div class="paso"><h3><span>1</span>Consumo mensual de su unidad</h3><div id="p1"></div></div>'+
@@ -588,6 +627,7 @@ function vistaRenglon(){
   $('main').innerHTML=h;
   $('btnVolver').onclick=()=>{ st.cod=''; vistaUE(); };
   $('rxUE').onclick=e=>{ e.preventDefault(); st.cod=''; vistaUE(); };
+  $('main').querySelectorAll('.irInicio').forEach(a=>a.onclick=e=>{ e.preventDefault(); irInicio(); });
   navActivar();
   $('gModo').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; st.proy=b.dataset.m==='1'; vistaRenglon(); };
   $('btnImg').onclick=()=>descargarImagen(x.c);
@@ -634,12 +674,16 @@ function actualizar(){
   $('vL').textContent=RX.p.L+' d'; $('vC').textContent=RX.p.cubrir+' d'; $('vN').textContent=ns+'%';
   // paso 1: las tres señales
   const Uc=B.ues[st.ue], rgC=Uc.consPer&&Uc.consPer[x.c], perC=rgC&&s.dRep!=null&&Math.abs((rgC[0]||0)-s.dRep)<=1?rgC[1]:null;
-  const extRep=s.dRep==null?'sin consumo reportado':perC?'periodo '+esc(perC)+(B.cr&&perC!==B.cr.p?' · <span style="color:#a23224;font-weight:600">no reportó '+B.cr.p+'</span>':''):'';
+  const extRep=s.dRep==null?'sin consumo reportado':perC?'periodo '+esc(perC)+(B.cr&&perC!==B.cr.p?' · <span style="color:#a23224;font-weight:600;white-space:nowrap">no reportó '+B.cr.p+'</span>':''):'';
   const vals=[['Consumo observado'+(s.truncado?' (truncado)':''),s.truncado?null:s.dObs,'O',''],['Consumo reportado',s.dRep,'R',extRep],['Formas 8',s.dReq,'F','']];
   const mx=Math.max(1,...vals.map(v=>v[1]||0),b.d||0);
   let h1=vals.map(v=>'<div class="sen"><span>'+v[0]+' <button class="q" data-h="'+v[2]+'" aria-label="Qué es '+v[0]+'">?</button>'+(v[3]?'<small class="nota" style="display:block;line-height:1.1">'+v[3]+'</small>':'')+'</span><div class="pista">'+(v[1]?'<i style="width:'+(v[1]/mx*100)+'%"></i>':'')+'</div><span class="val">'+(v[1]?fmt(v[1]):'sin dato')+'</span></div>').join('');
   h1+='<div class="sen base"><span class="base-lbl">Demanda usada <button class="q" data-h="D" aria-label="Qué es la demanda usada">?</button></span><div class="pista"><i style="width:'+((b.d||0)/mx*100)+'%"></i></div><span class="val base-lbl">'+(b.d?fmt(b.d):'·')+'</span></div>';
-  h1+='<div class="nota" style="margin-top:4px"><span class="chip '+b.diag+'">'+DIAG[b.diag][0]+'</span> <button class="q" id="qDiag2" aria-label="Qué significa la confiabilidad de la demanda">?</button> '+DIAG[b.diag][1]+'</div>';
+  let txtD=DIAG[b.diag][1];
+  if(b.diag==='divergente'){ const sv=[['el consumo observado',s.truncado?null:s.dObs],['el consumo reportado',s.dRep],['las Formas 8',s.dReq]].filter(z=>z[1]>0);
+    if(sv.length>=2){ const med=sv.map(z=>z[1]).sort((a,c)=>a-c)[Math.floor(sv.length/2)], fuera=sv.slice().sort((a,c)=>Math.abs(Math.log(c[1]/med))-Math.abs(Math.log(a[1]/med)))[0];
+      txtD='No coinciden: '+fuera[0]+' ('+fmt(fuera[1])+') '+(fuera[0]==='las Formas 8'?'están ':'está ')+(fuera[1]<med?'muy por debajo':'muy por encima')+' de las otras señales'+(fuera[0]==='las Formas 8'&&fuera[1]<med?', es decir, la unidad pide menos de lo que consume':'')+'. Se usa la mediana para no depender de una sola.'; } }
+  h1+='<div class="nota" style="margin-top:6px"><span class="chip '+b.diag+'">'+DIAG[b.diag][0]+'</span> <button class="q" id="qDiag2" aria-label="Qué significa la confiabilidad de la demanda">?</button> '+txtD+'</div>';
   $('p1').innerHTML=h1; $('p1').querySelectorAll('.q[data-h]').forEach(q=>q.onclick=()=>ayudaCorta(q.dataset.h)); $('qDiag2').onclick=ayudaDiag;
   if(!b.d){ $('p2').innerHTML=''; $('hoyRes').innerHTML='<div class="frase" style="grid-column:1/-1">Sin demanda registrada no se puede calcular un pedido.</div>'; $('graf').innerHTML=''; $('rxTag').innerHTML='<span class="tag t-sin">Sin datos</span>'; return; }
   const dd=b.d/30, Z=zDe(ns), cvu=s.cv!=null?s.cv:MODELO.CV_DEF, sd=(cvu*7*dd)/Math.sqrt(7), L=RX.p.L;
@@ -715,7 +759,7 @@ function grafico(x,k){
   s+='<path d="'+path(pts,true)+'" fill="none" stroke="#1E5A9E" stroke-width="2.4"/>';
   if(st.proy) s+='<path d="'+path(proySin)+'" fill="none" stroke="#9aa3ad" stroke-width="2" stroke-dasharray="5 4"/>';
   if(conPedido) s+='<path d="'+path(proyCon)+'" fill="none" stroke="#2e7d32" stroke-width="2.2" stroke-dasharray="7 3"/><circle cx="'+X(k.hoy+k.L*DIA)+'" cy="'+Y(proyCon[k.L][1])+'" r="4.5" fill="#2e7d32"/><text x="'+(X(k.hoy+k.L*DIA)+6)+'" y="'+(Y(proyCon[k.L][1])-6)+'" font-size="11" fill="#2e7d32" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">llega el pedido</text>';
-  s+='<line x1="'+X(k.hoy)+'" x2="'+X(k.hoy)+'" y1="'+mt+'" y2="'+Y(0)+'" stroke="#0C447C" stroke-width="1.4"/><text x="'+(X(k.hoy)+4)+'" y="'+(mt+11)+'" font-size="11" fill="#0C447C" font-weight="700">Hoy</text>';
+  s+='<line x1="'+X(k.hoy)+'" x2="'+X(k.hoy)+'" y1="'+mt+'" y2="'+Y(0)+'" stroke="#8a6d0b" stroke-width="1.6" stroke-dasharray="2 3"/><text x="'+(X(k.hoy)-4)+'" y="'+(Y(0)-6)+'" text-anchor="end" font-size="11" fill="#8a6d0b" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">Hoy · '+fC(k.hoy)+'</text>';
   s+='<line id="gCur" x1="0" x2="0" y1="'+mt+'" y2="'+Y(0)+'" stroke="#0C447C" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>';
   s+='<rect id="gHit" x="'+ml+'" y="'+mt+'" width="'+(W-ml-mr)+'" height="'+(H-mt-mb)+'" fill="transparent" style="cursor:crosshair"/></svg><div class="tip" id="gTip"></div>';
   GX={x,k,t0,t1,W,ml,mr,pts,proySin,proyCon,conPedido,ev,X};
