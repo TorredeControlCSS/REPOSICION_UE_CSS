@@ -282,7 +282,7 @@ const fL=t=>{ const d=new Date(t); return d.getDate()+'-'+MES[d.getMonth()]+'-'+
 const fC=t=>{ const d=new Date(t); return d.getDate()+'-'+MES[d.getMonth()]; };
 const nom=c=>(B.dic[c]&&B.dic[c][0])||c, vit=c=>!!(B.dic[c]&&B.dic[c][1]);
 /* CEDIS Panamá: disponible = saldo − reservado (null mientras no carguen saldo y reservas) */
-const dispPA=c=>{ const cd=B.ced[c]; if(!cd||!B.resPA) return null; const saldo=cd[0]||0, res=B.resPA.q[c]||0; return {saldo,res,disp:Math.max(0,saldo-res)}; };
+const dispPA=c=>{ const cd=B.ced[c]; if(!cd||!B.resPA) return null; const saldo=cd[0]||0, res=B.resPA.q[c]||0, d=B.resPA.d[c]||[0,0]; return {saldo,res,disp:Math.max(0,saldo-res),f8:d[0],nu:d[1]}; };
 const trn=c=>B.tr&&B.tr[c]?{q:B.tr[c][0],f:B.tr[c][1]}:null;
 const chipTr=(c,largo)=>{ const t=trn(c); if(!t) return ''; const hoy=Date.now(), atr=t.f&&dISO(t.f)<hoy; return ' <span class="chip tr'+(atr?' atr':'')+'" title="Orden de compra en camino a CEDIS Panamá'+(t.f?' · entrega '+t.f:'')+'">'+(largo?'OC en camino a CEDIS Panamá · '+fmt(t.q)+' u'+(t.f?' · entrega '+fC(dISO(t.f))+(atr?' (atrasada)':''):''):'OC en camino')+'</span>'; };
 const EST={rojo:{t:'Crítico',l:'Bajo el inventario crítico',bg:'#f6d5d1',c:'#c0392b',o:0},ambar:{t:'Bajo la línea',l:'Cruzó la línea de pedido',bg:'#fbe8c8',c:'#b7791f',o:1},
@@ -791,8 +791,10 @@ function actualizar(){
     (accion&&!st.proy? cel('Línea de pedido',fmt(ROP),'unidades') : cel('Le alcanzaría hasta',accion?fC(hasta):fC(hoy+Math.round(x.saldo/dd)*DIA),accion?'si se pide hoy (estimado)':'al consumo actual'))+pre+
     (function(){ const U=B.ues[st.ue], ci={'CEDIS PANAMA':0,'CEDIS DIVISA':1,'CEDIS CHIRIQUI':2}[U.cedis]||0, cd=B.ced[x.c], nomC={0:'CEDIS Panamá',1:'CEDIS Divisa',2:'CEDIS Chiriquí'}[ci];
       const pa=dispPA(x.c);
-      if(ci===0){ const v=pa?pa.disp:null, tt=pa?' title="Saldo '+fmt(pa.saldo)+' − reservado '+fmt(pa.res)+' para Formas 8 en despacho = disponible '+fmt(pa.disp)+(B.resPA&&B.resPA.gen?' (reservas al '+B.resPA.gen+')':'')+'"':'';
-        return '<div class="cel"'+(v===0?' style="--bg:#f6d5d1"':'')+tt+'><span class="l"><span>CEDIS Panamá tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">'+(pa&&pa.disp===0&&pa.saldo>0?'todo reservado':'unidades disponibles')+'</span></span></div>'; }
+      if(ci===0){ const v=pa?pa.disp:null, todoRes=pa&&pa.disp===0&&pa.saldo>0,
+          tt=pa?' title="Saldo '+fmt(pa.saldo)+' − reservado '+fmt(pa.res)+(pa.res?' en '+fmt(pa.f8)+' Formas 8 de '+fmt(pa.nu)+' unidades, reservado y aún sin despachar':'')+' = disponible '+fmt(pa.disp)+(B.resPA&&B.resPA.gen?' (reservas al '+B.resPA.gen+')':'')+'"':'';
+        /* todo reservado: lila (como el informe semanal) y la cantidad reservada a la vista; cero real: rojo */
+        return '<div class="cel"'+(todoRes?' style="--bg:#e7def3"':v===0?' style="--bg:#f6d5d1"':'')+tt+'><span class="l"><span>CEDIS Panamá tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">'+(todoRes?fmt(pa.res)+' reservadas':'unidades disponibles')+'</span></span></div>'; }
       const v=cd?cd[ci]:null, extra=pa?' title="CEDIS Panamá disponible '+fmt(pa.disp)+' unidades (neto de reservas)"':'';
       return '<div class="cel"'+(v===0?' style="--bg:#f6d5d1"':'')+extra+'><span class="l"><span>'+nomC+' tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">unidades</span></span></div>'; })()+'</div>';
   if($('qRec')) $('qRec').onclick=()=>{ AYC.PR=['Por recibir','Lo que ya pidió en Formas 8 en los últimos '+L+' días y todavía no ha entrado a su saldo. Pidió '+fmt(pe.pedido)+'; desde entonces entraron '+fmt(pe.recibido)+'; quedan '+fmt(pe.pend)+' por recibir. Se descuentan del pedido sugerido para no pedir dos veces.']; ayudaCorta('PR'); };
@@ -935,7 +937,7 @@ window.__rue={st,abrirUE,vistaUE,FILAS:()=>FILAS,iniciarTour,TOUR,B};
     $('frS').textContent=fL(dISO(idx.fechas[idx.fechas.length-1]));
     $('frP').textContent=B.gen?(new Date(B.gen).toLocaleString('es-PA',{timeZone:'America/Panama',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' PTY'):'·';
     // inventario de los CEDIS (para "le surte…"), en segundo plano
-    fetch(RESERVAS_URL+'?t='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{ if(!j||!j.r) return; B.resPA={gen:j.generado||'',q:{}}; Object.keys(j.r).forEach(c=>{ const x=j.r[c].rs; B.resPA.q[c]=x&&x.q>0?x.q:0; }); if(st.cod&&$('hoyRes')) actualizar(); }).catch(()=>{});
+    fetch(RESERVAS_URL+'?t='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{ if(!j||!j.r) return; B.resPA={gen:j.generado||'',q:{},d:{}}; Object.keys(j.r).forEach(c=>{ const x=j.r[c].rs; B.resPA.q[c]=x&&x.q>0?x.q:0; if(x&&x.q>0) B.resPA.d[c]=[x.f8||0,(x.u||[]).length]; }); if(st.cod&&$('hoyRes')) actualizar(); }).catch(()=>{});
     traer('matriz_snapshot.json',true).then(sn=>{ if(sn&&sn.renglones) sn.renglones.forEach(r=>B.ced[r.c]=[r.iPA||0,r.iDI||0,r.iCH||0]); if(st.cod&&$('hoyRes')) actualizar(); });
     const q=new URLSearchParams(location.search).get('ue');
     if(q&&idx.ues.some(x=>x.ue===q)) abrirUE(q); else inicio();
