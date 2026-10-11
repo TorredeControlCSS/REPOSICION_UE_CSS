@@ -367,31 +367,33 @@ function iniSelValida(){ const I=st.ini; if(I.sel&&!iniFiltradas().some(x=>x.ue=
 function iniRefrescar(encuadrar){ iniTabla(); rmDibujar(); if(encuadrar) rmEncuadrar(); }
 function iniAltura(){ const m=$('iniMain'); if(!m) return; const top=m.getBoundingClientRect().top+window.scrollY; m.style.height=Math.max(520,window.innerHeight-top-12)+'px'; if(RM.mapa) RM.mapa.invalidateSize(); }
 window.addEventListener('resize',()=>{ if(!st.ue) iniAltura(); });
-/* Totales arriba: siguen a los filtros de la tabla */
+/* Totales arriba: siguen a los filtros de la tabla (incluye cuántas unidades ya reportaron su consumo) */
 function iniKpis(){ const k=$('iKpis'); if(!k||!B.res) return; const f=iniFiltradas(), sum=c=>f.reduce((a,x)=>a+(x[c]||0),0);
   const kp=(t,v,bg,c)=>'<div class="ikpi" style="--bg:'+bg+';--c:'+c+'">'+t+'<b>'+fmt(v)+'</b></div>';
-  k.innerHTML='<span class="nota" style="align-self:center">Renglones en '+(f.length===listaIni().length?'todas las unidades':f.length+' unidad'+(f.length===1?'':'es'))+':</span>'+kp('Críticos',sum('r'),EST.rojo.bg,EST.rojo.c)+kp('Bajo la línea',sum('a'),EST.ambar.bg,EST.ambar.c)+kp('Cerca de la línea',sum('p'),EST.pronto.bg,EST.pronto.c)+kp('Con cobertura',sum('v'),EST.verde.bg,EST.verde.c); }
+  const nRep=B.cr?f.filter(x=>{ const c=crDe(x.ue); return c&&c.MED&&c.MED[0]==='PUBLICADO'; }).length:null;
+  k.innerHTML=(B.cr?'<div class="ikpi" style="--bg:#e6edf5;--c:#0C447C" title="Unidades cuyo consumo de medicamentos de '+B.cr.p+' ya está en MAESTRO_CONSUMOS_UE">Reportaron consumo '+B.cr.p+'<b>'+nRep+' de '+f.length+'</b></div>':'')+'<span class="nota" style="align-self:center;margin-left:6px">Renglones en '+(f.length===listaIni().length?'todas las unidades':f.length+' unidad'+(f.length===1?'':'es'))+':</span>'+kp('Críticos',sum('r'),EST.rojo.bg,EST.rojo.c)+kp('Bajo la línea',sum('a'),EST.ambar.bg,EST.ambar.c)+kp('Cerca de la línea',sum('p'),EST.pronto.bg,EST.pronto.c)+kp('Con cobertura',sum('v'),EST.verde.bg,EST.verde.c); }
 function enVista(x){ const v=st.ini.vis; if(!v||v==='pais') return true; const xy=xyDe(x.ue); if(!xy) return false; const b=RM.VIS[v][1]; return xy[0]>=b[0][0]&&xy[0]<=b[1][0]&&xy[1]>=b[0][1]&&xy[1]<=b[1][1]; }
 function iniFiltradas(){ const I=st.ini, q=(I.q||'').toLowerCase(); return listaIni().filter(x=>(!I.ced||x.cedis===I.ced)&&enVista(x)&&(!q||x.ue.toLowerCase().indexOf(q)>=0)); }
 function iniTabla(){
   const I=st.ini, S=I.sort, f=iniFiltradas(); iniKpis();
-  const val={ue:x=>x.ue,r:x=>x.r||0,a:x=>x.a||0,p:x=>x.p||0,v:x=>x.v||0,s:x=>x.s||0,pp:x=>(x.r||0)+(x.a||0),pct:x=>pctPP(x)==null?-1:pctPP(x)}[S.k];
+  const crO=x=>{ const c=crDe(x.ue), e=c&&c.MED?c.MED[0]:''; return e==='PUBLICADO'?2:e==='SIN_REPORTE'?0:1; };
+  const val={cr:crO,ue:x=>x.ue,r:x=>x.r||0,a:x=>x.a||0,p:x=>x.p||0,v:x=>x.v||0,s:x=>x.s||0,pp:x=>(x.r||0)+(x.a||0),pct:x=>pctPP(x)==null?-1:pctPP(x)}[S.k];
   f.sort((a,b)=>{ const A=val(a),Bv=val(b); return (A<Bv?-1:A>Bv?1:0)*S.d || ((b.r||0)+(b.a||0))-((a.r||0)+(a.a||0)) || a.ue.localeCompare(b.ue); });
   const th=(k,t,sub,n)=>'<th'+(n?' class="n"':'')+' data-s="'+k+'" title="Ordenar">'+t+(S.k===k?(S.d>0?' ▲':' ▼'):'')+(sub?'<small>'+sub+'</small>':'')+'</th>';
-  let h='<table class="it"><thead><tr class="grp"><th></th><th colspan="5" class="gc">Cantidad de renglones por estado</th><th colspan="2" class="gc">Renglones con pedido sugerido</th></tr><tr>'+th('ue','Unidad Ejecutora','y el CEDIS que la abastece')+th('r','Críticos','',1)+th('a','Bajo la línea','',1)+th('p','Cerca de la línea','',1)+th('v','Con cobertura','',1)+th('s','Sin datos','',1)+th('pp','Renglones','críticos + bajo la línea',1)+th('pct','%','de los que tienen dato',1)+'</tr></thead><tbody>';
+  let h='<table class="it"><thead><tr class="grp"><th></th><th colspan="5" class="gc">Cantidad de renglones por estado</th><th colspan="2" class="gc">Renglones con pedido sugerido</th>'+(B.cr?'<th class="gc">Consumo '+B.cr.p+'</th>':'')+'</tr><tr>'+th('ue','Unidad Ejecutora','y el CEDIS que la abastece')+th('r','Críticos','',1)+th('a','Bajo la línea','',1)+th('p','Cerca de la línea','',1)+th('v','Con cobertura','',1)+th('s','Sin datos','',1)+th('pp','Renglones','críticos + bajo la línea',1)+th('pct','%','de los que tienen dato',1)+(B.cr?th('cr','Registro','medicamentos'):'')+'</tr></thead><tbody>';
   f.forEach(x=>{ const pc=pctPP(x), c=clsPct(pc), sel=I.sel===x.ue;
     h+='<tr data-u="'+esc(x.ue)+'" tabindex="0"'+(sel?' class="sel"':'')+'><td class="ue"><b>'+esc(x.ue)+'</b><small>'+(NOMC[x.cedis]||x.cedis)+(x.nuevos?' · <span class="chip nuevo" title="Renglones que cruzaron la línea de pedido con la última carga de saldos">'+x.nuevos+' nuevos hoy</span>':'')+'</small></td>'+
       (x.r==null?'<td colspan="7" class="nota">resumen en preparación</td>':
       '<td class="n num" style="color:'+EST.rojo.c+';font-weight:700">'+fmt(x.r)+'</td><td class="n num" style="color:'+EST.ambar.c+';font-weight:700">'+fmt(x.a)+'</td><td class="n num">'+fmt(x.p)+'</td><td class="n num">'+fmt(x.v)+'</td><td class="n num" style="color:var(--gris)">'+fmt(x.s)+'</td>'+
-      '<td class="n num" style="font-weight:700;color:#0C447C">'+fmt((x.r||0)+(x.a||0))+'</td><td class="n"><span class="pct '+c+'">'+(pc==null?'·':Math.round(pc*100)+'%')+'</span></td>')+'</tr>'+
-      (sel?'<tr class="det"><td colspan="8" id="iDet"><div class="nota">Cargando los renglones de la unidad…</div></td></tr>':'');
+      '<td class="n num" style="font-weight:700;color:#0C447C">'+fmt((x.r||0)+(x.a||0))+'</td><td class="n"><span class="pct '+c+'">'+(pc==null?'·':Math.round(pc*100)+'%')+'</span></td>')+(B.cr?'<td>'+crChip(x.ue)+'</td>':'')+'</tr>'+
+      (sel?'<tr class="det"><td colspan="'+(B.cr?9:8)+'" id="iDet"><div class="nota">Cargando los renglones de la unidad…</div></td></tr>':'');
   });
   if(!f.length) h+='<tr><td colspan="8" class="nota" style="padding:14px">Ninguna unidad coincide con la búsqueda o los filtros.</td></tr>';
   h+='</tbody></table>';
   $('iTw').innerHTML=h;
   $('iTabD').textContent=f.length+' unidad'+(f.length===1?'':'es')+' · '+fmt(f.reduce((s,x)=>s+(x.r||0)+(x.a||0),0))+' renglones con pedido sugerido';
   $('iLimpiar').style.display=(I.sel||I.q||I.ced||(I.vis&&I.vis!=='pais'))?'':'none';
-  $('iTw').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{ const k=t.dataset.s; I.sort={k:k,d:S.k===k?-S.d:(k==='ue'?1:-1)}; iniTabla(); });
+  $('iTw').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{ const k=t.dataset.s; I.sort={k:k,d:S.k===k?-S.d:(k==='ue'||k==='cr'?1:-1)}; iniTabla(); });
   $('iTw').querySelectorAll('tr[data-u]').forEach(tr=>{ const go=()=>iniElegir(tr.dataset.u,true); tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
   const sinXY=RM.coord?f.filter(x=>!xyDe(x.ue)).map(x=>x.ue):[];
   $('iNota').innerHTML='Las cifras de la tabla son cantidades de <b>renglones</b>. Toque una unidad para ubicarla en el mapa y ver sus 10 renglones más urgentes.'+(sinXY.length?' · Sin ubicación en el mapa: '+sinXY.map(esc).join(', '):'');
@@ -473,8 +475,35 @@ function listaUE(){
   f.sort((a,b)=>{ const A=val(a),Bv=val(b); return (A<Bv?-1:A>Bv?1:0)*S.d || EST[a.r.estado].o-EST[b.r.estado].o || b.r.pedir-a.r.pedir; });
   return f;
 }
+/* ---------- Reporte de consumo (Registro de Consumos, consumos_ue.html) ----------
+   El periodo que corresponde reportar es el último mes ya terminado del calendario del Registro.
+   consumos/estado_<periodo>.json dice, por unidad y categoría, si su consumo de ese mes ya entró al
+   maestro (PUBLICADO) o no. La calculadora lo muestra para que se vea quién reporta y quién no. */
+B.cr=null;
+async function cargarReporteConsumo(hoyISO){
+  try{
+    const per=await traer('consumos/periodos.json',true); if(!per||!per.P) return;
+    const hoy=hoyISO||new Date().toISOString().slice(0,10);
+    const m=per.P.filter(x=>x.t==='MENSUAL'&&x.fin&&x.fin<hoy).sort((a,b)=>a.fin<b.fin?1:-1)[0]; if(!m) return;
+    const est=await traer('consumos/estado_'+m.p+'.json',true); if(!est||!est.F) return;
+    const cats=est.cats||['MED','MQ','LAB'], map={};
+    est.F.forEach(r=>{ const o={}; cats.forEach((c,i)=>o[c]=[r[3+2*i]||'',r[4+2*i]||'']); map[r[0]]=o; });
+    B.cr={p:m.p,lim:m.lim||'',cats:cats,ue:map};
+  }catch(e){}
+}
+const CR_EST={PUBLICADO:['Reportado','#d6efdc','#1f6b36'],SIN_REPORTE:['Sin reporte','#f6d5d1','#a23224']};
+function crDe(u){ return B.cr&&B.cr.ue[u]||null; }
+/* Chip del estado de reporte de MEDICAMENTOS (la calculadora trabaja sobre los renglones de la unidad;
+   las otras categorías van en el detalle). */
+function crChip(u,largo){
+  const c=crDe(u); if(!c) return '<span class="chip" title="Sin dato del Registro de Consumos">·</span>';
+  const [e,f]=c.MED||['',''], d=CR_EST[e]||['En revisión','#fbe8c8','#8a5a1a'];
+  const otras=B.cr.cats.filter(k=>k!=='MED').map(k=>k+': '+((CR_EST[(c[k]||[])[0]]||['en revisión'])[0]).toLowerCase()).join(' · ');
+  const tit='Consumo de '+B.cr.p+' en el Registro de Consumos · MED: '+(e||'—').toLowerCase().replace('_',' ')+(f?' ('+f+')':'')+(otras?' · '+otras:'');
+  return '<span class="chip" style="background:'+d[1]+';color:'+d[2]+';font-weight:600" title="'+esc(tit)+'">'+d[0]+(largo?' '+B.cr.p:'')+(e==='PUBLICADO'&&f?' · '+fC(dISO(f.slice(0,10))):'')+'</span>';
+}
 /* Encabezado de la unidad: reemplaza la barra superior (la herramienta se usa desde una unidad). */
-function cabUE(){ const U=B.ues[st.ue]; return '<div class="ucab"><div><h2>'+esc(st.ue)+'</h2><span class="nota">'+(NOMC[U.cedis]||U.cedis||'')+' · '+fmt(FILAS.length)+' renglones · saldos al '+fL(dISO(U.fechas.slice(-1)[0]))+'</span></div><button class="btn-volver" id="btnInicio" title="Ver todas las unidades en el mapa">‹ Todas las unidades</button></div>'; }
+function cabUE(){ const U=B.ues[st.ue]; return '<div class="ucab"><div><h2>'+esc(st.ue)+'</h2><span class="nota">'+(NOMC[U.cedis]||U.cedis||'')+' · '+fmt(FILAS.length)+' renglones · saldos al '+fL(dISO(U.fechas.slice(-1)[0]))+'</span>'+(B.cr?'<div style="margin-top:3px;font-size:12px">Consumo de medicamentos de <b>'+B.cr.p+'</b> en el Registro de Consumos: '+crChip(st.ue)+(crDe(st.ue)&&(crDe(st.ue).MED||[])[0]!=='PUBLICADO'?' <span class="nota">la calculadora usa el último consumo aprobado de cada renglón</span>':'')+'</div>':'')+'</div><button class="btn-volver" id="btnInicio" title="Ver todas las unidades en el mapa">‹ Todas las unidades</button></div>'; }
 function vistaUE(){
   if(st.cod) return vistaRenglon();
   const f=listaUE(), S=st.sortUE||{k:'imp',d:1};
@@ -577,7 +606,7 @@ document.addEventListener('keydown',e=>{ if(!st.cod||!$('rxNav')||$('tour').clas
 const AYC={L:['Tiempo de reposición','Días que se suponen para el cálculo entre que se pide y se recibe. Por defecto, 20 días. Es un parámetro de simulación, no un plazo de entrega comprometido.'],
   C:['Días a cubrir','Días de consumo que quiere tener cubiertos después de recibir el pedido. Por defecto, 30 días.'],
   O:['Consumo observado','Lo que bajó el saldo de su unidad en los últimos 90 días, contando solo los días en que tuvo existencia. Si estuvo en cero más de la mitad del periodo, no se usa (consumo truncado).'],
-  R:['Consumo reportado','El consumo mensual que su unidad reportó y que está publicado en MAESTRO_CONSUMOS_UE (el mismo del tablero de Consumos Reportados). Debajo del nombre se indica el periodo reportado al que corresponde (según el Registro de Consumos) y la fecha de corte del maestro.'],
+  R:['Consumo reportado','El consumo mensual que su unidad reportó en el Registro de Consumos y que está publicado en MAESTRO_CONSUMOS_UE. Debajo del nombre se indica de qué periodo es. Si su unidad no ha reportado el último mes, se usa su último consumo aprobado y se indica.'],
   F:['Formas 8','Lo que su unidad pidió en Formas 8 (urgencia y mensual), promedio mensual de los últimos 90 días.'],
   D:['Demanda usada','La mediana de las señales disponibles: si una está inflada o truncada, no arrastra el resultado. Con esta demanda se calcula la línea de pedido.'],
   G:['Hasta hoy y proyección','«Hasta hoy» muestra solo lo que ya pasó: el saldo real de su unidad hasta la última carga y sus Formas 8. «Ver proyección del pedido» agrega una estimación: cómo bajaría el saldo si no pide y cómo subiría si pide hoy, suponiendo que el pedido llega en el tiempo de entrega elegido y que el consumo sigue igual. Es una simulación, no una fecha de entrega comprometida.'],
@@ -604,8 +633,8 @@ function actualizar(){
   const x=RX, s=x.s, b=x.b, ns=RX.ns;
   $('vL').textContent=RX.p.L+' d'; $('vC').textContent=RX.p.cubrir+' d'; $('vN').textContent=ns+'%';
   // paso 1: las tres señales
-  const Uc=B.ues[st.ue], rgC=Uc.consPer&&Uc.consPer[x.c], perC=rgC&&s.dRep!=null&&Math.abs((rgC[0]||0)-s.dRep)<0.5?rgC[1]:null;
-  const extRep=perC?'periodo '+esc(perC)+(Uc.consCorte?' · corte '+fC(dISO(Uc.consCorte)):''):Uc.consCorte?'corte '+fC(dISO(Uc.consCorte)):'';
+  const Uc=B.ues[st.ue], rgC=Uc.consPer&&Uc.consPer[x.c], perC=rgC&&s.dRep!=null&&Math.abs((rgC[0]||0)-s.dRep)<=1?rgC[1]:null;
+  const extRep=s.dRep==null?'sin consumo reportado':perC?'periodo '+esc(perC)+(B.cr&&perC!==B.cr.p?' · <span style="color:#a23224;font-weight:600">no reportó '+B.cr.p+'</span>':''):'';
   const vals=[['Consumo observado'+(s.truncado?' (truncado)':''),s.truncado?null:s.dObs,'O',''],['Consumo reportado',s.dRep,'R',extRep],['Formas 8',s.dReq,'F','']];
   const mx=Math.max(1,...vals.map(v=>v[1]||0),b.d||0);
   let h1=vals.map(v=>'<div class="sen"><span>'+v[0]+' <button class="q" data-h="'+v[2]+'" aria-label="Qué es '+v[0]+'">?</button>'+(v[3]?'<small class="nota" style="display:block;line-height:1.1">'+v[3]+'</small>':'')+'</span><div class="pista">'+(v[1]?'<i style="width:'+(v[1]/mx*100)+'%"></i>':'')+'</div><span class="val">'+(v[1]?fmt(v[1]):'sin dato')+'</span></div>').join('');
@@ -775,7 +804,8 @@ window.__rue={st,abrirUE,vistaUE,FILAS:()=>FILAS,iniciarTour,TOUR,B};
   $('main').innerHTML='<div class="panel nota">Cargando la calculadora…</div>';
   try{
     const [idx,f8i,dic,res]=await Promise.all([traer('series_saldos_index.json'),traer('f8_eventos_index.json',true),traer('renglones_dic.json',true),traer('reposicion_resumen.json',true)]);
-    B.idx=idx; B.res=res; if(f8i&&f8i.ues) f8i.ues.forEach(x=>B.f8idx[x.ue]=x.archivo);
+    B.idx=idx; B.res=res;
+    await cargarReporteConsumo(idx.fechas[idx.fechas.length-1]); if(f8i&&f8i.ues) f8i.ues.forEach(x=>B.f8idx[x.ue]=x.archivo);
     if(dic&&dic.r) Object.keys(dic.r).forEach(k=>B.dic[k]=[dic.r[k].n,dic.r[k].vit?1:0]);
     if(res&&res.tr) B.tr=res.tr;
     B.gen=(res&&res.generado)||idx.generado||'';
