@@ -172,8 +172,8 @@ header h1{font-size:16.5px}header{padding:6px 18px}.hoy .cel .v{font-size:17px!i
 <body>
 <header>
   <img src="icons/icon-192.png" alt="CSS">
-  <div><h1>Calculadora de Reposición Sugerida</h1><div class="sub">Caja de Seguro Social · Dirección Nacional de Logística · para las Unidades Ejecutoras</div></div>
-  <div class="der"><span class="fr">Saldos al <b id="frS"></b></span><span class="fr">Publicado <b id="frP"></b></span><button class="hbtn" id="btnAyuda">Ayuda y recorrido guiado</button></div>
+  <div><h1>Calculadora de Reposición Sugerida para las Unidades Ejecutoras</h1><div class="sub">Caja de Seguro Social · Dirección Nacional de Logística</div></div>
+  <div class="der"><span class="fr">Saldos al <b id="frS"></b></span><span class="fr" id="frFw">Formas 8 al <b id="frF">…</b></span><span class="fr">Publicado <b id="frP"></b></span><button class="hbtn" id="btnAyuda">Ayuda y recorrido guiado</button></div>
 </header>
 <main id="main"></main>
 <div class="pie-aviso">Herramienta de apoyo: las cantidades son sugerencias, no órdenes de pedido.</div>
@@ -183,9 +183,12 @@ header h1{font-size:16.5px}header{padding:6px 18px}.hoy .cel .v{font-size:17px!i
 (function(){
 'use strict';
 const BASE='https://torredecontrolcss.github.io/REPOSICION_UE_CSS/';
+/* Reservas de inventario de CEDIS Panamá para Formas 8 en despacho (hoja RESERVAS del Motor de Asignación);
+   la misma fuente que el informe semanal de existencias: disponible = saldo − reservado. */
+const RESERVAS_URL='https://torredecontrolcss.github.io/ASIGNACION_F8/kanban/f8_renglones.json';
 /* B: mismo formato que usó el dummy aprobado. Se llena por partes:
    al abrir → índice, resumen (73 unidades), catálogo y tránsitos; al elegir unidad → sus 3 archivos. */
-const B={ues:{},dic:{},ced:{},tr:{},gen:'',idx:null,res:null,f8idx:{}};
+const B={ues:{},dic:{},ced:{},tr:{},gen:'',idx:null,res:null,f8idx:{},f8docs:{},resPA:null};
 async function traer(f,opcional){ try{ const r=await fetch(BASE+f+'?t='+Date.now()); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json(); }catch(e){ if(opcional) return null; throw new Error(f+': '+e.message); } }
 async function cargarUEDatos(u){
   if(B.ues[u]) return B.ues[u];
@@ -278,6 +281,8 @@ const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','di
 const fL=t=>{ const d=new Date(t); return d.getDate()+'-'+MES[d.getMonth()]+'-'+d.getFullYear(); };
 const fC=t=>{ const d=new Date(t); return d.getDate()+'-'+MES[d.getMonth()]; };
 const nom=c=>(B.dic[c]&&B.dic[c][0])||c, vit=c=>!!(B.dic[c]&&B.dic[c][1]);
+/* CEDIS Panamá: disponible = saldo − reservado (null mientras no carguen saldo y reservas) */
+const dispPA=c=>{ const cd=B.ced[c]; if(!cd||!B.resPA) return null; const saldo=cd[0]||0, res=B.resPA.q[c]||0, d=B.resPA.d[c]||[0,0]; return {saldo,res,disp:Math.max(0,saldo-res),f8:d[0],nu:d[1]}; };
 const trn=c=>B.tr&&B.tr[c]?{q:B.tr[c][0],f:B.tr[c][1]}:null;
 const chipTr=(c,largo)=>{ const t=trn(c); if(!t) return ''; const hoy=Date.now(), atr=t.f&&dISO(t.f)<hoy; return ' <span class="chip tr'+(atr?' atr':'')+'" title="Orden de compra en camino a CEDIS Panamá'+(t.f?' · entrega '+t.f:'')+'">'+(largo?'OC en camino a CEDIS Panamá · '+fmt(t.q)+' u'+(t.f?' · entrega '+fC(dISO(t.f))+(atr?' (atrasada)':''):''):'OC en camino')+'</span>'; };
 const EST={rojo:{t:'Crítico',l:'Bajo el inventario crítico',bg:'#f6d5d1',c:'#c0392b',o:0},ambar:{t:'Bajo la línea',l:'Cruzó la línea de pedido',bg:'#fbe8c8',c:'#b7791f',o:1},
@@ -597,11 +602,14 @@ let _xls=null;
 function libXLS(){ if(window.ExcelJS) return Promise.resolve(); if(_xls) return _xls; _xls=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=res; s.onerror=()=>{ _xls=null; rej(new Error('no se pudo cargar ExcelJS')); }; document.head.appendChild(s); }); return _xls; }
 function filasPre(u){ return (u===st.ue?FILAS:calcUE(u,st.p)).filter(x=>(['rojo','ambar','pronto'].indexOf(x.r.estado)>=0||x.r.aj)&&x.r.pedir>0).sort((a,b)=>EST[a.r.estado].o-EST[b.r.estado].o||b.r.pedir-a.r.pedir); }
 /* ---------- Transparencia: los datos con que calcula la herramienta, para que la unidad los revise ---------- */
-function xlsCab(ws,cols,titulo,linea,fuente){
+let _logoBuf=null;
+async function xlsLogo(wb){ try{ if(!_logoBuf){ const r=await fetch('icons/icon-192.png'); if(!r.ok) throw 0; _logoBuf=await r.arrayBuffer(); } return wb.addImage({buffer:_logoBuf,extension:'png'}); }catch(e){ return null; } }
+function xlsCab(ws,cols,titulo,linea,fuente,logo){
   const L=String.fromCharCode(64+cols);
-  ws.mergeCells('A1:'+L+'1'); ws.getCell('A1').value=titulo; ws.getCell('A1').font={bold:true,size:13,color:{argb:'FF0C447C'}};
-  ws.mergeCells('A2:'+L+'2'); ws.getCell('A2').value=linea; ws.getCell('A2').font={size:10,color:{argb:'FF555555'}};
-  ws.mergeCells('A3:'+L+'3'); ws.getCell('A3').value=fuente+' '+AVISO_REF; ws.getCell('A3').font={size:9,italic:true,color:{argb:'FF8A5A1A'}}; ws.getCell('A3').alignment={wrapText:true}; ws.getRow(3).height=42;
+  ws.mergeCells('B1:'+L+'1'); ws.getCell('B1').value=titulo; ws.getCell('B1').font={bold:true,size:13,color:{argb:'FF0C447C'}}; ws.getRow(1).height=22;
+  ws.mergeCells('B2:'+L+'2'); ws.getCell('B2').value=linea; ws.getCell('B2').font={size:10,color:{argb:'FF555555'}}; ws.getRow(2).height=18;
+  ws.mergeCells('B3:'+L+'3'); ws.getCell('B3').value=fuente+' '+AVISO_REF; ws.getCell('B3').font={size:9,italic:true,color:{argb:'FF8A5A1A'}}; ws.getCell('B3').alignment={wrapText:true,vertical:'top'}; ws.getRow(3).height=42;
+  if(logo!=null) ws.addImage(logo,{tl:{col:0.12,row:0.15},ext:{width:58,height:58}});
 }
 function xlsFila(hr){ hr.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A9E'}}; c.alignment={wrapText:true,vertical:'middle'}; }); }
 async function xlsBajar(wb,nombre){ const buf=await wb.xlsx.writeBuffer(), a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download=nombre; document.body.appendChild(a); a.click(); a.remove(); }
@@ -610,10 +618,10 @@ async function descConsumos(u){
   try{ await libXLS(); }catch(e){ aviso('No se pudo cargar el generador de Excel.'); return; }
   const U=B.ues[u], g=U.consReg; if(!g||!g.R){ aviso('No hay consumos de esta unidad en el Registro de Consumos.'); return; }
   const P=g.P||[], cods=Object.keys(g.R).sort(), fecha=U.fechas.slice(-1)[0];
-  const wb=new ExcelJS.Workbook(), ws=wb.addWorksheet('Consumos reportados'), nc=3+P.length+3;
+  const wb=new ExcelJS.Workbook(), ws=wb.addWorksheet('Consumos reportados'), nc=3+P.length+3, logo=await xlsLogo(wb);
   const cr=crDe(u), est=cr&&cr.MED?cr.MED[0]:'';
   xlsCab(ws,nc,'CAJA DE SEGURO SOCIAL · CONSUMOS REPORTADOS POR LA UNIDAD',u+' · periodos '+P.join(', ')+(B.cr?' · reporte de '+B.cr.p+' (medicamentos): '+(est==='PUBLICADO'?'publicado':est==='SIN_REPORTE'?'sin reporte':(est||'—').toLowerCase()):''),
-    'Fuente: Registro de Consumos por Unidad Ejecutora (consumos_ue.html). «Usado en la calculadora» es el valor vigente en MAESTRO_CONSUMOS_UE.');
+    'Fuente: Registro de Consumos por Unidad Ejecutora (consumos_ue.html). «Usado en la calculadora» es el valor vigente en MAESTRO_CONSUMOS_UE.',logo);
   const hr=ws.addRow(['Renglón','Descripción','Vital'].concat(P.map(x=>'Consumo mensual '+x),['Último aprobado','Periodo del último aprobado','Usado en la calculadora'])); xlsFila(hr);
   cods.forEach(c=>{ const v=g.R[c]||[], ul=(g.ult||{})[c]||[null,''];
     ws.addRow([c,nom(c),vit(c)?'Sí':''].concat(P.map((x,i)=>v[i]==null?null:v[i]),[ul[0],ul[1]||'',U.cons&&U.cons[c]!=null?U.cons[c]:null])); });
@@ -626,18 +634,30 @@ async function descF8(u){
   try{ await libXLS(); }catch(e){ aviso('No se pudo cargar el generador de Excel.'); return; }
   const U=B.ues[u], F=U.f8||{}, cods=Object.keys(F), fecha=U.fechas.slice(-1)[0];
   if(!cods.length){ aviso('No hay Formas 8 registradas para esta unidad.'); return; }
-  const wb=new ExcelJS.Workbook(), ws=wb.addWorksheet('Formas 8'), rs=wb.addWorksheet('Resumen por renglón');
-  const filas=[]; cods.forEach(c=>(F[c]||[]).forEach(([f,ur,me])=>filas.push([f,c,ur||0,me||0])));
-  filas.sort((a,b)=>a[0]<b[0]?1:a[0]>b[0]?-1:a[1].localeCompare(b[1]));
-  xlsCab(ws,7,'CAJA DE SEGURO SOCIAL · FORMAS 8 DE LA UNIDAD',u+' · '+fmt(filas.length)+' registros por día y renglón · del '+(filas.length?filas[filas.length-1][0]:'')+' al '+(filas.length?filas[0][0]:''),
-    'Fuente: Formas 8 registradas en SALMI (REQUISICIONES_F8), sumadas por día y tipo; las transferencias no se incluyen.');
-  xlsFila(ws.addRow(['Fecha','Renglón','Descripción','Vital','Urgencia','Mensual','Total']));
-  filas.forEach(r=>ws.addRow([r[0],r[1],nom(r[1]),vit(r[1])?'Sí':'',r[2],r[3],r[2]+r[3]]));
-  [12,12,55,7,12,12,12].forEach((w,i)=>ws.getColumn(i+1).width=w); [5,6,7].forEach(i=>ws.getColumn(i).numFmt='#,##0');
-  ws.views=[{state:'frozen',ySplit:4}]; ws.autoFilter={from:'A4',to:'G4'};
+  const docs=B.f8docs[u]?await traer(B.f8docs[u],true):null, D=docs&&docs.d&&docs.d.length?docs.d:null;
+  const wb=new ExcelJS.Workbook(), ws=wb.addWorksheet('Formas 8'), rs=wb.addWorksheet('Resumen por renglón'), logo=await xlsLogo(wb);
+  if(D){
+    /* una fila por Forma 8 y renglón, con su Nº de documento de SALMI (las líneas repetidas del mismo documento van sumadas) */
+    const nDoc=new Set(D.map(r=>r[1])).size;
+    xlsCab(ws,7,'CAJA DE SEGURO SOCIAL · FORMAS 8 DE LA UNIDAD',u+' · '+fmt(nDoc)+' Formas 8 · '+fmt(D.length)+' líneas · del '+D[D.length-1][0]+' al '+D[0][0],
+      'Fuente: Formas 8 registradas en SALMI (REQUISICIONES_F8), con su Nº de documento; las transferencias no se incluyen.',logo);
+    xlsFila(ws.addRow(['Fecha','Nº de documento','Tipo','Renglón','Descripción','Vital','Cantidad solicitada']));
+    D.forEach(r=>ws.addRow([r[0],r[1],r[2]==='U'?'Urgencia':'Mensual',r[3],nom(r[3]),vit(r[3])?'Sí':'',r[4]]));
+    [12,16,11,12,55,7,16].forEach((w,i)=>ws.getColumn(i+1).width=w); ws.getColumn(7).numFmt='#,##0';
+    ws.views=[{state:'frozen',ySplit:4}]; ws.autoFilter={from:'A4',to:'G4'};
+  } else {
+    const filas=[]; cods.forEach(c=>(F[c]||[]).forEach(([f,ur,me])=>filas.push([f,c,ur||0,me||0])));
+    filas.sort((a,b)=>a[0]<b[0]?1:a[0]>b[0]?-1:a[1].localeCompare(b[1]));
+    xlsCab(ws,7,'CAJA DE SEGURO SOCIAL · FORMAS 8 DE LA UNIDAD',u+' · '+fmt(filas.length)+' registros por día y renglón · del '+(filas.length?filas[filas.length-1][0]:'')+' al '+(filas.length?filas[0][0]:''),
+      'Fuente: Formas 8 registradas en SALMI (REQUISICIONES_F8), sumadas por día y tipo; las transferencias no se incluyen. El Nº de documento aún no está publicado.',logo);
+    xlsFila(ws.addRow(['Fecha','Renglón','Descripción','Vital','Urgencia','Mensual','Total']));
+    filas.forEach(r=>ws.addRow([r[0],r[1],nom(r[1]),vit(r[1])?'Sí':'',r[2],r[3],r[2]+r[3]]));
+    [12,12,55,7,12,12,12].forEach((w,i)=>ws.getColumn(i+1).width=w); [5,6,7].forEach(i=>ws.getColumn(i).numFmt='#,##0');
+    ws.views=[{state:'frozen',ySplit:4}]; ws.autoFilter={from:'A4',to:'G4'};
+  }
   /* Resumen: el promedio mensual de 90 días es exactamente la señal «Formas 8» de la calculadora */
   const fin=dISO(fecha), ini=fin-MODELO.VENT*DIA;
-  xlsCab(rs,6,'RESUMEN POR RENGLÓN',u+' · ventana de '+MODELO.VENT+' días hasta el '+fecha,'La columna «Promedio mensual (90 días)» es la señal «Formas 8» que usa la calculadora.');
+  xlsCab(rs,6,'CAJA DE SEGURO SOCIAL · RESUMEN POR RENGLÓN',u+' · ventana de '+MODELO.VENT+' días hasta el '+fecha,'La columna «Promedio mensual (90 días)» es la señal «Formas 8» que usa la calculadora.',logo);
   xlsFila(rs.addRow(['Renglón','Descripción','Vital','Pedido en 90 días','Promedio mensual (90 días)','Última Forma 8']));
   cods.sort().forEach(c=>{ const ev=F[c]||[]; let t=0; ev.forEach(([f,ur,me])=>{ if(dISO(f)>=ini) t+=(ur||0)+(me||0); }); const ult=ev.length?ev[ev.length-1][0]:'';
     rs.addRow([c,nom(c),vit(c)?'Sí':'',t,t?Math.round(t/(MODELO.VENT/30)):null,ult]); });
@@ -770,7 +790,12 @@ function actualizar(){
             : cel('Fecha sugerida',fC(cruza),'para valorar un pedido','#d6efdc',guardar)+cel('Por recibir',fmt(pe.pend),'unidades',null,'<button class="q" id="qRec" aria-label="Qué es por recibir">?</button>')+cel('Línea de pedido',fmt(ROP),'unidades'))+
     (accion&&!st.proy? cel('Línea de pedido',fmt(ROP),'unidades') : cel('Le alcanzaría hasta',accion?fC(hasta):fC(hoy+Math.round(x.saldo/dd)*DIA),accion?'si se pide hoy (estimado)':'al consumo actual'))+pre+
     (function(){ const U=B.ues[st.ue], ci={'CEDIS PANAMA':0,'CEDIS DIVISA':1,'CEDIS CHIRIQUI':2}[U.cedis]||0, cd=B.ced[x.c], nomC={0:'CEDIS Panamá',1:'CEDIS Divisa',2:'CEDIS Chiriquí'}[ci];
-      const v=cd?cd[ci]:null, extra=ci&&cd?' title="CEDIS Panamá tiene '+fmt(cd[0])+' unidades"':'';
+      const pa=dispPA(x.c);
+      if(ci===0){ const v=pa?pa.disp:null, todoRes=pa&&pa.disp===0&&pa.saldo>0,
+          tt=pa?' title="Saldo '+fmt(pa.saldo)+' − reservado '+fmt(pa.res)+(pa.res?' en '+fmt(pa.f8)+' Formas 8 de '+fmt(pa.nu)+' unidades, reservado y aún sin despachar':'')+' = disponible '+fmt(pa.disp)+(B.resPA&&B.resPA.gen?' (reservas al '+B.resPA.gen+')':'')+'"':'';
+        /* todo reservado: lila (como el informe semanal) y la cantidad reservada a la vista; cero real: rojo */
+        return '<div class="cel"'+(todoRes?' style="--bg:#e7def3"':v===0?' style="--bg:#f6d5d1"':'')+tt+'><span class="l"><span>CEDIS Panamá tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">'+(todoRes?fmt(pa.res)+' reservadas':'unidades disponibles')+'</span></span></div>'; }
+      const v=cd?cd[ci]:null, extra=pa?' title="CEDIS Panamá disponible '+fmt(pa.disp)+' unidades (neto de reservas)"':'';
       return '<div class="cel"'+(v===0?' style="--bg:#f6d5d1"':'')+extra+'><span class="l"><span>'+nomC+' tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">unidades</span></span></div>'; })()+'</div>';
   if($('qRec')) $('qRec').onclick=()=>{ AYC.PR=['Por recibir','Lo que ya pidió en Formas 8 en los últimos '+L+' días y todavía no ha entrado a su saldo. Pidió '+fmt(pe.pedido)+'; desde entonces entraron '+fmt(pe.recibido)+'; quedan '+fmt(pe.pend)+' por recibir. Se descuentan del pedido sugerido para no pedir dos veces.']; ayudaCorta('PR'); };
   if($('btnGuardar')) $('btnGuardar').onclick=()=>{ guardarAjuste(st.ue,x.c,{pedir,L,cubrir:RX.p.cubrir,ns,fecha:fC(Date.now())}); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Guardado: su Excel de sugerencia lleva '+fmt(pedir)+' unidades de este renglón.'); };
@@ -904,13 +929,15 @@ window.__rue={st,abrirUE,vistaUE,FILAS:()=>FILAS,iniciarTour,TOUR,B};
   try{
     const [idx,f8i,dic,res]=await Promise.all([traer('series_saldos_index.json'),traer('f8_eventos_index.json',true),traer('renglones_dic.json',true),traer('reposicion_resumen.json',true)]);
     B.idx=idx; B.res=res;
-    await cargarReporteConsumo(idx.fechas[idx.fechas.length-1]); if(f8i&&f8i.ues) f8i.ues.forEach(x=>B.f8idx[x.ue]=x.archivo);
+    await cargarReporteConsumo(idx.fechas[idx.fechas.length-1]); if(f8i&&f8i.ues) f8i.ues.forEach(x=>{ B.f8idx[x.ue]=x.archivo; if(x.docs) B.f8docs[x.ue]=x.docs; });
+    { const h=(f8i&&(f8i.hasta||f8i.ues.reduce((m,x)=>x.ultima_f8>m?x.ultima_f8:m,'')))||''; $('frF').textContent=h?fL(dISO(h)):'sin dato'; $('frFw').title=h?'Forma 8 más reciente publicada (SALMI · REQUISICIONES_F8): '+fL(dISO(h)):'No se pudo leer la fecha de las Formas 8'; }
     if(dic&&dic.r) Object.keys(dic.r).forEach(k=>B.dic[k]=[dic.r[k].n,dic.r[k].vit?1:0]);
     if(res&&res.tr) B.tr=res.tr;
     B.gen=(res&&res.generado)||idx.generado||'';
     $('frS').textContent=fL(dISO(idx.fechas[idx.fechas.length-1]));
     $('frP').textContent=B.gen?(new Date(B.gen).toLocaleString('es-PA',{timeZone:'America/Panama',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' PTY'):'·';
     // inventario de los CEDIS (para "le surte…"), en segundo plano
+    fetch(RESERVAS_URL+'?t='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{ if(!j||!j.r) return; B.resPA={gen:j.generado||'',q:{},d:{}}; Object.keys(j.r).forEach(c=>{ const x=j.r[c].rs; B.resPA.q[c]=x&&x.q>0?x.q:0; if(x&&x.q>0) B.resPA.d[c]=[x.f8||0,(x.u||[]).length]; }); if(st.cod&&$('hoyRes')) actualizar(); }).catch(()=>{});
     traer('matriz_snapshot.json',true).then(sn=>{ if(sn&&sn.renglones) sn.renglones.forEach(r=>B.ced[r.c]=[r.iPA||0,r.iDI||0,r.iCH||0]); if(st.cod&&$('hoyRes')) actualizar(); });
     const q=new URLSearchParams(location.search).get('ue');
     if(q&&idx.ues.some(x=>x.ue===q)) abrirUE(q); else inicio();
