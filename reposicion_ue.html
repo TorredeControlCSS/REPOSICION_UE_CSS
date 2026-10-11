@@ -181,8 +181,9 @@ async function traer(f,opcional){ try{ const r=await fetch(BASE+f+'?t='+Date.now
 async function cargarUEDatos(u){
   if(B.ues[u]) return B.ues[u];
   const meta=B.idx.ues.find(x=>x.ue===u); if(!meta) throw new Error('Unidad sin datos publicados');
-  const [s,f8,co]=await Promise.all([traer(meta.archivo),B.f8idx[u]?traer(B.f8idx[u],true):null,traer(meta.archivo.replace(/^series_saldos_/,'consumo_reportado_'),true)]);
-  B.ues[u]={cedis:s.cedis||meta.cedis,fechas:s.fechas,f:(s.f||[]).map(x=>[String(x.c),x.v||[]]),cons:co&&co.c?co.c:null,consCorte:co&&co.corte||'',consPer:co&&co.p||null,f8:(f8&&f8.f)||{}};
+  /* consumos/ue/<UE>.json lo publica el Registro de Consumos (consumos_ue.html): trae el periodo de cada consumo vigente. */
+  const [s,f8,co,rg]=await Promise.all([traer(meta.archivo),B.f8idx[u]?traer(B.f8idx[u],true):null,traer(meta.archivo.replace(/^series_saldos_/,'consumo_reportado_'),true),traer(meta.archivo.replace(/^series_saldos_/,'consumos/ue/'),true)]);
+  B.ues[u]={cedis:s.cedis||meta.cedis,fechas:s.fechas,f:(s.f||[]).map(x=>[String(x.c),x.v||[]]),cons:co&&co.c?co.c:null,consCorte:co&&co.corte||'',consPer:rg&&rg.ult||null,f8:(f8&&f8.f)||{}};
   return B.ues[u];
 }
 /* ===== Modelo de reposición (acordado 30-sep-2026, alineado con la Evaluación Técnica del P-240) =====
@@ -576,7 +577,7 @@ document.addEventListener('keydown',e=>{ if(!st.cod||!$('rxNav')||$('tour').clas
 const AYC={L:['Tiempo de reposición','Días que se suponen para el cálculo entre que se pide y se recibe. Por defecto, 20 días. Es un parámetro de simulación, no un plazo de entrega comprometido.'],
   C:['Días a cubrir','Días de consumo que quiere tener cubiertos después de recibir el pedido. Por defecto, 30 días.'],
   O:['Consumo observado','Lo que bajó el saldo de su unidad en los últimos 90 días, contando solo los días en que tuvo existencia. Si estuvo en cero más de la mitad del periodo, no se usa (consumo truncado).'],
-  R:['Consumo reportado','El consumo mensual que su unidad reportó y que está publicado en MAESTRO_CONSUMOS_UE (el mismo del tablero de Consumos Reportados). Junto al nombre se indica el periodo al que corresponde ese dato o, si no está disponible, la fecha de corte del maestro.'],
+  R:['Consumo reportado','El consumo mensual que su unidad reportó y que está publicado en MAESTRO_CONSUMOS_UE (el mismo del tablero de Consumos Reportados). Debajo del nombre se indica el periodo reportado al que corresponde (según el Registro de Consumos) y la fecha de corte del maestro.'],
   F:['Formas 8','Lo que su unidad pidió en Formas 8 (urgencia y mensual), promedio mensual de los últimos 90 días.'],
   D:['Demanda usada','La mediana de las señales disponibles: si una está inflada o truncada, no arrastra el resultado. Con esta demanda se calcula la línea de pedido.'],
   G:['Hasta hoy y proyección','«Hasta hoy» muestra solo lo que ya pasó: el saldo real de su unidad hasta la última carga y sus Formas 8. «Ver proyección del pedido» agrega una estimación: cómo bajaría el saldo si no pide y cómo subiría si pide hoy, suponiendo que el pedido llega en el tiempo de entrega elegido y que el consumo sigue igual. Es una simulación, no una fecha de entrega comprometida.'],
@@ -603,7 +604,8 @@ function actualizar(){
   const x=RX, s=x.s, b=x.b, ns=RX.ns;
   $('vL').textContent=RX.p.L+' d'; $('vC').textContent=RX.p.cubrir+' d'; $('vN').textContent=ns+'%';
   // paso 1: las tres señales
-  const Uc=B.ues[st.ue], perC=Uc.consPer&&Uc.consPer[x.c], extRep=perC?'periodo '+esc(perC):Uc.consCorte?'corte '+fC(dISO(Uc.consCorte)):'';
+  const Uc=B.ues[st.ue], rgC=Uc.consPer&&Uc.consPer[x.c], perC=rgC&&s.dRep!=null&&Math.abs((rgC[0]||0)-s.dRep)<0.5?rgC[1]:null;
+  const extRep=perC?'periodo '+esc(perC)+(Uc.consCorte?' · corte '+fC(dISO(Uc.consCorte)):''):Uc.consCorte?'corte '+fC(dISO(Uc.consCorte)):'';
   const vals=[['Consumo observado'+(s.truncado?' (truncado)':''),s.truncado?null:s.dObs,'O',''],['Consumo reportado',s.dRep,'R',extRep],['Formas 8',s.dReq,'F','']];
   const mx=Math.max(1,...vals.map(v=>v[1]||0),b.d||0);
   let h1=vals.map(v=>'<div class="sen"><span>'+v[0]+' <button class="q" data-h="'+v[2]+'" aria-label="Qué es '+v[0]+'">?</button>'+(v[3]?'<small class="nota" style="display:block;line-height:1.1">'+v[3]+'</small>':'')+'</span><div class="pista">'+(v[1]?'<i style="width:'+(v[1]/mx*100)+'%"></i>':'')+'</div><span class="val">'+(v[1]?fmt(v[1]):'sin dato')+'</span></div>').join('');
