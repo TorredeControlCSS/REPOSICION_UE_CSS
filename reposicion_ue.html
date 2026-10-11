@@ -188,7 +188,7 @@ const BASE='https://torredecontrolcss.github.io/REPOSICION_UE_CSS/';
 const RESERVAS_URL='https://torredecontrolcss.github.io/ASIGNACION_F8/kanban/f8_renglones.json';
 /* B: mismo formato que usó el dummy aprobado. Se llena por partes:
    al abrir → índice, resumen (73 unidades), catálogo y tránsitos; al elegir unidad → sus 3 archivos. */
-const B={ues:{},dic:{},ced:{},tr:{},gen:'',idx:null,res:null,f8idx:{},f8docs:{},resPA:null};
+const B={trc:null,ues:{},dic:{},ced:{},tr:{},gen:'',idx:null,res:null,f8idx:{},f8docs:{},resPA:null};
 async function traer(f,opcional){ try{ const r=await fetch(BASE+f+'?t='+Date.now()); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json(); }catch(e){ if(opcional) return null; throw new Error(f+': '+e.message); } }
 async function cargarUEDatos(u){
   if(B.ues[u]) return B.ues[u];
@@ -283,8 +283,14 @@ const fC=t=>{ const d=new Date(t); return d.getDate()+'-'+MES[d.getMonth()]; };
 const nom=c=>(B.dic[c]&&B.dic[c][0])||c, vit=c=>!!(B.dic[c]&&B.dic[c][1]);
 /* CEDIS Panamá: disponible = saldo − reservado (null mientras no carguen saldo y reservas) */
 const dispPA=c=>{ const cd=B.ced[c]; if(!cd||!B.resPA) return null; const saldo=cd[0]||0, res=B.resPA.q[c]||0, d=B.resPA.d[c]||[0,0]; return {saldo,res,disp:Math.max(0,saldo-res),f8:d[0],nu:d[1]}; };
-const trn=c=>B.tr&&B.tr[c]?{q:B.tr[c][0],f:B.tr[c][1]}:null;
-const chipTr=(c,largo)=>{ const t=trn(c); if(!t) return ''; const hoy=Date.now(), atr=t.f&&dISO(t.f)<hoy; return ' <span class="chip tr'+(atr?' atr':'')+'" title="Orden de compra en camino a CEDIS Panamá'+(t.f?' · entrega '+t.f:'')+'">'+(largo?'OC en camino a CEDIS Panamá · '+fmt(t.q)+' u'+(t.f?' · entrega '+fC(dISO(t.f))+(atr?' (atrasada)':''):''):'OC en camino')+'</span>'; };
+/* Tránsito al CEDIS que surte a la unidad (trc, desde 11-oct-2026: saldo pendiente por CEDIS + evidencia de recepción).
+   Si el resumen aún no trae trc, se usa tr (CEDIS Panamá). */
+const CEDK=u=>{ const c=(B.ues[u]&&B.ues[u].cedis)||''; return /DIVISA/.test(c)?'DI':/CHIRIQU/.test(c)?'CH':'PA'; }, CEDN={PA:'CEDIS Panamá',DI:'CEDIS Divisa',CH:'CEDIS Chiriquí'};
+const trn=c=>{ if(B.trc){ const k=CEDK(st.ue), x=B.trc[c]&&B.trc[c][k]; return x&&x[0]>0?{q:x[0],f:x[1],r:x[2]||0,rq:x[3]||0,v:x[4]||0,k}:null; }
+  return B.tr&&B.tr[c]?{q:B.tr[c][0],f:B.tr[c][1],r:0,rq:0,v:0,k:'PA'}:null; };
+const chipTr=(c,largo)=>{ const t=trn(c); if(!t) return ''; const hoy=Date.now(), atr=t.f&&dISO(t.f)<hoy, n=CEDN[t.k];
+  const tit='Orden de compra en camino a '+n+' · pendiente '+fmt(t.q)+' u'+(t.f?' · entrega '+t.f:'')+(t.v?' · vencida y sin entrada registrada en recepción':'')+(t.r?' · recepción de CEDIS Panamá registró '+fmt(t.rq)+' u que el planificador aún no confirma':'')+' · fuente: tránsitos de Planificación';
+  return ' <span class="chip tr'+(atr||t.r?' atr':'')+'" title="'+tit+'">'+(largo?'OC en camino a '+n+' · '+fmt(t.q)+' u'+(t.f?' · entrega '+fC(dISO(t.f))+(t.v?' (vencida sin entrada)':atr?' (atrasada)':''):'')+(t.r?' · recepción registrada sin confirmar':''):'OC en camino')+'</span>'; };
 const EST={rojo:{t:'Crítico',l:'Bajo el inventario crítico',bg:'#f6d5d1',c:'#c0392b',o:0},ambar:{t:'Bajo la línea',l:'Cruzó la línea de pedido',bg:'#fbe8c8',c:'#b7791f',o:1},
   pronto:{t:'Cerca de la línea',l:'La alcanzaría en 7 días o menos',bg:'#f5ecc6',c:'#8a6d0b',o:2},verde:{t:'Con cobertura',l:'Sobre la línea de pedido',bg:'#d6efdc',c:'#2e7d32',o:3},sin:{t:'Sin datos',l:'Sin consumo, reporte ni F8',bg:'#e2e5e9',c:'#5f6b78',o:4}};
 const DIAG={confiable:['Señal confiable','Las tres señales coinciden: la demanda es clara.'],presion:['Efecto presión','Se pide más de lo que se consume (F8 > 1.5 × consumo). El F8 está inflado y no se usa solo.'],
@@ -932,7 +938,7 @@ window.__rue={st,abrirUE,vistaUE,FILAS:()=>FILAS,iniciarTour,TOUR,B};
     await cargarReporteConsumo(idx.fechas[idx.fechas.length-1]); if(f8i&&f8i.ues) f8i.ues.forEach(x=>{ B.f8idx[x.ue]=x.archivo; if(x.docs) B.f8docs[x.ue]=x.docs; });
     { const h=(f8i&&(f8i.hasta||f8i.ues.reduce((m,x)=>x.ultima_f8>m?x.ultima_f8:m,'')))||''; $('frF').textContent=h?fL(dISO(h)):'sin dato'; $('frFw').title=h?'Forma 8 más reciente publicada (SALMI · REQUISICIONES_F8): '+fL(dISO(h)):'No se pudo leer la fecha de las Formas 8'; }
     if(dic&&dic.r) Object.keys(dic.r).forEach(k=>B.dic[k]=[dic.r[k].n,dic.r[k].vit?1:0]);
-    if(res&&res.tr) B.tr=res.tr;
+    if(res&&res.tr) B.tr=res.tr; if(res&&res.trc) B.trc=res.trc;
     B.gen=(res&&res.generado)||idx.generado||'';
     $('frS').textContent=fL(dISO(idx.fechas[idx.fechas.length-1]));
     $('frP').textContent=B.gen?(new Date(B.gen).toLocaleString('es-PA',{timeZone:'America/Panama',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' PTY'):'·';
