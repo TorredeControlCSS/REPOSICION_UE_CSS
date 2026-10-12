@@ -16,10 +16,11 @@ body{background:var(--bg);font-family:"Segoe UI",Tahoma,sans-serif;font-size:13p
 .top .t1{font-size:15px;font-weight:700;line-height:1.2}
 .top .t2{font-size:11px;opacity:.85}
 .top .sp{flex:1}
-.hper{background:#fff;color:#0C447C;border-radius:6px;padding:6px 12px;font-size:12.5px;line-height:1.35;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.18)}
-.hper .ic{font-size:20px}.hper b{font-weight:700}.hper .d{font-family:Consolas,monospace;font-weight:700;font-size:13px;background:#e3f2e4;color:#1b5e20;border-radius:4px;padding:1px 7px;white-space:nowrap}
-.hper.urg .d{background:#fbe0bd;color:#7a4a00}.hper.ult .d{background:#f6d5d1;color:#9b1c1c}.hper .nx{color:#555;font-size:11.5px}
-@media(max-width:900px){.top{flex-wrap:wrap}.hper{order:5;width:100%}}
+.hper{font-size:12px;line-height:1.5;color:#d6e2f0;text-align:right;padding-right:14px;margin-right:2px;border-right:1px solid rgba(255,255,255,.35)}
+.hper .t{color:#fff;font-weight:700;text-transform:uppercase;letter-spacing:.2px}.hper b{color:#fff}
+.hper .d{display:inline-block;font-weight:700;background:#d6efdc;color:#1d5a27;border-radius:3px;padding:0 6px;margin-left:4px}
+.hper.urg .d{background:#fbe0bd;color:#7a4a00}.hper.ult .d{background:#f6d5d1;color:#9b1c1c}
+@media(max-width:900px){.top{flex-wrap:wrap}.top .sp{display:none}.top .who{width:100%;text-align:left}.hper{order:5;width:100%;text-align:left;border-right:none;border-top:1px solid rgba(255,255,255,.35);padding:6px 0 0}}
 .top .who{font-size:12px;text-align:right;line-height:1.5;color:#d6e2f0}.top .who b{color:#fff}
 input,select,button,textarea{font-family:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--bd);background:#fff}
 button{cursor:pointer;background:#f3f3f3}button:hover{background:#e3eaf3}
@@ -1470,11 +1471,12 @@ async function hdrPer(){
  try{
   if(!PERS||!PERS.length){const j=await getJ('periodos.json',true);if(j&&j.P)PERS=j.P;}
   const el=$('hdrPer'),m=mensuales(),ab=m.filter(reportable)[0];if(!el)return;
-  if(!ab){const sig=m.find(p=>abrePer(p)>hoyPTY());el.innerHTML='<svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0C447C" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>No hay un periodo abierto'+(sig?' · <b>'+esc(nomPer(sig.p))+'</b> abre el <b>'+esc(fCortaPer(abrePer(sig)))+'</b>':'')+'</span>';el.style.display='';return;}
+  if(!ab){const sig=m.find(p=>abrePer(p)>hoyPTY());el.innerHTML='<div class="t">Sin periodo abierto</div>'+(sig?'<div>'+esc(nomPer(sig.p))+' abre el <b>'+esc(fCortaPer(abrePer(sig)))+'</b></div>':'');el.style.display='';return;}
   const c=cierrePer(ab),d=Math.round((Date.parse(c+'T12:00:00')-Date.parse(hoyPTY()+'T12:00:00'))/864e5),i=m.indexOf(ab),sig=m[i+1];
   el.className='hper'+(d<=0?' ult':d<=5?' urg':'');
-  el.innerHTML='<svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0C447C" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Periodo abierto: <b>'+esc(nomPer(ab.p))+'</b> · abrió el '+esc(fCortaPer(abrePer(ab)))+' · <b>cierra el '+esc(fCortaPer(c))+'</b>'+
-   (sig?'<br><span class="nx">Luego abre '+esc(nomPer(sig.p))+' el '+esc(fCortaPer(abrePer(sig)))+'</span>':'')+'</span><span class="d">'+(d<=0?'último día':d===1?'falta 1 día':'faltan '+d+' días')+'</span>';
+  el.innerHTML='<div class="t">Periodo abierto · '+esc(nomPer(ab.p))+'</div>'+
+   '<div>Abrió el '+esc(fCortaPer(abrePer(ab)))+' · <b>cierra el '+esc(fCortaPer(c))+'</b><span class="d">'+(d<=0?'último día':d===1?'falta 1 día':'faltan '+d+' días')+'</span></div>'+
+   (sig?'<div>Luego abre '+esc(nomPer(sig.p))+' el '+esc(fCortaPer(abrePer(sig)))+'</div>':'');
   el.style.display='';
  }catch(e){}
 }
