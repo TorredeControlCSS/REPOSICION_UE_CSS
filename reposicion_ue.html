@@ -125,7 +125,7 @@ header h1{font-size:16.5px}header{padding:6px 18px}.hoy .cel .v{font-size:17px!i
 .ipn{background:var(--papel);border:1px solid var(--borde);display:flex;flex-direction:column;min-height:0}
 .iph{display:flex;align-items:baseline;gap:8px;padding:7px 12px;border-bottom:1px solid #e3e6ea}
 .iph h3{margin:0;font-size:14px;color:var(--azul2)}.iph .d{font-size:11.5px;color:var(--gris)}
-#rmMapa{flex:1;min-height:0;background:#eef3f7}
+#rmMapa{flex:1;min-height:0;background:#eef3f7;position:relative;z-index:0}/* aísla las capas de Leaflet (z 400-1000) para que la ayuda y el recorrido queden encima del mapa */
 #rmMapa .leaflet-container{font:12px "Segoe UI",Arial,sans-serif}
 .rm-ley{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:6px 12px;font-size:11px;color:var(--gris);border-top:1px solid #e3e6ea}
 .rm-ley i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-2px;border:1.5px solid}
@@ -900,7 +900,7 @@ function ayuda(){
   $('modal').classList.add('open'); $('cerrarM').onclick=()=>$('modal').classList.remove('open'); $('btnTour').onclick=()=>{ $('modal').classList.remove('open'); iniciarTour(); };
 }
 /* ---------- recorrido guiado ---------- */
-function demoUE(){ if(st.ue) return st.ue; const l=(B.res&&B.res.ues)||[]; const x=l.slice().sort((a,b)=>(b.r+b.a)-(a.r+a.a))[0]; return x?x.ue:B.idx.ues[0].ue; }
+function demoUE(){ if(st.ue) return st.ue; const mia=ultimaUE(); if(mia) return mia; const l=(B.res&&B.res.ues)||[]; const x=l.slice().sort((a,b)=>(b.r+b.a)-(a.r+a.a))[0]; return x?x.ue:B.idx.ues[0].ue; }
 function demoR(){ const f=FILAS.filter(x=>x.r.estado==='rojo'||x.r.estado==='ambar').sort((a,b)=>b.r.pedir-a.r.pedir)[0]||FILAS[0]; return f?f.c:''; }
 const TOUR=[
  {sel:'#iniMain',t:'Todas las unidades, en el mapa y en la tabla',x:'Cada círculo es una Unidad Ejecutora: su tamaño es la cantidad de renglones con pedido sugerido y su color, qué proporción de sus renglones lo tiene. Arriba del mapa elige la región; arriba de la tabla busca su unidad o filtra por CEDIS. Las cifras de la tabla son renglones.',prep:()=>{ if(st.ue){ irInicio(); } }},
