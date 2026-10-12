@@ -247,7 +247,7 @@ td input:disabled{background:#f3f3f3;color:#333}
   <div class="sub" id="dSub"></div>
   <div id="d-usr"><div class="ctrl"><button class="pri" id="uNew">Nuevo usuario</button><input id="uQ" placeholder="Buscar nombre, cédula o UE" style="width:240px"><select id="uRol"><option value="">Todos los roles</option><option>ADMIN</option><option>APRUEBA</option><option>VALIDA</option><option>CARGA</option><option>LECTURA</option></select></div><div id="tUsr"></div></div>
   <div id="d-sol"><div class="ctrl"><select id="sEst"><option value="PENDIENTE">Pendientes</option><option value="">Todas</option></select></div><div id="tSol"></div></div>
-  <div id="d-per"><div class="ctrl"><button id="pNew">Crear el mes siguiente</button></div><div id="tPer"></div><div class="note" style="margin-top:6px">Cada mes <b>se abre solo el día 1</b>, se reporta mientras transcurre y hasta la fecha límite (día 5 del mes siguiente), cuando <b>se cierra solo</b>. Del 1 al 5 están abiertos el mes que termina y el mes nuevo. <b>Abrir / extender</b> lo deja abierto a mano hasta que usted lo cierre; <b>Cerrar ya</b> lo cierra antes.</div></div>
+  <div id="d-per"><div class="ctrl"><button id="pNew">Crear el mes siguiente</button></div><div id="tPer"></div><div class="note" style="margin-top:6px">Siempre hay <b>un solo mes abierto</b>: cada mes <b>se abre solo el día 6</b>, cuando se cierra el anterior, y <b>se cierra solo</b> en su fecha límite (día 5 del mes siguiente). <b>Abrir / extender</b> lo deja abierto a mano hasta que usted lo cierre; <b>Cerrar ya</b> lo cierra antes.</div></div>
   <div id="d-pub">
    <div class="legend"><b>Lo aprobado se publica solo:</b> cada aprobación escribe enseguida el consumo en MAESTROS_DINALOG › MAESTRO_CONSUMOS_UE, la hoja que leen el Motor de Asignación y Curvas de Inventario, con una copia completa de la hoja en Drive antes de escribir. Esta pantalla sirve para <b>reintentar</b> si alguna publicación falló (la simulación muestra lo aprobado que aún no está en el Motor), ver el <b>historial</b> y <b>revertir</b> la última publicación.</div>
    <div class="ctrl"><button class="pri" id="pSim">Correr simulación</button><button class="ok" id="pPub" disabled>Publicar al Motor</button><span class="note" id="pInfo"></span></div>
@@ -314,7 +314,7 @@ $('mX').onclick=cerrarModal;
 const CATN={MED:'Medicamentos',MQ:'Material quirúrgico',LAB:'Laboratorio y radiología'};
 const AYUDA={
  reportar:['Cómo reportar','<b>1.</b> Llene la columna <i>Consumo del mes</i> con el consumo mensual de cada renglón, en unidades. Puede escribir en la pantalla, o usar <i>Descargar plantilla</i>, llenarla en su computadora y <i>Subir plantilla llena</i>. <b>2.</b> Si una fila se pone en rojo es porque cambió 3 veces o más frente al último consumo aprobado: escriba el motivo en la última columna. En el paso 2, el botón <i>Ver solo esas filas</i> las reúne. <b>3.</b> Pulse <i>Enviar a validación</i>.<br><br>Deje vacío un renglón para conservar su último valor aprobado; escriba 0 si no hubo consumo. <i>Rellenar con el último consumo aprobado</i> copia los valores anteriores en los vacíos, para que solo cambie lo que varió. La tabla muestra los renglones que su unidad ha consumido; en <i>Mostrar</i> elija <i>Todo el catálogo</i> para reportar uno nuevo. <i>Descartar lo escrito</i>, en la barra de la tabla, borra lo que no ha enviado. Lo que escribe se guarda en su equipo hasta que lo envíe.'],
- plazo:['Plazo de reporte','El P-240 (Rev. 7.0, VI.B.11) establece que cada unidad remite su consumo en los <b>cinco primeros días del mes siguiente</b>. El mes se abre el día 1, así que la unidad puede ir cargando mientras transcurre; el día 6 del mes siguiente se cierra y ya no se puede reportar, salvo que un administrador lo reabra.'],
+ plazo:['Plazo de reporte','El P-240 (Rev. 7.0, VI.B.11) establece que cada unidad remite su consumo en los <b>cinco primeros días del mes siguiente</b>. Siempre hay un solo mes abierto: se abre el día 6 (cuando se cierra el anterior) y la unidad puede ir cargando mientras transcurre; el día 6 del mes siguiente se cierra y se abre el nuevo. Un mes cerrado ya no se puede reportar, salvo que un administrador lo reabra.'],
  mostrar:['Qué renglones ver','<b>Los que su unidad consume</b>: los que tienen un consumo aprobado mayor que cero o que ya llenó; es la vista normal para reportar. <b>Todos los de la categoría</b>: el catálogo completo, para reportar un renglón que su unidad empezó a consumir. <b>Ya llenados este mes</b>: para revisar lo que escribió antes de enviar. <b>Por justificar</b>: los que cambiaron mucho y necesitan una explicación. Cambiar la vista no borra nada de lo escrito.'],
  seguimiento:['Seguimiento del mes','<b>Notificar a las UE</b> envía a cada reportante un correo con la etapa de su reporte (validado, devuelto, reabierto o aprobado y actualizado en DINALOG-CSS, con lo que cambió frente al consumo anterior). Cada aviso sale una sola vez; úselo al terminar una jornada de firmas.<br><br>Muestra en una sola vista el estado del reporte de cada Unidad Ejecutora y categoría para el periodo elegido. <b>Las tarjetas son filtros</b>: clic en <i>Sin reporte</i> para ver solo las unidades que faltan, o en <i>Fuera de plazo</i> para las que enviaron después del día 5 (solo si un administrador reabrió el mes).<br><br>En cada celda: <b>Ver</b> abre el envío en Revisar; <b>Cargar</b> abre la carga por contingencia, para subir en nombre de la UE el reporte que envió por correo (queda registrado a su nombre y otra persona debe validarlo).<br><br><b>Copiar correos de las pendientes</b> junta los correos de los reportantes de las unidades sin reporte, listos para pegar en CCO.'],
  descarga:['Descargar consumos','<b>Una hoja por Unidad Ejecutora</b>: elija las unidades (o todas) y obtiene un Excel con un índice y una hoja por unidad. En cada hoja, una fila por renglón y una columna por periodo, más el consumo vigente, lo que está en revisión y la variación entre los dos últimos periodos con dato (rojo si se duplicó o más, azul si cayó a la mitad o menos). Con todas las unidades el archivo es pesado; para el trabajo diario conviene elegir solo las que va a revisar.<br><br><b>Base completa</b>: cuatro hojas (Vigente, Por periodo, En revisión y Envíos) con todas las unidades, una fila por dato, para filtrar o hacer tablas dinámicas.'],
@@ -466,23 +466,25 @@ const esAdmin=()=>ME&&ME.roles.indexOf('ADMIN')>=0;
 function misCats(){return esAdmin()?['MED','MQ','LAB']:ME.cats;}
 function mensuales(){return PERS.filter(p=>p.t==='MENSUAL');}
 const hoyPTY=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'});
-/* Un mes se reporta desde su día 1 hasta el día 5 del mes siguiente (P-240: fecha límite). */
+/* Un mes se reporta desde el día 6 hasta el día 5 del mes siguiente (P-240: fecha límite). Un solo mes abierto. */
 /* Ventana de reporte: se abre al terminar el mes; hasta la fecha límite (día 5) en plazo;
    después "fuera de plazo"; se cierra sola 5 días después de la fecha límite (día 10).
    ABIERTO a mano lo extiende; CERRADO a mano lo cierra antes. */
 const DIAS_GRACIA=5;
 /* Unidades que no reportan en el Registro: el consumo de CEDIS PANAMA lo mantiene la Calculadora */
 const UES_SIN_REGISTRO=['CEDIS PANAMA','CEDIS DIVISA','CEDIS CHIRIQUÍ','CEDIS CHIRIQUI'];const reporta=n=>!UES_SIN_REGISTRO.includes(String(n||'').toUpperCase());
-/* 12-oct-2026 · Regla de la Dirección: cada mes se abre el día 1 y se reporta mientras transcurre y
-   hasta su fecha límite (día 5 del mes siguiente), cuando se cierra solo. Del 1 al 5 conviven el mes
-   que termina y el mes nuevo. ABIERTO a mano lo extiende; CERRADO a mano lo cierra antes. */
+/* 12-oct-2026 · Regla de la Dirección: UN SOLO MES ABIERTO a la vez. Cada mes se abre el día
+   siguiente a la fecha límite del anterior (día 6) y se cierra solo en su propia fecha límite
+   (día 5 del mes siguiente). Así nunca coinciden dos meses. ABIERTO a mano lo extiende;
+   CERRADO a mano lo cierra antes. */
 function cierrePer(P){return P&&P.t==='MENSUAL'?(P.lim||P.fin||''):'';}
-function reportable(P){if(!P||P.t!=='MENSUAL')return false;if(P.e==='ABIERTO')return true;if(P.e==='CERRADO')return false;const h=hoyPTY(),c=cierrePer(P);return !!P.ini&&P.ini<=h&&(!c||h<=c);}
+function abrePer(P){if(!P||P.t!=='MENSUAL'||!P.ini)return '';const m=mensuales(),i=m.findIndex(x=>x.p===P.p),a=i>0?m[i-1]:null;
+  const d=new Date(((a&&a.lim)?a.lim:P.ini)+'T12:00:00');d.setDate(d.getDate()+((a&&a.lim)?1:5));return d.toISOString().slice(0,10);}
+function reportable(P){if(!P||P.t!=='MENSUAL')return false;if(P.e==='ABIERTO')return true;if(P.e==='CERRADO')return false;const h=hoyPTY(),a=abrePer(P),c=cierrePer(P);return !!a&&a<=h&&(!c||h<=c);}
 function estadoPer(P){if(!P)return '—';if(reportable(P))return 'ABIERTO';if(P.e==='CERRADO')return 'CERRADO';if(P.t==='MENSUAL'&&P.fin&&P.fin<hoyPTY())return 'CERRADO';return P.ini&&P.ini<=hoyPTY()?'EN_CURSO':'PROGRAMADO';}
 function tardePer(P){return reportable(P)&&P.lim&&hoyPTY()>P.lim;}
 const MESN=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function mesSiguiente(P){const m=/^(\d{4})-(\d{2})$/.exec(P.p||'');if(!m)return '';const k=+m[2]%12;return MESN[k]+' '+(+m[2]===12?+m[1]+1:m[1]);}
-/* Del 1 al 5 hay dos meses abiertos: se propone el que vence primero. */
 function periodoAbierto(){const m=mensuales();const ab=m.filter(reportable);return (ab[0]||m.filter(p=>p.e==='CERRADO').slice(-1)[0]||m[0]||{}).p;}
 async function ueJson(ue,fresco){
  const j=await getJ('ue/'+slug(ue)+'.json',fresco).catch(()=>null);
@@ -1420,7 +1422,7 @@ function pasosTour(){
   {tab:'seg',sel:'#tSeg',tit:'Una fila por unidad',txt:'El estado de cada categoría, la fecha de envío y el reportante. Ver abre el envío; Cargar sirve para subir por contingencia el reporte que la UE mandó por correo.'},
   {tab:'seg',sel:'#sgMail',tit:'Recordar a las pendientes',txt:'Junta los correos de los reportantes de las unidades sin reporte, para pegarlos en CCO.'});
  if(tiene('CARGA')&&!esAdmin())p.push(
-  {tab:'rep',sel:'#cPer',tit:'1 · Reportar: el periodo',txt:'Elija el mes que va a reportar. Puede cargar el mes en curso desde su día 1. La fecha límite es el día 5 del mes siguiente, según el P-240.'},
+  {tab:'rep',sel:'#cPer',tit:'1 · Reportar: el periodo',txt:'Elija el mes que va a reportar. Solo hay un mes abierto a la vez: se abre el día 6 y vence el día 5 del mes siguiente, según el P-240.'},
   {tab:'rep',sel:'#cCat',tit:'Su categoría',txt:'Medicamentos, material quirúrgico y laboratorio se reportan por separado. Usted ve solo las categorías que tiene asignadas.'},
   {tab:'rep',sel:'#cEstado',tit:'El estado de su envío',txt:'Aquí ve si ya envió, si Planificación le hizo una observación y en qué etapa está. Si le observaron algo, el comentario aparece aquí.'},
   {tab:'rep',sel:'#cSteps',tit:'Tres pasos',txt:'1. Llene el consumo del mes en la tabla, o descargue la plantilla, llénela y súbala. Rellenar con el último consumo aprobado copia los valores anteriores para que solo cambie lo que varió. 2. Si una fila cambia mucho se pone en rojo y pide un motivo. 3. Envíe a Planificación.'},
