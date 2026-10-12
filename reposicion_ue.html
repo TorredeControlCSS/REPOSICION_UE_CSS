@@ -810,12 +810,14 @@ function actualizar(){
   if($('btnRest')) $('btnRest').onclick=()=>{ guardarAjuste(st.ue,x.c,null); FILAS=calcUE(st.ue,st.p); RX=Object.assign(FILAS.find(f=>f.c===x.c),{p:RX.p,ns:RX.ns}); actualizar(); aviso('Listo: vuelve a la cantidad sugerida.'); };
   const kk={dd,SS,ROP,OBJ,pedir,L,hoy,est};
   $('graf').innerHTML=grafico(x,kk); activarVentana();
-  // Alto de la curva: usa el alto disponible de la pantalla (y nunca menos que la columna izquierda);
-  // la columna izquierda se estira a la misma altura, así no queda espacio vacío abajo.
+  // Alto de la curva: igual al alto natural de la columna izquierda (pasos 1 y 2 con su contenido),
+  // entre 340 y 720 px. Así las dos columnas terminan juntas sin estirar los pasos con espacio vacío.
   const g=$('graf'), ley=$('gLey'), cab=$('main').querySelector('.gcab');
-  if(g&&g.clientWidth){ const top=g.getBoundingClientRect().top+window.scrollY, disp=window.innerHeight-top-(ley?ley.offsetHeight:0)-30;
-    const izq=$('colIzq'); izq.style.minHeight=''; const minIzq=izq.offsetHeight-(ley?ley.offsetHeight:0)-(cab?cab.offsetHeight+4:0)-6;
-    const px=Math.max(340,Math.min(720,Math.max(disp*0.95,minIzq))), nh=Math.round(760*px/g.clientWidth);
+  if(g&&g.clientWidth){
+    const izq=$('colIzq'); izq.style.minHeight=''; izq.style.alignSelf='start'; izq.querySelectorAll('.paso').forEach(e=>e.style.flex='0 0 auto');
+    const minIzq=izq.offsetHeight-(ley?ley.offsetHeight:0)-(cab?cab.offsetHeight+4:0)-6;
+    izq.style.alignSelf=''; izq.querySelectorAll('.paso').forEach(e=>e.style.flex='');
+    const px=Math.max(340,Math.min(720,minIzq)), nh=Math.round(760*px/g.clientWidth);
     if(Math.abs(nh-GH)>6){ GH=nh; $('graf').innerHTML=grafico(x,kk); activarVentana(); } }
 }
 let GX=null, GH=380;
