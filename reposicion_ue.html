@@ -800,7 +800,9 @@ function actualizar(){
       if(ci===0){ const v=pa?pa.disp:null, todoRes=pa&&pa.disp===0&&pa.saldo>0,
           tt=pa?' title="Saldo '+fmt(pa.saldo)+' − reservado '+fmt(pa.res)+(pa.res?' en '+fmt(pa.f8)+' Formas 8 de '+fmt(pa.nu)+' unidades, reservado y aún sin despachar':'')+' = disponible '+fmt(pa.disp)+(B.resPA&&B.resPA.gen?' (reservas al '+B.resPA.gen+')':'')+'"':'';
         /* todo reservado: lila (como el informe semanal) y la cantidad reservada a la vista; cero real: rojo */
-        return '<div class="cel"'+(todoRes?' style="--bg:#e7def3"':v===0?' style="--bg:#f6d5d1"':'')+tt+'><span class="l"><span>CEDIS Panamá tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">'+(todoRes?fmt(pa.res)+' reservadas':'unidades disponibles')+'</span></span></div>'; }
+        /* 11-oct-2026: con reservas (parciales o totales) la tarjeta dice «neto» y muestra lo reservado en lila; sin reservas, igual que antes */
+        const conRes=!!(pa&&pa.res>0);
+        return '<div class="cel"'+(todoRes?' style="--bg:#e7def3"':conRes?' style="--bg:#efe9f7"':v===0?' style="--bg:#f6d5d1"':'')+tt+'><span class="l"><span>'+(conRes?'CEDIS Panamá neto':'CEDIS Panamá tiene')+'</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">'+(conRes?'<span style="color:#6a4c93;font-weight:600">'+fmt(pa.res)+' reservadas</span>':'unidades disponibles')+'</span></span></div>'; }
       const v=cd?cd[ci]:null, extra=pa?' title="CEDIS Panamá disponible '+fmt(pa.disp)+' unidades (neto de reservas)"':'';
       return '<div class="cel"'+(v===0?' style="--bg:#f6d5d1"':'')+extra+'><span class="l"><span>'+nomC+' tiene</span></span><span><span class="v">'+(v==null?'…':fmt(v))+'</span><span class="u">unidades</span></span></div>'; })()+'</div>';
   if($('qRec')) $('qRec').onclick=()=>{ AYC.PR=['Por recibir','Lo que ya pidió en Formas 8 en los últimos '+L+' días y todavía no ha entrado a su saldo. Pidió '+fmt(pe.pedido)+'; desde entonces entraron '+fmt(pe.recibido)+'; quedan '+fmt(pe.pend)+' por recibir. Se descuentan del pedido sugerido para no pedir dos veces.']; ayudaCorta('PR'); };
