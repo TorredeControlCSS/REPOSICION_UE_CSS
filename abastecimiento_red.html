@@ -7,18 +7,19 @@
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <style>
 :root{--azul:#0C447C;--azul2:#1E5A9E;--fondo:#ececec;--borde:#c9ced6;--papel:#fff;--tinta:#1d2733;--gris:#5f6b78;
- --p-rojo:#fbe4e1;--p-amar:#fbf3d6;--p-verde:#e2f3e7;--p-azul:#e3edf8;--p-gris:#eef0f3;--p-nar:#fde9d6;--r:10px;color-scheme:light}
+ --p-rojo:#fbe4e1;--p-amar:#fbf3d6;--p-verde:#e2f3e7;--p-azul:#e3edf8;--p-gris:#eef0f3;--p-nar:#fde9d6;--r:10px;--hh:52px;color-scheme:light}
 *{box-sizing:border-box}
 body{margin:0;background:var(--fondo);color:var(--tinta);font:13px/1.4 "Segoe UI",Calibri,system-ui,sans-serif}
 .num{font-family:Consolas,"Cascadia Mono","Courier New",monospace}
-header{background:var(--azul);color:#fff;display:flex;align-items:center;gap:12px;padding:7px 16px;flex-wrap:wrap}
+header{position:sticky;top:0;z-index:50;background:var(--azul);color:#fff;display:flex;align-items:center;gap:12px;padding:7px 16px;flex-wrap:wrap;box-shadow:0 2px 6px rgba(0,0,0,.18)}
 header img{width:36px;height:36px}
 header h1{margin:0;font-size:16px;font-weight:600}
 header .sub{font-size:11px;color:#cfe0f2}
 .der{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .fr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:3px 8px;font-size:11px;color:#e8f0f9;border-radius:6px}
 .fr b{color:#fff}
-.hbtn{font:inherit;font-size:12px;background:#fff;color:var(--azul);font-weight:600;border:0;padding:5px 10px;cursor:pointer;border-radius:6px}
+.hbtn{font:inherit;font-size:12px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);padding:5px 10px;cursor:pointer;border-radius:6px}
+.hbtn.pri{background:#fff;color:var(--azul);font-weight:700;border-color:#fff}
 .resumen{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap}
 .k{background:var(--bg,var(--p-gris));padding:6px 12px;border-radius:var(--r);min-width:120px}
 .k .v{font-family:Consolas,monospace;font-size:17px;font-weight:700;line-height:1.15}
@@ -34,38 +35,59 @@ select,input[type=text]{font:inherit;padding:4px 6px;border:1px solid var(--bord
 .btn{font:inherit;padding:5px 10px;border:1px solid var(--azul);background:#fff;color:var(--azul);border-radius:6px;cursor:pointer}
 .btn.pri{background:var(--azul);color:#fff}
 .conteo{padding:6px 10px;font-size:12px;color:var(--gris)}
-.tw{overflow:auto;max-height:calc(100vh - 290px)}
+.tw{overflow:auto;max-height:calc(100vh - var(--hh) - 190px)}
 table{border-collapse:collapse;width:100%}
-th{position:sticky;top:0;background:var(--azul);color:#fff;font-weight:600;font-size:12px;text-align:left;padding:6px 8px;white-space:nowrap;z-index:1}
+th{position:sticky;top:0;background:var(--azul);color:#fff;font-weight:600;font-size:12px;text-align:left;padding:6px 8px;white-space:nowrap;z-index:1;cursor:pointer;user-select:none}
+th:hover{background:var(--azul2)}
+th .o{opacity:.45;font-size:10px;margin-left:4px}
+th.on .o{opacity:1}
 td{padding:5px 8px;border-bottom:1px solid #edf0f3;vertical-align:top}
 td.n,th.n{text-align:right}
 tr.click{cursor:pointer} tr.click:hover td{background:#f6f9fc}
+tr.sel td{background:#e3edf8 !important}
 .chip{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
 .c-v{background:var(--p-verde);color:#1f6b36}.c-a{background:var(--p-amar);color:#7a5a0b}.c-r{background:var(--p-rojo);color:#a23224}
 .c-b{background:var(--p-azul);color:#0C447C}.c-g{background:var(--p-gris);color:#5f6b78}.c-n{background:var(--p-nar);color:#8a4b12}
 .vital{background:var(--p-rojo);color:#a23224}
-.grupo td{background:var(--p-azul);font-weight:600;color:var(--azul)}
 .desc{color:var(--gris);font-size:12px}
-.ue-cab{display:flex;gap:16px;flex-wrap:wrap;padding:10px;align-items:flex-start}
+.ue-grid{display:grid;grid-template-columns:minmax(340px,.8fr) minmax(0,1.9fr);gap:10px;padding:10px}
+.ue-der td{padding:5px 6px;font-size:12px}.ue-der th{padding:6px 6px}
+@media(max-width:1100px){.ue-grid{grid-template-columns:1fr}}
+.ue-izq{position:sticky;top:calc(var(--hh) + 8px);align-self:start;display:flex;flex-direction:column;gap:8px}
 .caja{background:var(--p-gris);border-radius:var(--r);padding:8px 12px}
+.caja-sk{border:1px solid var(--borde);border-radius:var(--r);padding:8px}
+.caja-sk h3{margin:0 0 4px;font-size:13px;color:var(--azul)}
+.ue-der .tw{max-height:calc(100vh - var(--hh) - 120px);border:1px solid var(--borde);border-radius:var(--r)}
 .nota{font-size:12px;color:var(--gris);padding:6px 10px}
 .aviso{margin:8px 16px;padding:8px 12px;border-radius:var(--r);background:var(--p-amar)}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9}
+.lnk{color:var(--azul2);cursor:pointer;text-decoration:underline;background:none;border:0;font:inherit;padding:0}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:900}
 .modal-bg.on{display:flex}
 .modal{background:#fff;border-radius:12px;max-width:760px;max-height:86vh;overflow:auto;padding:16px 20px}
 .modal h2{margin:0 0 8px;color:var(--azul);font-size:17px}
 .f{font-family:Consolas,monospace;background:var(--p-gris);border-radius:8px;padding:6px 10px;margin:4px 0}
-.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d2733;color:#fff;padding:8px 14px;border-radius:8px;opacity:0;transition:.3s;pointer-events:none}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d2733;color:#fff;padding:8px 14px;border-radius:8px;opacity:0;transition:.3s;pointer-events:none;z-index:2000}
 .toast.show{opacity:1}
 #cargando{padding:30px;text-align:center;color:var(--gris)}
+/* tour guiado (mismo patrón que redistribucion_cedis) */
+#tourOverlay{position:fixed;inset:0;z-index:1000}
+.tour-spot{position:absolute;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 9999px rgba(15,25,40,.55);z-index:1001;pointer-events:none;transition:all .25s ease}
+#tourBox{position:absolute;z-index:1002;background:#fff;border-radius:12px;max-width:360px;width:calc(100% - 32px);padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+#tourTitulo{font-size:14px;font-weight:700;color:var(--azul2);margin-bottom:6px}
+#tourTexto{font-size:12.5px;line-height:1.5;color:#333}
+#tourNav{display:flex;align-items:center;gap:8px;margin-top:12px}
+#tourPaso{font-size:11px;color:var(--gris)}
+.btn-plano{font:inherit;font-size:12px;background:#fff;border:1px solid var(--borde);border-radius:6px;padding:6px 10px;cursor:pointer}
+#tourNext{background:var(--azul);color:#fff;font-weight:700;border:1px solid var(--azul);border-radius:6px;padding:7px 14px;cursor:pointer;font:inherit;font-size:12px}
+@media (prefers-reduced-motion: reduce){.tour-spot{transition:none}}
 @media(max-width:700px){.resumen{padding:8px}.panel{margin:0 8px 8px}.tabs{padding:0 8px}}
 </style>
 </head>
 <body>
-<header>
+<header id="cab">
   <img src="https://torredecontrolcss.github.io/REPOSICION_UE_CSS/icons/icon-192.png" alt="CSS">
   <div><h1>Abastecimiento en red · CEDIS y unidades ejecutoras</h1><div class="sub">Caja de Seguro Social · Dirección Nacional de Logística</div></div>
-  <div class="der"><span id="frs"></span><button class="hbtn" id="btnAyuda">Cómo se calcula</button></div>
+  <div class="der"><span id="frs"></span><button class="hbtn pri" id="btnTour">▶ Ver tutorial guiado</button><button class="hbtn" id="btnAyuda">Cómo se calcula</button></div>
 </header>
 <div class="resumen" id="resumen"></div>
 <div id="avisos"></div>
@@ -77,13 +99,13 @@ tr.click{cursor:pointer} tr.click:hover td{background:#f6f9fc}
   <button class="tab" data-t="sin">Sin cobertura en la red</button>
   <button class="tab" data-t="mq">Cobertura de datos MQ</button>
 </div>
-<section class="panel">
-  <div class="filtros">
+<section class="panel" id="panel">
+  <div class="filtros" id="filtros">
     <div class="campo"><label for="fRed">Red</label><select id="fRed"><option value="">Todas</option><option value="CEDIS PANAMA">Red CEDIS Panamá</option><option value="CEDIS DIVISA">Red CEDIS Divisa</option><option value="CEDIS CHIRIQUI">Red CEDIS Chiriquí</option></select></div>
     <div class="campo"><label for="fUE">Unidad ejecutora</label><select id="fUE" style="max-width:300px"><option value="">Todas</option></select></div>
     <div class="campo" style="flex:1;min-width:170px"><label for="fB">Buscar renglón</label><input type="text" id="fB" placeholder="Código o nombre"></div>
     <div class="campo"><label for="fV">Renglones</label><select id="fV"><option value="">Todos</option><option value="v">Solo vitales</option><option value="c">Vitales o bajo inventario crítico</option></select></div>
-    <div style="display:flex;gap:6px;margin-left:auto">
+    <div style="display:flex;gap:6px;margin-left:auto" id="botonesXls">
       <button class="btn" id="btnLimpiar">Limpiar filtros</button>
       <button class="btn" id="btnXlsVista">Excel de esta vista</button>
       <button class="btn pri" id="btnXlsTodo">Excel completo</button>
@@ -108,6 +130,8 @@ tr.click{cursor:pointer} tr.click:hover td{background:#f6f9fc}
   <p class="desc">Fuentes: Saldos en línea (SALMI), Formas 8 de SALMI, consumo reportado (Registro de Consumos), reservas del Motor de Asignación. Es una propuesta: validar existencias físicas antes de emitir los formularios. Los insumos médico-quirúrgicos de unidades sin el módulo de inventario MQ en SALMI no se pueden calcular.</p>
   <p style="text-align:right"><button class="btn pri" id="cerrarM">Entendido</button></p>
 </div></div>
+<div id="tourOverlay" style="display:none"><div id="tourBox" role="dialog" aria-live="polite"><div id="tourTitulo"></div><div id="tourTexto"></div>
+  <div id="tourNav"><span id="tourPaso"></span><span style="flex:1"></span><button id="tourSkip" class="btn-plano">Saltar</button><button id="tourPrev" class="btn-plano">◂ Atrás</button><button id="tourNext">Siguiente ▸</button></div></div></div>
 <div class="toast" id="toast" role="status"></div>
 <script>
 (function(){
@@ -117,6 +141,7 @@ const RN={'CEDIS PANAMA':'Red CEDIS Panamá','CEDIS DIVISA':'Red CEDIS Divisa','
 const CN={'CEDIS PANAMA':'CEDIS Panamá','CEDIS DIVISA':'CEDIS Divisa','CEDIS CHIRIQUI':'CEDIS Chiriquí'};
 const TIPO=['CEDIS propio','Otro CEDIS','UE misma red','UE otra red'];
 const CLASE=['Sobre el objetivo','Alto (7–12 meses)','Exceso (>12 meses)','Sin movimiento (≥90 días)'], CLCHIP=['c-v','c-a','c-n','c-g'];
+const MAXFILAS=3000;
 const $=id=>document.getElementById(id);
 const fmt=v=>v==null||isNaN(v)?'·':Math.round(v).toLocaleString('en-US');
 const fmtM=v=>v>=1e6?(v/1e6).toFixed(1)+' M':fmt(v);
@@ -130,7 +155,8 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
 async function getJSON(f){ let ult; for(let i=0;i<4;i++){ try{ const r=await fetch(BASE+f+'?t='+Date.now(),{cache:'no-cache'}); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json(); }catch(e){ ult=e; await new Promise(z=>setTimeout(z,1000*(i+1)*(i+1))); } } throw ult; }
 
 let J=null, DIC={}, UES=[], N=[], M=[], X=[];
-const st={tab:'ue',red:'',ue:'',q:'',v:''};
+/* sort: por vista, {k: clave de columna, d: 1 asc / -1 desc}. null = orden natural de la vista */
+const st={tab:'ue',red:'',ue:'',q:'',v:'',ren:'',sort:{rank:{k:'vf',d:-1},ue:{k:'nec',d:-1},f8:null,f7:null,exc:{k:'rem',d:-1},sin:null,mq:{k:'mq',d:1}}};
 const nom=c=>(DIC[c]&&DIC[c].n)||c, vit=c=>!!(DIC[c]&&DIC[c].vit);
 const ueN=i=>UES[i]?UES[i][0]:String(i), ueR=i=>UES[i]?UES[i][1]:'';
 const origenN=m=>m[2]===8?CN[m[4]]||m[4]:ueN(m[4]);
@@ -143,14 +169,16 @@ async function iniciar(){
   }catch(e){ $('cuerpo').innerHTML='<div id="cargando">No se pudo cargar abastecimiento_red.json. Revise la conexión y recargue la página.</div>'; return; }
   $('frs').innerHTML='<span class="fr">Saldos al <b>'+fL(J.corte)+'</b></span> <span class="fr">Formas 8 al <b>'+fL(J.corteF8)+'</b></span> <span class="fr">Publicado <b>'+horaPTY(J.generado)+'</b></span>';
   const sel=$('fUE'); UES.map((u,i)=>[u[0],i]).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{ const o=document.createElement('option'); o.value=i; o.textContent=n; sel.appendChild(o); });
-  resumen(); avisos(); pintar();
+  ajustarAltoCab(); resumen(); avisos(); pintar();
 }
+function ajustarAltoCab(){ document.documentElement.style.setProperty('--hh',($('cab').offsetHeight||52)+'px'); }
+window.addEventListener('resize',ajustarAltoCab);
 function resumen(){
-  const k=J.kpi, f=k.porFuente;
+  const k=J.kpi, f=k.porFuente, p=k.cubiertas/k.unidades;
   const box=(v,l,bg)=>'<div class="k" style="--bg:'+bg+'"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';
   $('resumen').innerHTML=
     box(fmt(k.lineas),'líneas UE × renglón bajo la línea de pedido','var(--p-gris)')+
-    box(pct(k.cubiertas/k.unidades),'de las unidades necesarias se cubren con la red',k.cubiertas/k.unidades>=.7?'var(--p-verde)':k.cubiertas/k.unidades>=.5?'var(--p-amar)':'var(--p-rojo)')+
+    box(pct(p),'de las unidades necesarias se cubren con la red',p>=.7?'var(--p-verde)':p>=.5?'var(--p-amar)':'var(--p-rojo)')+
     box(fmt(k.completas),'líneas cubiertas completas','var(--p-verde)')+
     box(fmt(k.vitalesCompletas)+' / '+fmt(k.vitales),'líneas vitales cubiertas completas','var(--p-rojo)')+
     box(fmt(k.formas8),'Formas 8 a CEDIS','var(--p-azul)')+
@@ -161,7 +189,7 @@ function resumen(){
 }
 function avisos(){
   const mq=UES.filter(u=>u[3]<=5).length;
-  $('avisos').innerHTML=mq?'<div class="aviso">'+mq+' unidades ejecutoras muestran 5 o menos renglones de insumos médico-quirúrgicos en Saldos en línea: sus necesidades de esos insumos no se pueden calcular y están sujetas a la instalación del módulo de gestión de inventario de insumos quirúrgicos en SALMI (Departamento de Control de Inventario / Coordinación Nacional de Almacenes). Vea la pestaña «Cobertura de datos MQ».</div>':'';
+  $('avisos').innerHTML=mq?'<div class="aviso" id="avisoMQ">'+mq+' unidades ejecutoras muestran 5 o menos renglones de insumos médico-quirúrgicos en Saldos en línea: sus necesidades de esos insumos no se pueden calcular y están sujetas a la instalación del módulo de gestión de inventario de insumos quirúrgicos en SALMI (Departamento de Control de Inventario / Coordinación Nacional de Almacenes). Vea la pestaña «Cobertura de datos MQ».</div>':'';
 }
 /* ---------- filtros ---------- */
 function pasaRen(c,vital,crit){ if(st.v==='v'&&!vital) return false; if(st.v==='c'&&!(vital||crit)) return false;
@@ -170,96 +198,167 @@ const pasaUE=ui=>(st.ue===''||+st.ue===ui)&&(st.red===''||ueR(ui)===st.red);
 function filasN(){ return N.filter(r=>pasaUE(r[0])&&pasaRen(r[1],r[2],r[3])); }
 function filasM(forma){ return M.filter(m=>m[2]===forma&&(st.ue===''||+st.ue===m[0]||(forma===7&&+st.ue===m[4]))&&(st.red===''||ueR(m[0])===st.red)&&pasaRen(m[1],vit(m[1]),false)); }
 function filasX(){ return X.filter(x=>pasaUE(x[0])&&pasaRen(x[1],vit(x[1]),false)); }
+
+/* ---------- tabla genérica ordenable ----------
+   cols: [{k, h, n (numérica), v: fila→valor para ordenar, html: fila→celda}] */
+function tablaOrdenable(vista, cols, filas, opc){
+  opc=opc||{};
+  const s=st.sort[vista];
+  let F=filas;
+  if(s){ const c=cols.find(x=>x.k===s.k); if(c){ F=filas.slice().sort((a,b)=>{ const x=c.v(a), y=c.v(b);
+      if(x==null&&y==null) return 0; if(x==null) return 1; if(y==null) return -1;
+      return (typeof x==='string'||typeof y==='string') ? String(x).localeCompare(String(y))*s.d : (x-y)*s.d; }); } }
+  const corta=F.length>MAXFILAS;
+  const th=cols.map(c=>{ const on=s&&s.k===c.k; return '<th data-k="'+c.k+'" class="'+(c.n?'n ':'')+(on?'on':'')+'" title="Ordenar por '+esc(c.h)+'">'+c.h+'<span class="o">'+(on?(s.d>0?'▲':'▼'):'↕')+'</span></th>'; }).join('');
+  const tb=F.slice(0,MAXFILAS).map((f,i)=>'<tr'+(opc.trAttr?opc.trAttr(f,i):'')+'>'+cols.map(c=>'<td'+(c.n?' class="n num"':'')+'>'+c.html(f)+'</td>').join('')+'</tr>').join('');
+  const html='<div class="tw"'+(opc.id?' id="'+opc.id+'"':'')+'><table><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody></table></div>'+(corta?'<div class="nota">Se muestran '+fmt(MAXFILAS)+' de '+fmt(F.length)+' filas; el Excel trae todas.</div>':'');
+  return {html, filas:F};
+}
+function enlazarOrden(cont, vista){
+  cont.querySelectorAll('th[data-k]').forEach(t=>t.onclick=()=>{ const k=t.dataset.k, s=st.sort[vista];
+    st.sort[vista]= (s&&s.k===k) ? {k, d:-s.d} : {k, d:t.classList.contains('n')?-1:1}; pintar(); });
+}
+
 /* ---------- pintar ---------- */
 function pintar(){
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===st.tab));
   ({ue:vistaUE,f8:vistaF8,f7:vistaF7,exc:vistaExc,sin:vistaSin,mq:vistaMQ})[st.tab]();
 }
-const cob=r=>r[12]===0?'<span class="chip c-v">Completa</span>':(r[10]+r[11]>0?'<span class="chip c-a">Parcial</span>':'<span class="chip c-r">Sin fuente</span>');
-const ren=(c)=>'<b class="num">'+esc(c)+'</b>'+(vit(c)?' <span class="chip vital">VITAL</span>':'')+'<div class="desc">'+esc(nom(c).slice(0,90))+'</div>';
+const cobChip=r=>r[12]===0?'<span class="chip c-v">Completa</span>':(r[10]+r[11]>0?'<span class="chip c-a">Parcial</span>':'<span class="chip c-r">Sin fuente</span>');
+const cobTxt=r=>r[12]===0?'Completa':(r[10]+r[11]>0?'Parcial':'Sin fuente');
+const ren=c=>'<b class="num">'+esc(c)+'</b>'+(vit(c)?' <span class="chip vital">VITAL</span>':'')+'<div class="desc">'+esc(nom(c).slice(0,90))+'</div>';
+const nRen=(k,h)=>({k,h,v:f=>f[1]===undefined?null:nom(f[1]).toLowerCase(),html:f=>ren(f[1])});
+
+/* -- ranking de UE -- */
 function rankingUE(){
-  const a={}; filasN().forEach(r=>{ const x=a[r[0]]||(a[r[0]]={l:0,v:0,q:0,c:0,f:0,vf:0}); x.l++; x.v+=r[2]; x.q+=r[9]; x.c+=r[10]+r[11]; x.f+=r[12]; if(r[2]&&r[12]>0) x.vf++; });
-  return Object.keys(a).map(k=>[+k,a[k]]).sort((p,q)=>q[1].vf-p[1].vf||q[1].f-p[1].f);
+  const a={}; filasN().forEach(r=>{ const x=a[r[0]]||(a[r[0]]={ui:r[0],l:0,v:0,q:0,c:0,f:0,vf:0}); x.l++; x.v+=r[2]; x.q+=r[9]; x.c+=r[10]+r[11]; x.f+=r[12]; if(r[2]&&r[12]>0) x.vf++; });
+  return Object.values(a);
 }
 function vistaUE(){
   if(st.ue===''){
     const R=rankingUE();
+    const cols=[{k:'ue',h:'Unidad ejecutora',v:x=>ueN(x.ui),html:x=>'<b>'+esc(ueN(x.ui))+'</b>'},{k:'red',h:'Red',v:x=>RN[ueR(x.ui)],html:x=>RN[ueR(x.ui)]},
+      {k:'l',h:'Líneas',n:1,v:x=>x.l,html:x=>fmt(x.l)},{k:'v',h:'Vitales',n:1,v:x=>x.v,html:x=>fmt(x.v)},{k:'q',h:'Necesidad',n:1,v:x=>x.q,html:x=>fmt(x.q)},
+      {k:'c',h:'Cubierta',n:1,v:x=>x.c,html:x=>fmt(x.c)},{k:'p',h:'% cubierto',n:1,v:x=>x.c/x.q,html:x=>{ const p=x.c/x.q; return '<span class="chip '+(p>=.9?'c-v':p>=.6?'c-a':'c-r')+'">'+pct(p)+'</span>'; }},
+      {k:'vf',h:'Vitales sin cobertura completa',n:1,v:x=>x.vf,html:x=>fmt(x.vf)}];
+    const t=tablaOrdenable('rank',cols,R,{id:'tablaRank',trAttr:x=>' class="click" data-ue="'+x.ui+'"'});
     $('conteo').textContent=R.length+' unidades con necesidad · toque una para ver su pre-pedido con el origen de cada cantidad';
-    $('cuerpo').innerHTML='<div class="tw"><table><thead><tr><th>Unidad ejecutora</th><th>Red</th><th class="n">Líneas</th><th class="n">Vitales</th><th class="n">Necesidad</th><th class="n">Cubierta</th><th class="n">% cubierto</th><th class="n">Vitales sin cobertura completa</th></tr></thead><tbody>'+
-      R.map(([i,x])=>{ const p=x.c/x.q; return '<tr class="click" data-ue="'+i+'"><td><b>'+esc(ueN(i))+'</b></td><td>'+RN[ueR(i)]+'</td><td class="n num">'+fmt(x.l)+'</td><td class="n num">'+fmt(x.v)+'</td><td class="n num">'+fmt(x.q)+'</td><td class="n num">'+fmt(x.c)+'</td><td class="n"><span class="chip '+(p>=.9?'c-v':p>=.6?'c-a':'c-r')+'">'+pct(p)+'</span></td><td class="n num">'+fmt(x.vf)+'</td></tr>'; }).join('')+'</tbody></table></div>';
-    $('cuerpo').querySelectorAll('tr[data-ue]').forEach(t=>t.onclick=()=>{ st.ue=t.dataset.ue; $('fUE').value=st.ue; pintar(); });
+    $('cuerpo').innerHTML=t.html; enlazarOrden($('cuerpo'),'rank');
+    $('cuerpo').querySelectorAll('tr[data-ue]').forEach(tr=>tr.onclick=()=>{ st.ue=tr.dataset.ue; st.ren=''; $('fUE').value=st.ue; pintar(); });
     return;
   }
-  const ui=+st.ue, F=filasN().sort((a,b)=>b[2]-a[2]||b[3]-a[3]||b[12]-a[12]);
+  const ui=+st.ue, F=filasN();
   const mv={}; M.filter(m=>m[0]===ui).forEach(m=>{ (mv[m[1]]||(mv[m[1]]=[])).push(m); });
-  const fuentes={}; M.filter(m=>m[0]===ui).forEach(m=>{ const k=origenN(m)+'|'+m[2]; fuentes[k]=(fuentes[k]||0)+1; });
   const q=F.reduce((s,r)=>s+r[9],0), c=F.reduce((s,r)=>s+r[10]+r[11],0);
-  $('conteo').innerHTML=F.length+' renglones bajo la línea de pedido · <a href="#" id="volver">ver todas las unidades</a>';
-  $('cuerpo').innerHTML='<div class="ue-cab"><div class="caja"><div style="font-size:15px;font-weight:700;color:var(--azul)">'+esc(ueN(ui))+'</div><div class="desc">'+RN[ueR(ui)]+'</div><div style="margin-top:4px">Necesidad <b class="num">'+fmt(q)+'</b> · cubierta <b class="num">'+fmt(c)+'</b> ('+pct(c/q)+')</div></div>'+
-    '<div>'+sankey(ui)+'</div></div>'+
-    '<div class="tw"><table><thead><tr><th>Renglón</th><th>Estado</th><th class="n">Saldo</th><th class="n">Línea de pedido</th><th class="n">Por recibir</th><th class="n">Necesidad</th><th>De dónde sale</th><th class="n">Faltante</th><th>Cobertura</th></tr></thead><tbody>'+
-    F.map(r=>'<tr><td>'+ren(r[1])+'</td><td>'+(r[3]?'<span class="chip c-r">Bajo inv. crítico</span>':'<span class="chip c-a">Bajo la línea</span>')+'</td><td class="n num">'+fmt(r[4])+'</td><td class="n num">'+fmt(r[6])+'</td><td class="n num">'+fmt(r[8])+'</td><td class="n num"><b>'+fmt(r[9])+'</b></td><td>'+
-      (mv[r[1]]||[]).map(m=>'<div><span class="chip '+(m[2]===8?'c-b':CLCHIP[m[6]])+'">F'+m[2]+'</span> '+esc(origenN(m))+' · <b class="num">'+fmt(m[5])+'</b>'+(m[2]===7?' <span class="desc">'+CLASE[m[6]]+'</span>':'')+'</div>').join('')+'</td><td class="n num">'+(r[12]?fmt(r[12]):'·')+'</td><td>'+cob(r)+'</td></tr>').join('')+'</tbody></table></div>';
-  $('volver').onclick=e=>{ e.preventDefault(); st.ue=''; $('fUE').value=''; pintar(); };
+  const cols=[nRen('ren','Renglón'),
+    {k:'est',h:'Estado',v:r=>r[3]?0:1,html:r=>r[3]?'<span class="chip c-r">Crítico</span>':'<span class="chip c-a">Bajo línea</span>'},
+    {k:'saldo',h:'Saldo',n:1,v:r=>r[4],html:r=>fmt(r[4])},{k:'rop',h:'Línea de pedido',n:1,v:r=>r[6],html:r=>fmt(r[6])},
+    {k:'pend',h:'Por recibir',n:1,v:r=>r[8],html:r=>fmt(r[8])},{k:'nec',h:'Necesidad',n:1,v:r=>r[9],html:r=>'<b>'+fmt(r[9])+'</b>'},
+    {k:'org',h:'De dónde sale',v:r=>(mv[r[1]]||[]).length,html:r=>(mv[r[1]]||[]).map(m=>'<div><span class="chip '+(m[2]===8?'c-b':CLCHIP[m[6]])+'">F'+m[2]+'</span> '+esc(origenN(m))+' · <b class="num">'+fmt(m[5])+'</b></div>').join('')||'<span class="desc">—</span>'},
+    {k:'falt',h:'Faltante',n:1,v:r=>r[12],html:r=>r[12]?fmt(r[12]):'·'},
+    {k:'cob',h:'Cobertura',v:r=>r[12]===0?0:(r[10]+r[11]>0?1:2),html:cobChip}];
+  const t=tablaOrdenable('ue',cols,F,{id:'tablaUE',trAttr:r=>' class="click'+(st.ren===r[1]?' sel':'')+'" data-c="'+r[1]+'"'});
+  $('conteo').innerHTML=F.length+' renglones bajo la línea de pedido · <button class="lnk" id="volver">ver todas las unidades</button> · toque un renglón para ver de dónde se abastece';
+  $('cuerpo').innerHTML='<div class="ue-grid"><div class="ue-izq" id="ueIzq"><div class="caja"><div style="font-size:15px;font-weight:700;color:var(--azul)">'+esc(ueN(ui))+'</div><div class="desc">'+RN[ueR(ui)]+'</div><div style="margin-top:4px">Necesidad <b class="num">'+fmt(q)+'</b> · cubierta <b class="num">'+fmt(c)+'</b> ('+pct(c/q)+')</div></div>'+
+    '<div class="caja-sk" id="cajaSankey">'+sankeyHTML(ui,F)+'</div></div><div class="ue-der">'+t.html+'</div></div>';
+  enlazarOrden($('cuerpo'),'ue');
+  $('volver').onclick=()=>{ st.ue=''; st.ren=''; $('fUE').value=''; pintar(); };
+  $('cuerpo').querySelectorAll('tr[data-c]').forEach(tr=>tr.onclick=()=>{ st.ren=(st.ren===tr.dataset.c?'':tr.dataset.c);
+    $('cuerpo').querySelectorAll('tr[data-c]').forEach(x=>x.classList.toggle('sel',x.dataset.c===st.ren));
+    $('cajaSankey').innerHTML=sankeyHTML(ui,F); const b=$('verTodos'); if(b) b.onclick=()=>{ st.ren=''; pintar(); }; });
+  const b=$('verTodos'); if(b) b.onclick=()=>{ st.ren=''; pintar(); };
 }
-/* Sankey simple: orígenes → la UE, grosor = renglones que aporta cada origen */
-function sankey(ui){
-  const a={}; M.filter(m=>m[0]===ui).forEach(m=>{ const k=origenN(m), x=a[k]||(a[k]={n:0,f:m[2]}); x.n++; });
-  const L=Object.entries(a).sort((p,q)=>q[1].n-p[1].n); if(!L.length) return '<div class="nota">Sin fuentes en la red para esta unidad.</div>';
-  /* cada origen ocupa al menos 16 px para que su etiqueta no se encime; la banda conserva su grosor real */
-  const tot=L.reduce((s,x)=>s+x[1].n,0), sc=Math.min(6,Math.max(1.2,300/tot)), W=700, X0=330, X1=560;
-  const slots=L.map(x=>Math.max(16,x[1].n*sc)+3), H=Math.max(120,slots.reduce((a,b)=>a+b,0)+20);
-  let y=10, ry=10+(H-20-tot*sc)/2, s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Orígenes del abastecimiento de la unidad">';
-  L.forEach(([k,x],i)=>{ const h=x.n*sc, yt=y+(slots[i]-3-h)/2, col=x.f===8?'#2F6DB5':'#E07A2E', cx=(X0+X1)/2;
-    s+='<path d="M'+X0+' '+yt+' C'+cx+' '+yt+' '+cx+' '+ry+' '+X1+' '+ry+' L'+X1+' '+(ry+h)+' C'+cx+' '+(ry+h)+' '+cx+' '+(yt+h)+' '+X0+' '+(yt+h)+' Z" fill="'+col+'" fill-opacity=".35"/><rect x="'+(X0-6)+'" y="'+yt+'" width="6" height="'+Math.max(2,h)+'" fill="'+col+'"/>';
-    s+='<text x="'+(X0-10)+'" y="'+(y+(slots[i]-3)/2+4)+'" font-size="11" text-anchor="end" fill="#1d2733">'+esc(k.length>44?k.slice(0,43)+'…':k)+' · '+x.n+'</text>';
+/* Sankey: con un renglón elegido, unidades desde cada origen (+ faltante); sin renglón, líneas por origen. */
+function sankeyHTML(ui,F){
+  let L, centro, titulo, nota;
+  if(st.ren){
+    const r=F.find(x=>x[1]===st.ren)||N.find(x=>x[0]===ui&&x[1]===st.ren);
+    const a=M.filter(m=>m[0]===ui&&m[1]===st.ren).map(m=>({l:origenN(m)+(m[2]===7?' · '+CLASE[m[6]].split(' (')[0].toLowerCase():''),v:m[5],c:m[2]===8?'#2F6DB5':'#E07A2E'}));
+    if(r&&r[12]>0) a.push({l:'Faltante sin fuente en la red',v:r[12],c:'#b9c0c9'});
+    L=a.sort((x,y)=>y.v-x.v); centro=['Necesidad',r?fmt(r[9]):'·','unidades'];
+    titulo='<b class="num">'+esc(st.ren)+'</b> '+esc(nom(st.ren).slice(0,70))+(vit(st.ren)?' <span class="chip vital">VITAL</span>':'');
+    nota='Unidades por origen · <button class="lnk" id="verTodos">ver todos los renglones</button>';
+  } else {
+    const a={}; M.filter(m=>m[0]===ui).forEach(m=>{ const k=origenN(m), x=a[k]||(a[k]={l:k,v:0,c:m[2]===8?'#2F6DB5':'#E07A2E'}); x.v++; });
+    L=Object.values(a).sort((x,y)=>y.v-x.v);
+    if(L.length>10){ const r=L.splice(9); L.push({l:'Otras '+r.length+' unidades',v:r.reduce((s,x)=>s+x.v,0),c:'#E07A2E'}); }
+    centro=['Total',fmt(L.reduce((s,x)=>s+x.v,0)),'líneas'];
+    titulo='Orígenes del abastecimiento'; nota='Grosor = líneas de despacho (renglón × origen). Toque un renglón de la tabla para ver sus cantidades.';
+  }
+  if(!L.length) return '<h3>'+titulo+'</h3><div class="nota">Sin fuentes en la red para '+(st.ren?'este renglón':'esta unidad')+'.</div><div class="desc">'+nota+'</div>';
+  const tot=L.reduce((s,x)=>s+x.v,0), W=440, X0=228, X1=350, AREA=Math.min(360,Math.max(120,L.length*30));
+  const sc=AREA/tot, slots=L.map(x=>Math.max(28,x.v*sc)+3), H=slots.reduce((a,b)=>a+b,0)+20;
+  let y=10, ry=10+(H-20-tot*sc)/2; const r0=ry, cx=(X0+X1)/2;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Diagrama de orígenes del abastecimiento">';
+  L.forEach((x,i)=>{ const h=x.v*sc, yt=y+(slots[i]-3-h)/2;
+    s+='<path d="M'+X0+' '+yt+' C'+cx+' '+yt+' '+cx+' '+ry+' '+X1+' '+ry+' L'+X1+' '+(ry+h)+' C'+cx+' '+(ry+h)+' '+cx+' '+(yt+h)+' '+X0+' '+(yt+h)+' Z" fill="'+x.c+'" fill-opacity=".38"><title>'+esc(x.l)+': '+fmt(x.v)+'</title></path><rect x="'+(X0-6)+'" y="'+yt+'" width="6" height="'+Math.max(2,h)+'" fill="'+x.c+'"/>';
+    const cy=y+(slots[i]-3)/2; s+='<text x="'+(X0-10)+'" y="'+(cy-2)+'" font-size="11" text-anchor="end" fill="#1d2733">'+esc(x.l.length>34?x.l.slice(0,33)+'…':x.l)+'</text><text x="'+(X0-10)+'" y="'+(cy+11)+'" font-size="11" font-weight="700" text-anchor="end" fill="#1d2733" font-family="Consolas,monospace">'+fmt(x.v)+'</text>';
     y+=slots[i]; ry+=h; });
-  const r0=10+(H-20-tot*sc)/2;
-  s+='<rect x="'+X1+'" y="'+r0+'" width="8" height="'+(tot*sc)+'" fill="#0C447C"/><text x="'+(X1+14)+'" y="'+(r0+tot*sc/2+4)+'" font-size="11" fill="#1d2733">'+tot+' líneas</text></svg>';
-  return s+'<div class="desc"><span class="chip c-b">F8</span> desde CEDIS · <span class="chip c-n">F7</span> desde otras UE · grosor = líneas de despacho (renglón × origen)</div>';
+  const mc=r0+tot*sc/2; s+='<rect x="'+X1+'" y="'+r0+'" width="8" height="'+(tot*sc)+'" fill="#0C447C"/><text x="'+(X1+14)+'" y="'+(mc-8)+'" font-size="11" fill="#5f6b78">'+esc(centro[0])+'</text><text x="'+(X1+14)+'" y="'+(mc+7)+'" font-size="13" font-weight="700" fill="#1d2733" font-family="Consolas,monospace">'+esc(centro[1])+'</text><text x="'+(X1+14)+'" y="'+(mc+20)+'" font-size="10" fill="#5f6b78">'+esc(centro[2])+'</text>';
+  s+='</svg>';
+  return '<h3>'+titulo+'</h3>'+s+'<div class="desc"><span class="chip c-b">F8</span> desde CEDIS · <span class="chip c-n">F7</span> desde otras UE'+(st.ren?' · <span class="chip c-g">gris</span> faltante':'')+'<br>'+nota+'</div>';
 }
-function grupoTabla(filas,keyF,titulo,cols,celdas){
-  let h='<div class="tw"><table><thead><tr>'+cols.map(c=>'<th'+(c[1]?' class="n"':'')+'>'+c[0]+'</th>').join('')+'</tr></thead><tbody>', g=null;
-  filas.forEach(f=>{ const k=keyF(f); if(k!==g){ g=k; h+='<tr class="grupo"><td colspan="'+cols.length+'">'+titulo(f)+'</td></tr>'; } h+='<tr>'+celdas(f)+'</tr>'; });
-  return h+'</tbody></table></div>';
-}
+/* -- Formas 8 -- */
+function colsF8(){ return [
+  {k:'org',h:'CEDIS que despacha',v:m=>CN[m[4]],html:m=>'<b>'+esc(CN[m[4]])+'</b>'},
+  {k:'tipo',h:'Tipo',v:m=>m[3],html:m=>m[3]===1?'<span class="chip c-a">Otro CEDIS</span>':'<span class="chip c-b">CEDIS propio</span>'},
+  {k:'des',h:'UE que recibe',v:m=>ueN(m[0]),html:m=>esc(ueN(m[0]))+'<div class="desc">'+RN[ueR(m[0])]+'</div>'},
+  nRen('ren','Renglón'),{k:'q',h:'Cantidad',n:1,v:m=>m[5],html:m=>'<b>'+fmt(m[5])+'</b>'}]; }
 function vistaF8(){
   const F=filasM(8).sort((a,b)=>String(a[4]).localeCompare(String(b[4]))||ueN(a[0]).localeCompare(ueN(b[0]))||a[1].localeCompare(b[1]));
   const docs=new Set(F.map(m=>m[4]+'>'+m[0])).size;
-  $('conteo').textContent=docs+' Formas 8 · '+F.length+' renglones · '+fmt(F.reduce((s,m)=>s+m[5],0))+' unidades';
-  $('cuerpo').innerHTML=grupoTabla(F,m=>m[4]+'>'+m[0],m=>'Forma 8 · '+esc(CN[m[4]])+' → '+esc(ueN(m[0]))+(m[3]===1?' <span class="chip c-a">otro CEDIS</span>':''),
-    [['Renglón'],['Tipo'],['Cantidad',1]],m=>'<td>'+ren(m[1])+'</td><td>'+TIPO[m[3]]+'</td><td class="n num"><b>'+fmt(m[5])+'</b></td>');
+  $('conteo').textContent=docs+' Formas 8 · '+F.length+' renglones · '+fmt(F.reduce((s,m)=>s+m[5],0))+' unidades · orden inicial: por CEDIS y unidad (una Forma 8 por pareja)';
+  const t=tablaOrdenable('f8',colsF8(),F); $('cuerpo').innerHTML=t.html; enlazarOrden($('cuerpo'),'f8');
 }
+/* -- Formas 7 -- */
+function colsF7(){ return [
+  {k:'org',h:'UE que cede',v:m=>ueN(m[4]),html:m=>'<b>'+esc(ueN(m[4]))+'</b>'},
+  {k:'des',h:'UE que recibe',v:m=>ueN(m[0]),html:m=>esc(ueN(m[0]))},
+  {k:'red',h:'Red',v:m=>RN[ueR(m[0])],html:m=>RN[ueR(m[0])]},
+  nRen('ren','Renglón'),
+  {k:'cl',h:'Inventario que se cede',v:m=>m[6],html:m=>'<span class="chip '+CLCHIP[m[6]]+'">'+CLASE[m[6]]+'</span>'},
+  {k:'dsm',h:'Días sin movimiento',n:1,v:m=>m[7],html:m=>m[7]==null?'·':fmt(m[7])},
+  {k:'q',h:'Cantidad',n:1,v:m=>m[5],html:m=>'<b>'+fmt(m[5])+'</b>'}]; }
 function vistaF7(){
   const F=filasM(7).sort((a,b)=>ueN(a[4]).localeCompare(ueN(b[4]))||ueN(a[0]).localeCompare(ueN(b[0]))||a[1].localeCompare(b[1]));
   const docs=new Set(F.map(m=>m[4]+'>'+m[0])).size;
-  $('conteo').textContent=docs+' Formas 7 · '+F.length+' renglones · '+fmt(F.reduce((s,m)=>s+m[5],0))+' unidades';
-  $('cuerpo').innerHTML=grupoTabla(F,m=>m[4]+'>'+m[0],m=>'Forma 7 · cede '+esc(ueN(m[4]))+' → recibe '+esc(ueN(m[0])),
-    [['Renglón'],['Inventario que se cede'],['Días sin movimiento en quien cede',1],['Cantidad',1]],
-    m=>'<td>'+ren(m[1])+'</td><td><span class="chip '+CLCHIP[m[6]]+'">'+CLASE[m[6]]+'</span></td><td class="n num">'+(m[7]==null?'·':fmt(m[7]))+'</td><td class="n num"><b>'+fmt(m[5])+'</b></td>');
+  $('conteo').textContent=docs+' Formas 7 · '+F.length+' renglones · '+fmt(F.reduce((s,m)=>s+m[5],0))+' unidades · orden inicial: por unidad que cede y unidad que recibe (una Forma 7 por pareja)';
+  const t=tablaOrdenable('f7',colsF7(),F); $('cuerpo').innerHTML=t.html; enlazarOrden($('cuerpo'),'f7');
 }
+/* -- Excesos -- */
 function vistaExc(){
-  const F=filasX().sort((a,b)=>b[6]-b[7]-(a[6]-a[7]));
+  const F=filasX();
+  const cols=[{k:'ue',h:'Unidad ejecutora',v:x=>ueN(x[0]),html:x=>esc(ueN(x[0]))+'<div class="desc">'+RN[ueR(x[0])]+'</div>'},nRen('ren','Renglón'),
+    {k:'cl',h:'Clase',v:x=>x[2],html:x=>'<span class="chip '+CLCHIP[x[2]]+'">'+CLASE[x[2]]+'</span>'},
+    {k:'me',h:'Meses de cobertura',n:1,v:x=>x[3],html:x=>x[3]==null?'·':x[3]},{k:'dsm',h:'Días sin movimiento',n:1,v:x=>x[4],html:x=>x[4]==null?'·':fmt(x[4])},
+    {k:'sal',h:'Saldo',n:1,v:x=>x[5],html:x=>fmt(x[5])},{k:'ced',h:'Cedible',n:1,v:x=>x[6],html:x=>fmt(x[6])},
+    {k:'us',h:'Usado en Formas 7',n:1,v:x=>x[7],html:x=>fmt(x[7])},{k:'rem',h:'Remanente',n:1,v:x=>x[6]-x[7],html:x=>'<b>'+fmt(x[6]-x[7])+'</b>'}];
   $('conteo').textContent=F.length+' renglones con exceso o sin movimiento · '+fmt(F.reduce((s,x)=>s+x[6]-x[7],0))+' unidades aún disponibles para redistribución o devolución al CEDIS';
-  $('cuerpo').innerHTML='<div class="tw"><table><thead><tr><th>Unidad ejecutora</th><th>Renglón</th><th>Clase</th><th class="n">Meses de cobertura</th><th class="n">Días sin movimiento</th><th class="n">Saldo</th><th class="n">Cedible</th><th class="n">Usado en Formas 7</th><th class="n">Remanente</th></tr></thead><tbody>'+
-    F.slice(0,3000).map(x=>'<tr><td>'+esc(ueN(x[0]))+'<div class="desc">'+RN[ueR(x[0])]+'</div></td><td>'+ren(x[1])+'</td><td><span class="chip '+CLCHIP[x[2]]+'">'+CLASE[x[2]]+'</span></td><td class="n num">'+(x[3]==null?'·':x[3])+'</td><td class="n num">'+(x[4]==null?'·':fmt(x[4]))+'</td><td class="n num">'+fmt(x[5])+'</td><td class="n num">'+fmt(x[6])+'</td><td class="n num">'+fmt(x[7])+'</td><td class="n num"><b>'+fmt(x[6]-x[7])+'</b></td></tr>').join('')+'</tbody></table></div>'+(F.length>3000?'<div class="nota">Se muestran 3,000 filas; el Excel trae todas.</div>':'');
+  const t=tablaOrdenable('exc',cols,F); $('cuerpo').innerHTML=t.html; enlazarOrden($('cuerpo'),'exc');
 }
+/* -- Sin cobertura -- */
 function sinCob(){
-  const g={}; filasN().filter(r=>r[12]>0).forEach(r=>{ const x=g[r[1]]||(g[r[1]]={u:new Set(),q:0,f:0}); x.u.add(r[0]); x.q+=r[9]; x.f+=r[12]; });
-  return Object.entries(g).sort((a,b)=>(vit(b[0])-vit(a[0]))||(b[1].u.size-a[1].u.size));
+  const g={}; filasN().filter(r=>r[12]>0).forEach(r=>{ const x=g[r[1]]||(g[r[1]]={c:r[1],u:new Set(),q:0,f:0}); x.u.add(r[0]); x.q+=r[9]; x.f+=r[12]; });
+  return Object.values(g).sort((a,b)=>(vit(b.c)-vit(a.c))||(b.u.size-a.u.size));
 }
 function vistaSin(){
   const G=sinCob();
-  $('conteo').textContent=G.length+' renglones con faltante después de usar CEDIS y otras UE · para gestión de Planificación';
-  $('cuerpo').innerHTML='<div class="tw"><table><thead><tr><th>Renglón</th><th class="n">UE con faltante</th><th class="n">Necesidad</th><th class="n">Cubierto por la red</th><th class="n">Faltante</th><th class="n">% cubierto</th></tr></thead><tbody>'+
-    G.map(([c,x])=>'<tr><td>'+ren(c)+'</td><td class="n num">'+x.u.size+'</td><td class="n num">'+fmt(x.q)+'</td><td class="n num">'+fmt(x.q-x.f)+'</td><td class="n num"><b>'+fmt(x.f)+'</b></td><td class="n">'+pct((x.q-x.f)/x.q)+'</td></tr>').join('')+'</tbody></table></div>';
+  const cols=[{k:'ren',h:'Renglón',v:x=>nom(x.c).toLowerCase(),html:x=>ren(x.c)},{k:'u',h:'UE con faltante',n:1,v:x=>x.u.size,html:x=>fmt(x.u.size)},
+    {k:'q',h:'Necesidad',n:1,v:x=>x.q,html:x=>fmt(x.q)},{k:'c',h:'Cubierto por la red',n:1,v:x=>x.q-x.f,html:x=>fmt(x.q-x.f)},
+    {k:'f',h:'Faltante',n:1,v:x=>x.f,html:x=>'<b>'+fmt(x.f)+'</b>'},{k:'p',h:'% cubierto',n:1,v:x=>(x.q-x.f)/x.q,html:x=>pct((x.q-x.f)/x.q)}];
+  $('conteo').textContent=G.length+' renglones con faltante después de usar CEDIS y otras UE · para gestión de Planificación · orden inicial: vitales primero y más unidades afectadas';
+  const t=tablaOrdenable('sin',cols,G); $('cuerpo').innerHTML=t.html; enlazarOrden($('cuerpo'),'sin');
 }
+/* -- MQ -- */
 function vistaMQ(){
-  const F=UES.map((u,i)=>[i,u]).filter(([i,u])=>u[3]<=5&&(st.red===''||u[1]===st.red));
+  const F=UES.map((u,i)=>({i,u})).filter(x=>x.u[3]<=5&&(st.red===''||x.u[1]===st.red));
+  const cols=[{k:'ue',h:'Unidad ejecutora',v:x=>x.u[0],html:x=>'<b>'+esc(x.u[0])+'</b>'},{k:'red',h:'Red',v:x=>RN[x.u[1]],html:x=>RN[x.u[1]]},
+    {k:'mq',h:'Renglones MQ con saldo',n:1,v:x=>x.u[3],html:x=>x.u[3]},{k:'tot',h:'Renglones totales con saldo',n:1,v:x=>x.u[2],html:x=>fmt(x.u[2])},
+    {k:'sit',h:'Situación',v:()=>0,html:()=>'Sujeto a la instalación del módulo de gestión de inventario de insumos quirúrgicos en SALMI (Departamento de Control de Inventario / Coordinación Nacional de Almacenes)'}];
   $('conteo').textContent=F.length+' unidades con 5 o menos renglones de insumos médico-quirúrgicos en Saldos en línea';
-  $('cuerpo').innerHTML='<div class="tw"><table><thead><tr><th>Unidad ejecutora</th><th>Red</th><th class="n">Renglones MQ con saldo</th><th class="n">Renglones totales con saldo</th><th>Situación</th></tr></thead><tbody>'+
-    F.map(([i,u])=>'<tr><td><b>'+esc(u[0])+'</b></td><td>'+RN[u[1]]+'</td><td class="n num">'+u[3]+'</td><td class="n num">'+fmt(u[2])+'</td><td>Sujeto a la instalación del módulo de gestión de inventario de insumos quirúrgicos en SALMI (Departamento de Control de Inventario / Coordinación Nacional de Almacenes)</td></tr>').join('')+'</tbody></table></div>';
+  const t=tablaOrdenable('mq',cols,F); $('cuerpo').innerHTML=t.html; enlazarOrden($('cuerpo'),'mq');
 }
+
 /* ---------- Excel institucional ---------- */
 let _xls=null;
 function cargarExcelJS(){ if(window.ExcelJS) return Promise.resolve(); if(_xls) return _xls;
@@ -286,17 +385,21 @@ const T=(h,w)=>({h,t:'txt',w}), Nm=(h,w)=>({h,t:'num',w});
 function metaBase(){ return [['Saldos al',fL(J.corte)],['Formas 8 al',fL(J.corteF8)],['Regla','Cada UE se abastece de su CEDIS (Forma 8), de otro CEDIS sobre su resguardo (Forma 8) y de otras UE de su misma red (Forma 7), sin tope de donantes'],
   ['Filtros',[st.red?RN[st.red]:'Todas las redes',st.ue!==''?ueN(+st.ue):'Todas las UE',st.v==='v'?'Solo vitales':st.v==='c'?'Vitales o bajo inv. crítico':'Todos los renglones',st.q?'Búsqueda: '+st.q:''].filter(Boolean).join(' · ')],
   ['Advertencia','Propuesta sujeta a validación de existencias físicas antes de emitir los formularios']]; }
+/* el Excel de la vista respeta el orden que el usuario eligió en la tabla */
+function ordenar(vista,filas,cols){ const s=st.sort[vista]; if(!s) return filas; const c=cols.find(x=>x.k===s.k); if(!c) return filas;
+  return filas.slice().sort((a,b)=>{ const x=c.v(a),y=c.v(b); if(x==null&&y==null) return 0; if(x==null) return 1; if(y==null) return -1; return (typeof x==='string'||typeof y==='string')?String(x).localeCompare(String(y))*s.d:(x-y)*s.d; }); }
 const defs={
-  ue:()=>['Necesidades','Necesidades por unidad ejecutora y renglón',[T('Unidad ejecutora',34),T('Red',18),T('Código',12),T('Renglón',46),T('Vital',6),T('Estado',18),Nm('Saldo'),Nm('Demanda/mes'),Nm('Línea de pedido'),Nm('Nivel objetivo'),Nm('Por recibir'),Nm('Necesidad'),Nm('Por Forma 8'),Nm('Por Forma 7'),Nm('Faltante'),T('Cobertura',14)],
-    filasN().map(r=>[ueN(r[0]),RN[ueR(r[0])],r[1],nom(r[1]),r[2]?'Sí':'',r[3]?'Bajo inventario crítico':'Bajo la línea',r[4],r[5],r[6],r[7],r[8],r[9],r[10],r[11],r[12],r[12]===0?'Completa':(r[10]+r[11]>0?'Parcial':'Sin fuente')])],
+  ue:()=>{ const nec=ordenar('ue',filasN(),[{k:'nec',v:r=>r[9]},{k:'saldo',v:r=>r[4]},{k:'rop',v:r=>r[6]},{k:'pend',v:r=>r[8]},{k:'falt',v:r=>r[12]},{k:'ren',v:r=>nom(r[1]).toLowerCase()}]);
+    return ['Necesidades','Necesidades por unidad ejecutora y renglón',[T('Unidad ejecutora',34),T('Red',18),T('Código',12),T('Renglón',46),T('Vital',6),T('Estado',18),Nm('Saldo'),Nm('Demanda/mes'),Nm('Línea de pedido'),Nm('Nivel objetivo'),Nm('Por recibir'),Nm('Necesidad'),Nm('Por Forma 8'),Nm('Por Forma 7'),Nm('Faltante'),T('Cobertura',14)],
+    nec.map(r=>[ueN(r[0]),RN[ueR(r[0])],r[1],nom(r[1]),r[2]?'Sí':'',r[3]?'Bajo inventario crítico':'Bajo la línea',r[4],r[5],r[6],r[7],r[8],r[9],r[10],r[11],r[12],cobTxt(r)])]; },
   f8:()=>['Formas 8','Formas 8 propuestas: despacho desde CEDIS',[T('CEDIS que despacha',18),T('Tipo',14),T('UE que recibe',34),T('Red de la UE',18),T('Código',12),T('Renglón',46),T('Vital',6),Nm('Cantidad')],
-    filasM(8).map(m=>[CN[m[4]],TIPO[m[3]],ueN(m[0]),RN[ueR(m[0])],m[1],nom(m[1]),vit(m[1])?'Sí':'',m[5]])],
+    ordenar('f8',filasM(8),colsF8()).map(m=>[CN[m[4]],TIPO[m[3]],ueN(m[0]),RN[ueR(m[0])],m[1],nom(m[1]),vit(m[1])?'Sí':'',m[5]])],
   f7:()=>['Formas 7','Formas 7 propuestas: traslados entre unidades ejecutoras',[T('UE que cede',34),T('UE que recibe',34),T('Red',18),T('Código',12),T('Renglón',46),T('Vital',6),T('Inventario que se cede',22),Nm('Días sin movimiento en quien cede'),Nm('Cantidad')],
-    filasM(7).map(m=>[ueN(m[4]),ueN(m[0]),RN[ueR(m[0])],m[1],nom(m[1]),vit(m[1])?'Sí':'',CLASE[m[6]],m[7],m[5]])],
+    ordenar('f7',filasM(7),colsF7()).map(m=>[ueN(m[4]),ueN(m[0]),RN[ueR(m[0])],m[1],nom(m[1]),vit(m[1])?'Sí':'',CLASE[m[6]],m[7],m[5]])],
   exc:()=>['Excesos','Excesos e inventario sin movimiento en unidades ejecutoras',[T('Unidad ejecutora',34),T('Red',18),T('Código',12),T('Renglón',46),T('Clase',22),{h:'Meses de cobertura',t:'dec'},Nm('Días sin movimiento'),Nm('Saldo'),Nm('Cedible'),Nm('Usado en Formas 7'),Nm('Remanente')],
-    filasX().map(x=>[ueN(x[0]),RN[ueR(x[0])],x[1],nom(x[1]),CLASE[x[2]],x[3],x[4],x[5],x[6],x[7],x[6]-x[7]])],
+    filasX().sort((a,b)=>(b[6]-b[7])-(a[6]-a[7])).map(x=>[ueN(x[0]),RN[ueR(x[0])],x[1],nom(x[1]),CLASE[x[2]],x[3],x[4],x[5],x[6],x[7],x[6]-x[7]])],
   sin:()=>['Sin cobertura','Faltante sin fuente en la red · para gestión de Planificación',[T('Código',12),T('Renglón',56),T('Vital',6),Nm('UE con faltante'),Nm('Necesidad'),Nm('Cubierto por la red'),Nm('Faltante'),{h:'% cubierto',t:'pct'}],
-    sinCob().map(([c,x])=>[c,nom(c),vit(c)?'Sí':'',x.u.size,x.q,x.q-x.f,x.f,(x.q-x.f)/x.q])],
+    sinCob().map(x=>[x.c,nom(x.c),vit(x.c)?'Sí':'',x.u.size,x.q,x.q-x.f,x.f,(x.q-x.f)/x.q])],
   mq:()=>['Cobertura MQ','Unidades sin datos de insumos médico-quirúrgicos en Saldos en línea',[T('Unidad ejecutora',40),T('Red',18),Nm('Renglones MQ con saldo'),Nm('Renglones totales'),T('Situación',90)],
     UES.filter(u=>u[3]<=5).map(u=>[u[0],RN[u[1]],u[3],u[2],'Sujeto a la instalación del módulo de gestión de inventario de insumos quirúrgicos en SALMI (Control de Inventario / Coordinación Nacional de Almacenes)'])]
 };
@@ -307,13 +410,15 @@ async function excel(todo){
   let nombre;
   if(todo){
     const g={red:st.red,ue:st.ue,q:st.q,v:st.v}; st.red='';st.ue='';st.q='';st.v='';
-    const k=J.kpi, f=k.porFuente;
-    await hoja(wb,'Resumen','Resumen nacional',meta.filter(x=>x[0]!=='Filtros'),[T('Indicador',50),Nm('Valor',18)],[
-      ['Líneas UE × renglón bajo la línea de pedido',k.lineas],['Unidades necesarias',k.unidades],['Unidades cubiertas por la red',k.cubiertas],['Líneas cubiertas completas',k.completas],['Líneas cubiertas en parte',k.parciales],['Líneas sin fuente en la red',k.sinFuente],
-      ['Líneas vitales',k.vitales],['Líneas vitales cubiertas completas',k.vitalesCompletas],['Formas 8 a CEDIS',k.formas8],['Formas 7 entre UE',k.formas7],
-      ['Unidades desde el CEDIS que surte (F8)',f.cedisPropio],['Unidades desde otro CEDIS (F8)',f.otroCedis],['Unidades desde UE de la misma red (F7)',f.ueMismaRed]]);
-    for(const t of ['ue','f8','f7','exc','sin','mq']){ const [n,ti,c,fi]=defs[t](); await hoja(wb,n,ti,meta.filter(x=>x[0]!=='Filtros'),c,fi); }
-    Object.assign(st,g); nombre='ABASTECIMIENTO_RED_COMPLETO';
+    try{
+      const k=J.kpi, f=k.porFuente, m2=metaBase().filter(x=>x[0]!=='Filtros');
+      await hoja(wb,'Resumen','Resumen nacional',m2,[T('Indicador',50),Nm('Valor',18)],[
+        ['Líneas UE × renglón bajo la línea de pedido',k.lineas],['Unidades necesarias',k.unidades],['Unidades cubiertas por la red',k.cubiertas],['Líneas cubiertas completas',k.completas],['Líneas cubiertas en parte',k.parciales],['Líneas sin fuente en la red',k.sinFuente],
+        ['Líneas vitales',k.vitales],['Líneas vitales cubiertas completas',k.vitalesCompletas],['Formas 8 a CEDIS',k.formas8],['Formas 7 entre UE',k.formas7],
+        ['Unidades desde el CEDIS que surte (F8)',f.cedisPropio],['Unidades desde otro CEDIS (F8)',f.otroCedis],['Unidades desde UE de la misma red (F7)',f.ueMismaRed]]);
+      for(const t of ['ue','f8','f7','exc','sin','mq']){ const [n,ti,c,fi]=defs[t](); await hoja(wb,n,ti,m2,c,fi); }
+    } finally { Object.assign(st,g); }
+    nombre='ABASTECIMIENTO_RED_COMPLETO';
   } else {
     const [n,ti,c,fi]=defs[st.tab](); if(!fi.length){ toast('No hay filas que exportar con los filtros actuales.'); return; }
     await hoja(wb,n,ti,meta,c,fi); nombre='ABASTECIMIENTO_RED_'+n.toUpperCase().replace(/\s+/g,'_');
@@ -322,13 +427,64 @@ async function excel(todo){
   a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download=nombre+'_'+hoyPTY()+'.xlsx';
   document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); toast('Excel descargado.');
 }
+
+/* ---------- tour guiado ---------- */
+function primeraUE(){ const R=rankingUE().sort((a,b)=>b.vf-a.vf||b.f-a.f); return R.length?String(R[0].ui):''; }
+const TOUR=[
+  {sel:'#cab',tit:'1. Encabezado',txt:'Muestra de qué fecha son los saldos y las Formas 8 usados, y cuándo se publicó el cálculo. Se queda fijo al bajar en la página. «Cómo se calcula» abre las fórmulas.',prep:'inicio'},
+  {sel:'#resumen',tit:'2. Resumen nacional',txt:'Cuántas líneas (unidad × renglón) están bajo su línea de pedido, qué parte de lo que necesitan se cubre con el inventario de la red, cuántas Formas 8 y Formas 7 se proponen y cuánto queda sin fuente.'},
+  {sel:'#avisoMQ',tit:'3. Datos de insumos médico-quirúrgicos',txt:'Algunas unidades no tienen instalado en SALMI el módulo de inventario de insumos quirúrgicos: sus necesidades de esos insumos no se pueden calcular. La lista está en la última pestaña.'},
+  {sel:'#tabs',tit:'4. Las vistas',txt:'Por unidad ejecutora (pre-pedido de cada unidad), Formas 8 a los CEDIS, Formas 7 entre unidades, excesos e inventario sin movimiento, faltantes sin fuente para Planificación y cobertura de datos MQ.'},
+  {sel:'#filtros',tit:'5. Filtros y descargas',txt:'Filtre por red, unidad, renglón o solo vitales. «Excel de esta vista» descarga lo que está viendo, con sus filtros y el orden elegido; «Excel completo» trae todas las vistas en un solo libro.'},
+  {sel:'#tablaRank',tit:'6. Ranking de unidades',txt:'Las unidades con más renglones vitales sin cobertura completa aparecen primero. Toque cualquier título de columna para ordenar de mayor a menor o de menor a mayor. Toque una unidad para abrir su pre-pedido.',prep:'ranking'},
+  {sel:'#ueIzq',tit:'7. Una unidad: de dónde se abastece',txt:'El diagrama muestra los orígenes de lo que necesita la unidad: su CEDIS y otros CEDIS (azul, Forma 8) y otras unidades de su red (naranja, Forma 7). Se queda fijo mientras recorre la tabla.',prep:'ue'},
+  {sel:'#tablaUE',tit:'8. El pre-pedido',txt:'Un renglón por fila, ordenado de mayor a menor necesidad. «De dónde sale» indica cada origen y su cantidad. Toque un renglón y el diagrama muestra las unidades exactas de cada origen y el faltante.',prep:'ue'},
+  {sel:'#cajaSankey',tit:'9. Abastecimiento de un renglón',txt:'Con un renglón elegido, cada banda es la cantidad que aporta un origen; en gris, lo que no tiene fuente en la red. «Ver todos los renglones» regresa a la vista de la unidad.',prep:'ren'},
+  {sel:'.tab[data-t=f8]',tit:'10. Formas 8 a los CEDIS',txt:'Lista lo que cada unidad debe pedir a su CEDIS, o a otro CEDIS cuando el suyo no tiene. Una Forma 8 por cada pareja CEDIS–unidad.',prep:'f8'},
+  {sel:'.tab[data-t=f7]',tit:'11. Formas 7 entre unidades',txt:'Traslados entre unidades de la misma red: quién cede, quién recibe, qué tipo de inventario se cede (sin movimiento, exceso, alto) y cuánto. Una Forma 7 por pareja.',prep:'f7'},
+  {sel:'.tab[data-t=exc]',tit:'12. Excesos y sin movimiento',txt:'Inventario que las unidades podrían ceder, cuánto se usó en esta propuesta y cuánto queda: base para redistribuir o devolver al CEDIS antes de que venza.',prep:'exc'},
+  {sel:'.tab[data-t=sin]',tit:'13. Sin cobertura en la red',txt:'Renglones que ni los CEDIS ni otras unidades pueden cubrir: es la lista para la gestión de Planificación.',prep:'sin'},
+  {sel:'#btnXlsTodo',tit:'14. Descargue el reporte',txt:'El Excel completo trae el resumen y todas las vistas, con el formato institucional. Es una propuesta: valide existencias físicas antes de emitir los formularios.',prep:'fin'}
+];
+let TI=0, tourEstado=null;
+function tourPrep(p){
+  if(p==='inicio'||p==='ranking'){ st.tab='ue'; st.ue=''; st.ren=''; $('fUE').value=''; pintar(); }
+  else if(p==='ue'){ st.tab='ue'; st.sort.ue={k:'nec',d:-1}; if(st.ue==='') st.ue=primeraUE(); st.ren=''; $('fUE').value=st.ue; pintar(); }
+  else if(p==='ren'){ st.tab='ue'; if(st.ue==='') st.ue=primeraUE(); $('fUE').value=st.ue; const r=filasN().filter(x=>M.some(m=>m[0]===+st.ue&&m[1]===x[1])).sort((a,b)=>b[9]-a[9])[0]; st.ren=r?r[1]:''; pintar(); }
+  else if(['f8','f7','exc','sin'].indexOf(p)>=0){ st.tab=p; pintar(); }
+}
+function tourPaso(){
+  const p=TOUR[TI]; if(!p){ tourCerrar(); return; }
+  if(p.prep) tourPrep(p.prep);
+  setTimeout(()=>{
+    const t=document.querySelector(p.sel), box=$('tourBox');
+    if(!t){ if(TI<TOUR.length-1){ TI++; tourPaso(); } else tourCerrar(); return; }
+    let sp=document.querySelector('.tour-spot'); if(!sp){ sp=document.createElement('div'); sp.className='tour-spot'; $('tourOverlay').appendChild(sp); }
+    $('tourTitulo').textContent=p.tit; $('tourTexto').textContent=p.txt; $('tourPaso').textContent='Paso '+(TI+1)+' de '+TOUR.length;
+    $('tourPrev').style.visibility=TI===0?'hidden':'visible'; $('tourNext').textContent=TI===TOUR.length-1?'Terminar':'Siguiente ▸';
+    if(p.sel!=='#cab') t.scrollIntoView({block:'center'});
+    setTimeout(()=>{ const r=t.getBoundingClientRect(); const hh=Math.min(r.height,window.innerHeight-40);
+      sp.style.cssText='display:block;top:'+(r.top-6)+'px;left:'+(r.left-6)+'px;width:'+(r.width+12)+'px;height:'+(hh+12)+'px';
+      const bh=box.offsetHeight||170,bw=box.offsetWidth||360; let top=r.top+hh+14; if(top+bh>window.innerHeight-10) top=Math.max(10,r.top-bh-14); if(top<10) top=10;
+      box.style.top=top+'px'; box.style.left=Math.min(Math.max(10,r.left),window.innerWidth-bw-10)+'px'; $('tourNext').focus(); },220);
+  },p.prep?160:0);
+}
+function tourIniciar(){ tourEstado={tab:st.tab,ue:st.ue,ren:st.ren}; TI=0; $('tourOverlay').style.display='block'; tourPaso(); }
+function tourCerrar(){ $('tourOverlay').style.display='none'; const sp=document.querySelector('.tour-spot'); if(sp) sp.remove();
+  if(tourEstado){ Object.assign(st,tourEstado); $('fUE').value=st.ue; tourEstado=null; pintar(); window.scrollTo(0,0); } }
+$('btnTour').onclick=()=>{ if(J) tourIniciar(); };
+$('tourNext').onclick=()=>{ if(TI>=TOUR.length-1){ tourCerrar(); return; } TI++; tourPaso(); };
+$('tourPrev').onclick=()=>{ if(TI>0){ TI--; tourPaso(); } };
+$('tourSkip').onclick=tourCerrar;
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('tourOverlay').style.display==='block') tourCerrar(); });
+
 /* ---------- eventos ---------- */
 $('tabs').onclick=e=>{ const b=e.target.closest('.tab'); if(!b) return; st.tab=b.dataset.t; pintar(); };
 $('fRed').onchange=e=>{ st.red=e.target.value; pintar(); };
-$('fUE').onchange=e=>{ st.ue=e.target.value; pintar(); };
+$('fUE').onchange=e=>{ st.ue=e.target.value; st.ren=''; pintar(); };
 let _t; $('fB').oninput=e=>{ clearTimeout(_t); _t=setTimeout(()=>{ st.q=e.target.value.trim(); pintar(); },250); };
 $('fV').onchange=e=>{ st.v=e.target.value; pintar(); };
-$('btnLimpiar').onclick=()=>{ st.red='';st.ue='';st.q='';st.v=''; $('fRed').value='';$('fUE').value='';$('fB').value='';$('fV').value=''; pintar(); };
+$('btnLimpiar').onclick=()=>{ st.red='';st.ue='';st.q='';st.v='';st.ren=''; $('fRed').value='';$('fUE').value='';$('fB').value='';$('fV').value=''; pintar(); };
 $('btnXlsVista').onclick=()=>excel(false); $('btnXlsTodo').onclick=()=>excel(true);
 $('btnAyuda').onclick=()=>$('modal').classList.add('on'); $('cerrarM').onclick=()=>$('modal').classList.remove('on');
 $('modal').onclick=e=>{ if(e.target.id==='modal') $('modal').classList.remove('on'); };
