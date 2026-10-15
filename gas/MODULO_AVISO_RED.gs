@@ -40,7 +40,10 @@ var ARV = {
     ['AVISO_RED_ACTIVO','NO','SI/NO — correo «Abastecimiento en red» por Unidad Ejecutora: qué pedir al CEDIS (F8), qué recibir y qué ceder entre unidades (F7), con Excel adjunto'],
     ['AVISO_RED_PRUEBA_A','','Correo de prueba: si tiene valor, TODOS los correos de abastecimiento en red van solo a este correo (máximo 3 unidades). Vaciar para enviar a las unidades.'],
     ['AVISO_RED_DIAS','L','Días de envío del abastecimiento en red: L,M,X,J,V,S,D separados por coma, L-V, o DIARIO'],
-    ['AVISO_RED_MAX_DEST','120','Máximo de destinatarios (Para + CC) por envío del abastecimiento en red; si se necesitan más, no se envía y se avisa']
+    ['AVISO_RED_MAX_DEST','120','Máximo de destinatarios (Para + CC) por envío del abastecimiento en red; si se necesitan más, no se envía y se avisa'],
+    ['AVISO_RED_JEFES_TO','','Jefaturas que reciben UN correo de resumen nacional al terminar el envío (unidades, Formas 8 y 7, faltantes y a quién no se pudo enviar)'],
+    ['AVISO_RED_JEFES_CC','','Copia del resumen nacional del abastecimiento en red'],
+    ['AVISO_RED_CC','','Copia en CADA correo por unidad (ojo: suma a la cuota una vez por unidad; preferir el resumen de jefaturas)']
   ]
 };
 var ARV_CLASE = ['sobre el objetivo','alto (7–12 meses)','exceso (>12 meses)','sin movimiento (≥90 días)'];
@@ -65,10 +68,12 @@ function _arvConfig_(){
   var faltan=ARV.FILAS.filter(function(f){ return !hay[f[0]]; });
   if(faltan.length){ sh.getRange(sh.getLastRow()+1,1,faltan.length,3).setValues(faltan); faltan.forEach(function(f){ o[f[0]]=f[1]; }); }
   var prueba=String(o['AVISO_RED_PRUEBA_A']||'').trim(), max=parseInt(o['AVISO_RED_MAX_DEST'],10);
+  var lista=function(k){ return String(o[k]||'').split(/[,;\s]+/).map(function(x){ return x.trim().toLowerCase(); }).filter(function(e){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }); };
   return { activo:String(o['AVISO_RED_ACTIVO']||'NO').toUpperCase().indexOf('S')===0,
            prueba:/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(prueba)?prueba:'',
            dias:String(o['AVISO_RED_DIAS']==null?'L':o['AVISO_RED_DIAS']).toUpperCase().trim(),
-           maxDest:isFinite(max)&&max>0?max:120 };
+           maxDest:isFinite(max)&&max>0?max:120,
+           jefesTo:lista('AVISO_RED_JEFES_TO'), jefesCc:lista('AVISO_RED_JEFES_CC'), cc:lista('AVISO_RED_CC') };
 }
 /* ¿Hoy (hora de Panamá) es día de envío? */
 function _arvEsDia_(dias){
@@ -233,7 +238,7 @@ function iniciarAvisoRedCadena_(opts){
     cola.sort(function(a,b){ var A=_arvUE_(J,D.dic,a), B=_arvUE_(J,D.dic,b); return (B.f8.length+B.f7r.length+B.f7c.length)-(A.f8.length+A.f7r.length+A.f7c.length); });
     cola=cola.slice(0,ARV.MAX_PRUEBA);
   } else cola=cola.filter(function(i){ var ok=!!_auDirDe_(dir,J.ues[i][0]); if(!ok) sinDir.push(J.ues[i][0]); return ok; });
-  var necesita=cfg.prueba?cola.length:cola.reduce(function(s,i){ var d=_auDirDe_(dir,J.ues[i][0]); return s+d.to.length+d.cc.length; },0);
+  var necesita=cfg.prueba?cola.length+1:cola.reduce(function(s,i){ var d=_auDirDe_(dir,J.ues[i][0]); return s+d.to.length+d.cc.length+cfg.cc.filter(function(e){ return d.to.indexOf(e)<0&&d.cc.indexOf(e)<0; }).length; },0)+cfg.jefesTo.length+cfg.jefesCc.length;
   if(necesita>cfg.maxDest){
     var m='Se necesitan '+necesita+' destinatarios y AVISO_RED_MAX_DEST es '+cfg.maxDest+'. No se envió el abastecimiento en red (saldos del '+fecha+'). Suba el tope solo si la cuota diaria de Brevo (300) alcanza junto con los demás correos del día.';
     _arvAvisar_('[Abastecimiento en red] No se envió: tope de destinatarios',m); _arvLog_(m); return {ok:false,omitido:'tope de destinatarios'};
@@ -262,6 +267,7 @@ function arvWorker_(){
     var i=cola[pos], u=J.ues[i]?J.ues[i][0]:String(i);
     try{
       var d=cfg.prueba?{to:[cfg.prueba],cc:[]}:_auDirDe_(dir,u);
+      if(d&&!cfg.prueba&&cfg.cc.length) d={to:d.to, cc:d.cc.concat(cfg.cc.filter(function(e){ return d.to.indexOf(e)<0&&d.cc.indexOf(e)<0; }))};
       if(d && _arvEnviarUno_(_arvUE_(J,D.dic,i),J,d.to,d.cc,cfg.prueba?'PRUEBA · en producción iría a los correos de '+u+' en DIRECTORIO_UE':'')) env++;
     }catch(e){ fallas.push(u+': '+e.message); _arvLog_('falló '+u+' → '+e); }
     var pr={}; pr[ARV.P.POS]=String(pos+1); pr[ARV.P.ENV]=String(env); pr[ARV.P.FALLA]=JSON.stringify(fallas); p.setProperties(pr);   // avance guardado por unidad
@@ -269,6 +275,7 @@ function arvWorker_(){
   if(pos<cola.length){ _arvProgramar_(20000); return; }
   _arvBorrarTriggers_(); p.deleteProperty(ARV.P.ACTIVO);
   if(!cfg.prueba) p.setProperty(ARV.P.ULTIMO,fecha);
+  try{ _arvResumenJefes_(cfg,J,D.dic,cola,env,fallas); }catch(e){ fallas.push('Resumen a jefaturas: '+e.message); _arvLog_('falló el resumen a jefaturas → '+e); }
   var m=env+' correos de abastecimiento en red enviados'+(cfg.prueba?' (modo prueba, a '+cfg.prueba+')':'')+' · saldos del '+fecha+(fallas.length?'\n\nNo enviados ('+fallas.length+'):\n- '+fallas.join('\n- '):'');
   _arvAvisar_('[Abastecimiento en red] '+env+' enviados'+(fallas.length?' · '+fallas.length+' sin enviar':''), m);
   _arvLog_('TERMINADO · '+m);
@@ -291,3 +298,35 @@ function enviarAvisoRedManual(){
   }catch(e){ _arvToast_('No se pudo: '+e.message,'Abastecimiento en red · ERROR'); }
 }
 function cancelarAvisoRed(){ var p=_arvProp_(); p.deleteProperty(ARV.P.ACTIVO); _arvBorrarTriggers_(); _arvToast_('Envío del abastecimiento en red cancelado.'); }
+
+/* ---------- resumen nacional para jefaturas (UN correo al terminar) ---------- */
+function _arvResumenJefes_(cfg, J, dic, cola, env, fallas){
+  var to=cfg.prueba?[cfg.prueba]:cfg.jefesTo; if(!to.length) return;
+  var enviadas={}; cola.forEach(function(i){ enviadas[i]=1; });
+  var filas=[]; J.ues.forEach(function(u,i){ var A=_arvUE_(J,dic,i); if(!_arvTieneAlgo_(A)) return;
+    filas.push({ue:u[0], red:ARV_CEDIS[u[1]]?ARV_CEDIS[u[1]].replace('CEDIS','Red'):u[1], f8:A.f8.length, f7r:A.f7r.length, f7c:A.f7c.length, sin:A.sin.length, ok:!!enviadas[i]&&!fallas.some(function(f){ return String(f).indexOf(u[0]+': ')===0; })}); });
+  filas.sort(function(a,b){ return a.red.localeCompare(b.red)||a.ue.localeCompare(b.ue); });
+  var k=J.kpi, td='padding:4px 8px;border-bottom:1px solid #e3e6ea;font:12px Segoe UI,Arial,sans-serif;', tdn=td+'text-align:right;font-family:Consolas,monospace;',
+      th='padding:6px 8px;background:#1E5A9E;color:#fff;font:bold 11px Segoe UI,Arial,sans-serif;text-align:left;', thn=th+'text-align:right;';
+  var caja=function(v,l,bg){ return '<td style="padding:4px"><div style="background:'+bg+';border-radius:10px;padding:8px 10px;font:12px Segoe UI,Arial,sans-serif;color:#333"><div style="font:bold 18px Consolas,monospace;color:#1d2733">'+v+'</div>'+l+'</div></td>'; };
+  var noEnv=filas.filter(function(f){ return !f.ok; });
+  var h='<div style="max-width:860px;margin:0 auto;border:1px solid #a8a8a8;background:#fff">'+
+    (cfg.prueba?'<div style="background:#b8860b;color:#fff;padding:6px 14px;font:bold 12px Segoe UI,Arial,sans-serif">PRUEBA · en producción iría a AVISO_RED_JEFES_TO / AVISO_RED_JEFES_CC</div>':'')+
+    '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0C447C"><tr><td style="padding:12px 0 12px 16px;width:52px"><img src="'+ARV.LOGO+'" width="44" height="44" alt="CSS"></td>'+
+    '<td style="padding:12px 16px;color:#fff;font:14px Segoe UI,Arial,sans-serif"><div style="font-size:17px;font-weight:bold">Abastecimiento en red · resumen nacional</div>'+
+    '<div style="color:#cfe0f2;font-size:12px">Caja de Seguro Social · Dirección Nacional de Logística · Saldos al '+_arvFecha_(J.corte)+'</div></td></tr></table>'+
+    '<div style="padding:12px 16px;font:13px Segoe UI,Arial,sans-serif;color:#333">'+
+    '<p style="margin:0 0 8px">Se envió a <b>'+env+'</b> unidades ejecutoras su propuesta de abastecimiento con el inventario de la red (CEDIS y otras unidades)'+(noEnv.length&&!cfg.prueba?'; <b>'+noEnv.length+'</b> no la recibieron (sin correo en DIRECTORIO_UE o error de envío)':'')+'.</p>'+
+    '<table width="100%" cellpadding="0" cellspacing="0"><tr>'+
+      caja(Math.round(100*k.cubiertas/k.unidades)+'%','de lo necesario se cubre con la red','#fbf3d6')+
+      caja(_arvFmt_(k.formas8),'Formas 8 a CEDIS','#e3edf8')+
+      caja(_arvFmt_(k.formas7),'Formas 7 entre unidades','#e2f3e7')+
+      caja(_arvFmt_(k.vitalesCompletas)+' / '+_arvFmt_(k.vitales),'líneas vitales cubiertas completas','#fbe4e1')+
+    '</tr></table>'+
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:10px"><tr><th style="'+th+'">Unidad ejecutora</th><th style="'+th+'">Red</th><th style="'+thn+'">Pedir a CEDIS</th><th style="'+thn+'">Recibir de UE</th><th style="'+thn+'">Ceder a UE</th><th style="'+thn+'">Sin fuente</th><th style="'+th+'">Correo</th></tr>'+
+    filas.map(function(f){ return '<tr><td style="'+td+'">'+_arvEsc_(f.ue)+'</td><td style="'+td+'white-space:nowrap">'+_arvEsc_(f.red)+'</td><td style="'+tdn+'">'+f.f8+'</td><td style="'+tdn+'">'+f.f7r+'</td><td style="'+tdn+'">'+f.f7c+'</td><td style="'+tdn+'">'+f.sin+'</td><td style="'+td+(f.ok?'color:#1f6b36">Enviado':cfg.prueba?'color:#5f6b78">No (prueba)':'color:#a23224;font-weight:bold">No enviado')+'</td></tr>'; }).join('')+'</table>'+
+    '<p style="color:#5f6b78;font-size:11px">Cantidades en renglones. El detalle por unidad, las Formas 8 y 7 completas y el Excel nacional están en el tablero.</p>'+
+    '<p style="text-align:center;margin:16px 0"><a href="'+ARV.URL_TABLERO+'" style="background:#0C447C;color:#fff;padding:9px 18px;text-decoration:none;font-weight:bold;border-radius:6px">Abrir el tablero de abastecimiento en red</a></p></div></div>';
+  var op={htmlBody:h, name:ARV.REMITENTE}; if(!cfg.prueba&&cfg.jefesCc.length) op.cc=cfg.jefesCc.join(',');
+  enviarCorreoCSS_(to.join(','), (cfg.prueba?'[PRUEBA] ':'')+'Abastecimiento en red · resumen nacional · '+env+' unidades notificadas · saldos al '+_arvFecha_(J.corte), 'Este correo requiere un cliente con soporte HTML. Tablero: '+ARV.URL_TABLERO, op);
+}
