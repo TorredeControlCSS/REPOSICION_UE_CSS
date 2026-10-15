@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Abastecimiento en red</title>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<style>
+:root{--azul:#0C447C;--azul2:#1E5A9E;--fondo:#ececec;--borde:#c9ced6;--papel:#fff;--tinta:#1d2733;--gris:#5f6b78;
+ --p-rojo:#fbe4e1;--p-amar:#fbf3d6;--p-verde:#e2f3e7;--p-azul:#e3edf8;--p-gris:#eef0f3;--p-nar:#fde9d6;--r:10px;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:13px/1.4 "Segoe UI",Calibri,system-ui,sans-serif}
+.num{font-family:Consolas,"Cascadia Mono","Courier New",monospace}
+header{background:var(--azul);color:#fff;display:flex;align-items:center;gap:12px;padding:7px 16px;flex-wrap:wrap}
+header img{width:36px;height:36px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header .sub{font-size:11px;color:#cfe0f2}
+.der{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:3px 8px;font-size:11px;color:#e8f0f9;border-radius:6px}
+.fr b{color:#fff}
+.hbtn{font:inherit;font-size:12px;background:#fff;color:var(--azul);font-weight:600;border:0;padding:5px 10px;cursor:pointer;border-radius:6px}
+.resumen{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap}
+.k{background:var(--bg,var(--p-gris));padding:6px 12px;border-radius:var(--r);min-width:120px}
+.k .v{font-family:Consolas,monospace;font-size:17px;font-weight:700;line-height:1.15}
+.k .l{font-size:11px;color:var(--gris)}
+.tabs{display:flex;gap:4px;padding:0 16px;flex-wrap:wrap}
+.tab{font:inherit;border:0;background:#dfe3e9;color:var(--tinta);padding:7px 12px;border-radius:var(--r) var(--r) 0 0;cursor:pointer}
+.tab.on{background:var(--papel);font-weight:600;color:var(--azul)}
+.panel{background:var(--papel);margin:0 16px 16px;border-radius:0 var(--r) var(--r) var(--r);border:1px solid var(--borde)}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;padding:8px 10px;border-bottom:1px solid var(--borde)}
+.campo{display:flex;flex-direction:column;gap:2px}
+.campo label{font-size:11px;color:var(--gris)}
+select,input[type=text]{font:inherit;padding:4px 6px;border:1px solid var(--borde);border-radius:6px;background:#fff}
+.btn{font:inherit;padding:5px 10px;border:1px solid var(--azul);background:#fff;color:var(--azul);border-radius:6px;cursor:pointer}
+.btn.pri{background:var(--azul);color:#fff}
+.conteo{padding:6px 10px;font-size:12px;color:var(--gris)}
+.tw{overflow:auto;max-height:calc(100vh - 290px)}
+table{border-collapse:collapse;width:100%}
+th{position:sticky;top:0;background:var(--azul);color:#fff;font-weight:600;font-size:12px;text-align:left;padding:6px 8px;white-space:nowrap;z-index:1}
+td{padding:5px 8px;border-bottom:1px solid #edf0f3;vertical-align:top}
+td.n,th.n{text-align:right}
+tr.click{cursor:pointer} tr.click:hover td{background:#f6f9fc}
+.chip{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.c-v{background:var(--p-verde);color:#1f6b36}.c-a{background:var(--p-amar);color:#7a5a0b}.c-r{background:var(--p-rojo);color:#a23224}
+.c-b{background:var(--p-azul);color:#0C447C}.c-g{background:var(--p-gris);color:#5f6b78}.c-n{background:var(--p-nar);color:#8a4b12}
+.vital{background:var(--p-rojo);color:#a23224}
+.grupo td{background:var(--p-azul);font-weight:600;color:var(--azul)}
+.desc{color:var(--gris);font-size:12px}
+.ue-cab{display:flex;gap:16px;flex-wrap:wrap;padding:10px;align-items:flex-start}
+.caja{background:var(--p-gris);border-radius:var(--r);padding:8px 12px}
+.nota{font-size:12px;color:var(--gris);padding:6px 10px}
+.aviso{margin:8px 16px;padding:8px 12px;border-radius:var(--r);background:var(--p-amar)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9}
+.modal-bg.on{display:flex}
+.modal{background:#fff;border-radius:12px;max-width:760px;max-height:86vh;overflow:auto;padding:16px 20px}
+.modal h2{margin:0 0 8px;color:var(--azul);font-size:17px}
+.f{font-family:Consolas,monospace;background:var(--p-gris);border-radius:8px;padding:6px 10px;margin:4px 0}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d2733;color:#fff;padding:8px 14px;border-radius:8px;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+#cargando{padding:30px;text-align:center;color:var(--gris)}
+@media(max-width:700px){.resumen{padding:8px}.panel{margin:0 8px 8px}.tabs{padding:0 8px}}
+</style>
+</head>
+<body>
+<header>
+  <img src="https://torredecontrolcss.github.io/REPOSICION_UE_CSS/icons/icon-192.png" alt="CSS">
+  <div><h1>Abastecimiento en red · CEDIS y unidades ejecutoras</h1><div class="sub">Caja de Seguro Social · Dirección Nacional de Logística</div></div>
+  <div class="der"><span id="frs"></span><button class="hbtn" id="btnAyuda">Cómo se calcula</button></div>
+</header>
+<div class="resumen" id="resumen"></div>
+<div id="avisos"></div>
+<div class="tabs" id="tabs">
+  <button class="tab on" data-t="ue">Por unidad ejecutora</button>
+  <button class="tab" data-t="f8">Formas 8 (CEDIS)</button>
+  <button class="tab" data-t="f7">Formas 7 (entre UE)</button>
+  <button class="tab" data-t="exc">Excesos y sin movimiento</button>
+  <button class="tab" data-t="sin">Sin cobertura en la red</button>
+  <button class="tab" data-t="mq">Cobertura de datos MQ</button>
+</div>
+<section class="panel">
+  <div class="filtros">
+    <div class="campo"><label for="fRed">Red</label><select id="fRed"><option value="">Todas</option><option value="CEDIS PANAMA">Red CEDIS Panamá</option><option value="CEDIS DIVISA">Red CEDIS Divisa</option><option value="CEDIS CHIRIQUI">Red CEDIS Chiriquí</option></select></div>
+    <div class="campo"><label for="fUE">Unidad ejecutora</label><select id="fUE" style="max-width:300px"><option value="">Todas</option></select></div>
+    <div class="campo" style="flex:1;min-width:170px"><label for="fB">Buscar renglón</label><input type="text" id="fB" placeholder="Código o nombre"></div>
+    <div class="campo"><label for="fV">Renglones</label><select id="fV"><option value="">Todos</option><option value="v">Solo vitales</option><option value="c">Vitales o bajo inventario crítico</option></select></div>
+    <div style="display:flex;gap:6px;margin-left:auto">
+      <button class="btn" id="btnLimpiar">Limpiar filtros</button>
+      <button class="btn" id="btnXlsVista">Excel de esta vista</button>
+      <button class="btn pri" id="btnXlsTodo">Excel completo</button>
+    </div>
+  </div>
+  <div class="conteo" id="conteo"></div>
+  <div id="cuerpo"><div id="cargando">Cargando datos…</div></div>
+</section>
+<div class="modal-bg" id="modal"><div class="modal">
+  <h2>Cómo se calcula</h2>
+  <p>Para cada unidad ejecutora y renglón se usa el mismo modelo de la Calculadora de Reposición UE.</p>
+  <div class="f">d (demanda/mes) = mediana de: consumo observado 90 d · consumo reportado · Formas 8 de 90 d ÷ 3</div>
+  <div class="f">Inventario crítico (SS) = Z × (CV × 7 × d/30 ÷ √7) × √20 &nbsp; Z = 1.65 vitales · 1.28 resto</div>
+  <div class="f">Línea de pedido = d/30 × 20 + SS &nbsp;&nbsp; Nivel objetivo = d/30 × (20 + 30) + SS</div>
+  <div class="f">Necesidad = nivel objetivo − saldo − por recibir &nbsp;(solo si saldo ≤ línea de pedido)</div>
+  <p><b>De dónde sale, en este orden</b></p>
+  <div class="f">1 · CEDIS que surte a la UE (Forma 8): saldo − reservado para Formas 8 en despacho</div>
+  <div class="f">2 · Otro CEDIS (Forma 8): disponible − demanda de su red/30 × tope (Panamá 90 d · Divisa 60 d · Chiriquí 60 d)</div>
+  <div class="f">3 · Otras UE de la misma red (Forma 7): saldo − (nivel objetivo + d/30 × 20)</div>
+  <div class="f">Inventario sin movimiento ≥ 90 d y sin demanda: se cede todo (vitales: la mitad)</div>
+  <p><b>Prioridad:</b> vitales, luego bajo inventario crítico, luego menos días de cobertura. Al elegir de qué UE tomar, se prefiere inventario sin movimiento (×1.5), exceso &gt;12 meses (×1.4) y alto 7–12 meses (×1.2). No se propone un traslado parcial menor a 7 días de la demanda de quien recibe.</p>
+  <p class="desc">Fuentes: Saldos en línea (SALMI), Formas 8 de SALMI, consumo reportado (Registro de Consumos), reservas del Motor de Asignación. Es una propuesta: validar existencias físicas antes de emitir los formularios. Los insumos médico-quirúrgicos de unidades sin el módulo de inventario MQ en SALMI no se pueden calcular.</p>
+  <p style="text-align:right"><button class="btn pri" id="cerrarM">Entendido</button></p>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(function(){
+'use strict';
+const BASE='https://torredecontrolcss.github.io/REPOSICION_UE_CSS/', LOGO=BASE+'icons/icon-192.png';
+const RN={'CEDIS PANAMA':'Red CEDIS Panamá','CEDIS DIVISA':'Red CEDIS Divisa','CEDIS CHIRIQUI':'Red CEDIS Chiriquí'};
+const CN={'CEDIS PANAMA':'CEDIS Panamá','CEDIS DIVISA':'CEDIS Divisa','CEDIS CHIRIQUI':'CEDIS Chiriquí'};
+const TIPO=['CEDIS propio','Otro CEDIS','UE misma red','UE otra red'];
+const CLASE=['Sobre el objetivo','Alto (7–12 meses)','Exceso (>12 meses)','Sin movimiento (≥90 días)'], CLCHIP=['c-v','c-a','c-n','c-g'];
+const $=id=>document.getElementById(id);
+const fmt=v=>v==null||isNaN(v)?'·':Math.round(v).toLocaleString('en-US');
+const fmtM=v=>v>=1e6?(v/1e6).toFixed(1)+' M':fmt(v);
+const pct=v=>isFinite(v)?Math.round(v*100)+'%':'·';
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const fL=s=>{ const p=String(s||'').slice(0,10).split('-'); return p.length===3?(+p[2])+'-'+MES[+p[1]-1]+'-'+p[0]:(s||'·'); };
+const horaPTY=iso=>{ try{ return new Date(iso).toLocaleString('es-PA',{timeZone:'America/Panama',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' PTY'; }catch(e){ return fL(iso); } };
+const hoyPTY=()=>{ try{ return new Date().toLocaleDateString('en-CA',{timeZone:'America/Panama'}); }catch(e){ return new Date().toISOString().slice(0,10); } };
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),3800); }
+async function getJSON(f){ let ult; for(let i=0;i<4;i++){ try{ const r=await fetch(BASE+f+'?t='+Date.now(),{cache:'no-cache'}); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json(); }catch(e){ ult=e; await new Promise(z=>setTimeout(z,1000*(i+1)*(i+1))); } } throw ult; }
+
+let J=null, DIC={}, UES=[], N=[], M=[], X=[];
+const st={tab:'ue',red:'',ue:'',q:'',v:''};
+const nom=c=>(DIC[c]&&DIC[c].n)||c, vit=c=>!!(DIC[c]&&DIC[c].vit);
+const ueN=i=>UES[i]?UES[i][0]:String(i), ueR=i=>UES[i]?UES[i][1]:'';
+const origenN=m=>m[2]===8?CN[m[4]]||m[4]:ueN(m[4]);
+
+/* ---------- carga ---------- */
+async function iniciar(){
+  try{
+    const [j,d]=await Promise.all([getJSON('abastecimiento_red.json'),getJSON('renglones_dic.json').catch(()=>({r:{}}))]);
+    J=j; DIC=d.r||{}; UES=J.ues; N=J.n; M=J.m; X=J.x;
+  }catch(e){ $('cuerpo').innerHTML='<div id="cargando">No se pudo cargar abastecimiento_red.json. Revise la conexión y recargue la página.</div>'; return; }
+  $('frs').innerHTML='<span class="fr">Saldos al <b>'+fL(J.corte)+'</b></span> <span class="fr">Formas 8 al <b>'+fL(J.corteF8)+'</b></span> <span class="fr">Publicado <b>'+horaPTY(J.generado)+'</b></span>';
+  const sel=$('fUE'); UES.map((u,i)=>[u[0],i]).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{ const o=document.createElement('option'); o.value=i; o.textContent=n; sel.appendChild(o); });
+  resumen(); avisos(); pintar();
+}
+function resumen(){
+  const k=J.kpi, f=k.porFuente;
+  const box=(v,l,bg)=>'<div class="k" style="--bg:'+bg+'"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';
+  $('resumen').innerHTML=
+    box(fmt(k.lineas),'líneas UE × renglón bajo la línea de pedido','var(--p-gris)')+
+    box(pct(k.cubiertas/k.unidades),'de las unidades necesarias se cubren con la red',k.cubiertas/k.unidades>=.7?'var(--p-verde)':k.cubiertas/k.unidades>=.5?'var(--p-amar)':'var(--p-rojo)')+
+    box(fmt(k.completas),'líneas cubiertas completas','var(--p-verde)')+
+    box(fmt(k.vitalesCompletas)+' / '+fmt(k.vitales),'líneas vitales cubiertas completas','var(--p-rojo)')+
+    box(fmt(k.formas8),'Formas 8 a CEDIS','var(--p-azul)')+
+    box(fmt(k.formas7),'Formas 7 entre UE','var(--p-azul)')+
+    box(fmtM(f.cedisPropio+f.otroCedis),'unidades desde CEDIS','var(--p-gris)')+
+    box(fmtM(f.ueMismaRed+f.ueOtraRed),'unidades desde otras UE','var(--p-gris)')+
+    box(fmtM(k.unidades-k.cubiertas),'unidades sin fuente en la red','var(--p-rojo)');
+}
+function avisos(){
+  const mq=UES.filter(u=>u[3]<=5).length;
+  $('avisos').innerHTML=mq?'<div class="aviso">'+mq+' unidades ejecutoras muestran 5 o menos renglones de insumos médico-quirúrgicos en Saldos en línea: sus necesidades de esos insumos no se pueden calcular y están sujetas a la instalación del módulo de gestión de inventario de insumos quirúrgicos en SALMI (Departamento de Control de Inventario / Coordinación Nacional de Almacenes). Vea la pestaña «Cobertura de datos MQ».</div>':'';
+}
+/* ---------- filtros ---------- */
+function pasaRen(c,vital,crit){ if(st.v==='v'&&!vital) return false; if(st.v==='c'&&!(vital||crit)) return false;
+  if(st.q){ const q=st.q.toLowerCase(); if(c.indexOf(q)<0 && nom(c).toLowerCase().indexOf(q)<0) return false; } return true; }
+const pasaUE=ui=>(st.ue===''||+st.ue===ui)&&(st.red===''||ueR(ui)===st.red);
+function filasN(){ return N.filter(r=>pasaUE(r[0])&&pasaRen(r[1],r[2],r[3])); }
+function filasM(forma){ return M.filter(m=>m[2]===forma&&(st.ue===''||+st.ue===m[0]||(forma===7&&+st.ue===m[4]))&&(st.red===''||ueR(m[0])===st.red)&&pasaRen(m[1],vit(m[1]),false)); }
+function filasX(){ return X.filter(x=>pasaUE(x[0])&&pasaRen(x[1],vit(x[1]),false)); }
+/* ---------- pintar ---------- */
+function pintar(){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===st.tab));
+  ({ue:vistaUE,f8:vistaF8,f7:vistaF7,exc:vistaExc,sin:vistaSin,mq:vistaMQ})[st.tab]();
+}
+const cob=r=>r[12]===0?'<span class="chip c-v">Completa</span>':(r[10]+r[11]>0?'<span class="chip c-a">Parcial</span>':'<span class="chip c-r">Sin fuente</span>');
+const ren=(c)=>'<b class="num">'+esc(c)+'</b>'+(vit(c)?' <span class="chip vital">VITAL</span>':'')+'<div class="desc">'+esc(nom(c).slice(0,90))+'</div>';
+function rankingUE(){
+  const a={}; filasN().forEach(r=>{ const x=a[r[0]]||(a[r[0]]={l:0,v:0,q:0,c:0,f:0,vf:0}); x.l++; x.v+=r[2]; x.q+=r[9]; x.c+=r[10]+r[11]; x.f+=r[12]; if(r[2]&&r[12]>0) x.vf++; });
+  return Object.keys(a).map(k=>[+k,a[k]]).sort((p,q)=>q[1].vf-p[1].vf||q[1].f-p[1].f);
+}
+function vistaUE(){
+  if(st.ue===''){
+    const R=rankingUE();
+    $('conteo').textContent=R.length+' unidades con necesidad · toque una para ver su pre-pedido con el origen de cada cantidad';
+    $('cuerpo').innerHTML='<div class="tw"><table><thead><tr><th>Unidad ejecutora</th><th>Red</th><th class="n">Líneas</th><th class="n">Vitales</th><th class="n">Necesidad</th><th class="n">Cubierta</th><th class="n">% cubierto</th><th class="n">Vitales sin cobertura completa</th></tr></thead><tbody>'+
+      R.map(([i,x])=>{ const p=x.c/x.q; return '<tr class="click" data-ue="'+i+'"><td><b>'+esc(ueN(i))+'</b></td><td>'+RN[ueR(i)]+'</td><td class="n num">'+fmt(x.l)+'</td><td class="n num">'+fmt(x.v)+'</td><td class="n num">'+fmt(x.q)+'</td><td class="n num">'+fmt(x.c)+'</td><td class="n"><span class="chip '+(p>=.9?'c-v':p>=.6?'c-a':'c-r')+'">'+pct(p)+'</span></td><td class="n num">'+fmt(x.vf)+'</td></tr>'; }).join('')+'</tbody></table></div>';
+    $('cuerpo').querySelectorAll('tr[data-ue]').forEach(t=>t.onclick=()=>{ st.ue=t.dataset.ue; $('fUE').value=st.ue; pintar(); });
+    return;
+  }
+  const ui=+st.ue, F=filasN().sort((a,b)=>b[2]-a[2]||b[3]-a[3]||b[12]-a[12]);
+  const mv={}; M.filter(m=>m[0]===ui).forEach(m=>{ (mv[m[1]]||(mv[m[1]]=[])).push(m); });
+  const fuentes={}; M.filter(m=>m[0]===ui).forEach(m=>{ const k=origenN(m)+'|'+m[2]; fuentes[k]=(fuentes[k]||0)+1; });
+  const q=F.reduce((s,r)=>s+r[9],0), c=F.reduce((s,r)=>s+r[10]+r[11],0);
+  $('conteo').innerHTML=F.length+' renglones bajo la línea de pedido · <a href="#" id="volver">ver todas las unidades</a>';
+  $('cuerpo').innerHTML='<div class="ue-cab"><div class="caja"><div style="font-size:15px;font-weight:700;color:var(--azul)">'+esc(ueN(ui))+'</div><div class="desc">'+RN[ueR(ui)]+'</div><div style="margin-top:4px">Necesidad <b class="num">'+fmt(q)+'</b> · cubierta <b class="num">'+fmt(c)+'</b> ('+pct(c/q)+')</div></div>'+
+    '<div>'+sankey(ui)+'</div></div>'+
+    '<div class="tw"><table><thead><tr><th>Renglón</th><th>Estado</th><th class="n">Saldo</th><th class="n">Línea de pedido</th><th class="n">Por recibir</th><th class="n">Necesidad</th><th>De dónde sale</th><th class="n">Faltante</th><th>Cobertura</th></tr></thead><tbody>'+
+    F.map(r=>'<tr><td>'+ren(r[1])+'</td><td>'+(r[3]?'<span class="chip c-r">Bajo inv. crítico</span>':'<span class="chip c-a">Bajo la línea</span>')+'</td><td class="n num">'+fmt(r[4])+'</td><td class="n num">'+fmt(r[6])+'</td><td class="n num">'+fmt(r[8])+'</td><td class="n num"><b>'+fmt(r[9])+'</b></td><td>'+
+      (mv[r[1]]||[]).map(m=>'<div><span class="chip '+(m[2]===8?'c-b':CLCHIP[m[6]])+'">F'+m[2]+'</span> '+esc(origenN(m))+' · <b class="num">'+fmt(m[5])+'</b>'+(m[2]===7?' <span class="desc">'+CLASE[m[6]]+'</span>':'')+'</div>').join('')+'</td><td class="n num">'+(r[12]?fmt(r[12]):'·')+'</td><td>'+cob(r)+'</td></tr>').join('')+'</tbody></table></div>';
+  $('volver').onclick=e=>{ e.preventDefault(); st.ue=''; $('fUE').value=''; pintar(); };
+}
+/* Sankey simple: orígenes → la UE, grosor = renglones que aporta cada origen */
+function sankey(ui){
+  const a={}; M.filter(m=>m[0]===ui).forEach(m=>{ const k=origenN(m), x=a[k]||(a[k]={n:0,f:m[2]}); x.n++; });
+  const L=Object.entries(a).sort((p,q)=>q[1].n-p[1].n); if(!L.length) return '<div class="nota">Sin fuentes en la red para esta unidad.</div>';
+  /* cada origen ocupa al menos 16 px para que su etiqueta no se encime; la banda conserva su grosor real */
+  const tot=L.reduce((s,x)=>s+x[1].n,0), sc=Math.min(6,Math.max(1.2,300/tot)), W=700, X0=330, X1=560;
+  const slots=L.map(x=>Math.max(16,x[1].n*sc)+3), H=Math.max(120,slots.reduce((a,b)=>a+b,0)+20);
+  let y=10, ry=10+(H-20-tot*sc)/2, s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Orígenes del abastecimiento de la unidad">';
+  L.forEach(([k,x],i)=>{ const h=x.n*sc, yt=y+(slots[i]-3-h)/2, col=x.f===8?'#2F6DB5':'#E07A2E', cx=(X0+X1)/2;
+    s+='<path d="M'+X0+' '+yt+' C'+cx+' '+yt+' '+cx+' '+ry+' '+X1+' '+ry+' L'+X1+' '+(ry+h)+' C'+cx+' '+(ry+h)+' '+cx+' '+(yt+h)+' '+X0+' '+(yt+h)+' Z" fill="'+col+'" fill-opacity=".35"/><rect x="'+(X0-6)+'" y="'+yt+'" width="6" height="'+Math.max(2,h)+'" fill="'+col+'"/>';
+    s+='<text x="'+(X0-10)+'" y="'+(y+(slots[i]-3)/2+4)+'" font-size="11" text-anchor="end" fill="#1d2733">'+esc(k.length>44?k.slice(0,43)+'…':k)+' · '+x.n+'</text>';
+    y+=slots[i]; ry+=h; });
+  const r0=10+(H-20-tot*sc)/2;
+  s+='<rect x="'+X1+'" y="'+r0+'" width="8" height="'+(tot*sc)+'" fill="#0C447C"/><text x="'+(X1+14)+'" y="'+(r0+tot*sc/2+4)+'" font-size="11" fill="#1d2733">'+tot+' líneas</text></svg>';
+  return s+'<div class="desc"><span class="chip c-b">F8</span> desde CEDIS · <span class="chip c-n">F7</span> desde otras UE · grosor = líneas de despacho (renglón × origen)</div>';
+}
+function grupoTabla(filas,keyF,titulo,cols,celdas){
+  let h='<div class="tw"><table><thead><tr>'+cols.map(c=>'<th'+(c[1]?' class="n"':'')+'>'+c[0]+'</th>').join('')+'</tr></thead><tbody>', g=null;
+  filas.forEach(f=>{ const k=keyF(f); if(k!==g){ g=k; h+='<tr class="grupo"><td colspan="'+cols.length+'">'+titulo(f)+'</td></tr>'; } h+='<tr>'+celdas(f)+'</tr>'; });
+  return h+'</tbody></table></div>';
+}
+function vistaF8(){
+  const F=filasM(8).sort((a,b)=>String(a[4]).localeCompare(String(b[4]))||ueN(a[0]).localeCompare(ueN(b[0]))||a[1].localeCompare(b[1]));
+  const docs=new Set(F.map(m=>m[4]+'>'+m[0])).size;
+  $('conteo').textContent=docs+' Formas 8 · '+F.length+' renglones · '+fmt(F.reduce((s,m)=>s+m[5],0))+' unidades';
+  $('cuerpo').innerHTML=grupoTabla(F,m=>m[4]+'>'+m[0],m=>'Forma 8 · '+esc(CN[m[4]])+' → '+esc(ueN(m[0]))+(m[3]===1?' <span class="chip c-a">otro CEDIS</span>':''),
+    [['Renglón'],['Tipo'],['Cantidad',1]],m=>'<td>'+ren(m[1])+'</td><td>'+TIPO[m[3]]+'</td><td class="n num"><b>'+fmt(m[5])+'</b></td>');
+}
+function vistaF7(){
+  const F=filasM(7).sort((a,b)=>ueN(a[4]).localeCompare(ueN(b[4]))||ueN(a[0]).localeCompare(ueN(b[0]))||a[1].localeCompare(b[1]));
+  const docs=new Set(F.map(m=>m[4]+'>'+m[0])).size;
+  $('conteo').textContent=docs+' Formas 7 · '+F.length+' renglones · '+fmt(F.reduce((s,m)=>s+m[5],0))+' unidades';
+  $('cuerpo').innerHTML=grupoTabla(F,m=>m[4]+'>'+m[0],m=>'Forma 7 · cede '+esc(ueN(m[4]))+' → recibe '+esc(ueN(m[0])),
+    [['Renglón'],['Inventario que se cede'],['Días sin movimiento en quien cede',1],['Cantidad',1]],
+    m=>'<td>'+ren(m[1])+'</td><td><span class="chip '+CLCHIP[m[6]]+'">'+CLASE[m[6]]+'</span></td><td class="n num">'+(m[7]==null?'·':fmt(m[7]))+'</td><td class="n num"><b>'+fmt(m[5])+'</b></td>');
+}
+function vistaExc(){
+  const F=filasX().sort((a,b)=>b[6]-b[7]-(a[6]-a[7]));
+  $('conteo').textContent=F.length+' renglones con exceso o sin movimiento · '+fmt(F.reduce((s,x)=>s+x[6]-x[7],0))+' unidades aún disponibles para redistribución o devolución al CEDIS';
+  $('cuerpo').innerHTML='<div class="tw"><table><thead><tr><th>Unidad ejecutora</th><th>Renglón</th><th>Clase</th><th class="n">Meses de cobertura</th><th class="n">Días sin movimiento</th><th class="n">Saldo</th><th class="n">Cedible</th><th class="n">Usado en Formas 7</th><th class="n">Remanente</th></tr></thead><tbody>'+
+    F.slice(0,3000).map(x=>'<tr><td>'+esc(ueN(x[0]))+'<div class="desc">'+RN[ueR(x[0])]+'</div></td><td>'+ren(x[1])+'</td><td><span class="chip '+CLCHIP[x[2]]+'">'+CLASE[x[2]]+'</span></td><td class="n num">'+(x[3]==null?'·':x[3])+'</td><td class="n num">'+(x[4]==null?'·':fmt(x[4]))+'</td><td class="n num">'+fmt(x[5])+'</td><td class="n num">'+fmt(x[6])+'</td><td class="n num">'+fmt(x[7])+'</td><td class="n num"><b>'+fmt(x[6]-x[7])+'</b></td></tr>').join('')+'</tbody></table></div>'+(F.length>3000?'<div class="nota">Se muestran 3,000 filas; el Excel trae todas.</div>':'');
+}
+function sinCob(){
+  const g={}; filasN().filter(r=>r[12]>0).forEach(r=>{ const x=g[r[1]]||(g[r[1]]={u:new Set(),q:0,f:0}); x.u.add(r[0]); x.q+=r[9]; x.f+=r[12]; });
+  return Object.entries(g).sort((a,b)=>(vit(b[0])-vit(a[0]))||(b[1].u.size-a[1].u.size));
+}
+function vistaSin(){
+  const G=sinCob();
+  $('conteo').textContent=G.length+' renglones con faltante después de usar CEDIS y otras UE · para gestión de Planificación';
+  $('cuerpo').innerHTML='<div class="tw"><table><thead><tr><th>Renglón</th><th class="n">UE con faltante</th><th class="n">Necesidad</th><th class="n">Cubierto por la red</th><th class="n">Faltante</th><th class="n">% cubierto</th></tr></thead><tbody>'+
+    G.map(([c,x])=>'<tr><td>'+ren(c)+'</td><td class="n num">'+x.u.size+'</td><td class="n num">'+fmt(x.q)+'</td><td class="n num">'+fmt(x.q-x.f)+'</td><td class="n num"><b>'+fmt(x.f)+'</b></td><td class="n">'+pct((x.q-x.f)/x.q)+'</td></tr>').join('')+'</tbody></table></div>';
+}
+function vistaMQ(){
+  const F=UES.map((u,i)=>[i,u]).filter(([i,u])=>u[3]<=5&&(st.red===''||u[1]===st.red));
+  $('conteo').textContent=F.length+' unidades con 5 o menos renglones de insumos médico-quirúrgicos en Saldos en línea';
+  $('cuerpo').innerHTML='<div class="tw"><table><thead><tr><th>Unidad ejecutora</th><th>Red</th><th class="n">Renglones MQ con saldo</th><th class="n">Renglones totales con saldo</th><th>Situación</th></tr></thead><tbody>'+
+    F.map(([i,u])=>'<tr><td><b>'+esc(u[0])+'</b></td><td>'+RN[u[1]]+'</td><td class="n num">'+u[3]+'</td><td class="n num">'+fmt(u[2])+'</td><td>Sujeto a la instalación del módulo de gestión de inventario de insumos quirúrgicos en SALMI (Departamento de Control de Inventario / Coordinación Nacional de Almacenes)</td></tr>').join('')+'</tbody></table></div>';
+}
+/* ---------- Excel institucional ---------- */
+let _xls=null;
+function cargarExcelJS(){ if(window.ExcelJS) return Promise.resolve(); if(_xls) return _xls;
+  _xls=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=res; s.onerror=()=>{ _xls=null; rej(new Error('ExcelJS')); }; document.head.appendChild(s); }); return _xls; }
+let _logo=null;
+async function logoB64(){ if(_logo!==null) return _logo; try{ const r=await fetch(LOGO); const b=await r.arrayBuffer(); let bin=''; new Uint8Array(b).forEach(x=>bin+=String.fromCharCode(x)); _logo=btoa(bin); }catch(e){ _logo=''; } return _logo; }
+async function hoja(wb,nombreHoja,titulo,meta,cols,filas){
+  const ws=wb.addWorksheet(nombreHoja.slice(0,31),{views:[{state:'frozen',ySplit:7+meta.length}]});
+  const lg=await logoB64(); if(lg){ const id=wb.addImage({base64:lg,extension:'png'}); ws.addImage(id,{tl:{col:0,row:0},ext:{width:58,height:58}}); }
+  const nC=cols.length, linea=(f,txt,o)=>{ ws.mergeCells(f,2,f,Math.max(2,nC)); const c=ws.getCell(f,2); c.value=txt; c.font=Object.assign({name:'Calibri',size:11},o||{}); };
+  linea(1,'CAJA DE SEGURO SOCIAL',{bold:true,size:13,color:{argb:'FF0C447C'}});
+  linea(2,'Dirección Nacional de Logística · Abastecimiento en red',{color:{argb:'FF1E5A9E'}});
+  linea(3,titulo,{bold:true,size:12});
+  let f=5; [['Generado',new Date().toLocaleString('es-PA',{timeZone:'America/Panama'})+' (hora de Panamá)']].concat(meta).forEach(([k,v])=>{ ws.getCell(f,1).value=k; ws.getCell(f,1).font={bold:true,size:10,color:{argb:'FF5F6B78'}}; ws.mergeCells(f,2,f,Math.max(2,nC)); ws.getCell(f,2).value=v; ws.getCell(f,2).font={size:10}; f++; });
+  f++;
+  const hr=ws.getRow(f); cols.forEach((c,i)=>{ const x=hr.getCell(i+1); x.value=c.h; x.font={bold:true,color:{argb:'FFFFFFFF'},size:10}; x.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0C447C'}}; x.alignment={vertical:'middle',horizontal:c.t==='txt'?'left':'right',wrapText:true}; });
+  hr.height=30; ws.autoFilter={from:{row:f,column:1},to:{row:f,column:nC}};
+  filas.forEach((r,j)=>{ const row=ws.getRow(f+1+j); r.forEach((v,i)=>{ const x=row.getCell(i+1), t=cols[i].t;
+    x.value=(v===''||v==null)?null:(t==='txt'?String(v):(isFinite(v)?Number(v):String(v)));
+    if(t==='num') x.numFmt='#,##0'; if(t==='pct') x.numFmt='0%'; if(t==='dec') x.numFmt='0.0'; x.font={name:t==='txt'?'Calibri':'Consolas',size:10}; }); });
+  cols.forEach((c,i)=>{ ws.getColumn(i+1).width=c.w||14; });
+}
+const T=(h,w)=>({h,t:'txt',w}), Nm=(h,w)=>({h,t:'num',w});
+function metaBase(){ return [['Saldos al',fL(J.corte)],['Formas 8 al',fL(J.corteF8)],['Regla','Cada UE se abastece de su CEDIS (Forma 8), de otro CEDIS sobre su resguardo (Forma 8) y de otras UE de su misma red (Forma 7), sin tope de donantes'],
+  ['Filtros',[st.red?RN[st.red]:'Todas las redes',st.ue!==''?ueN(+st.ue):'Todas las UE',st.v==='v'?'Solo vitales':st.v==='c'?'Vitales o bajo inv. crítico':'Todos los renglones',st.q?'Búsqueda: '+st.q:''].filter(Boolean).join(' · ')],
+  ['Advertencia','Propuesta sujeta a validación de existencias físicas antes de emitir los formularios']]; }
+const defs={
+  ue:()=>['Necesidades','Necesidades por unidad ejecutora y renglón',[T('Unidad ejecutora',34),T('Red',18),T('Código',12),T('Renglón',46),T('Vital',6),T('Estado',18),Nm('Saldo'),Nm('Demanda/mes'),Nm('Línea de pedido'),Nm('Nivel objetivo'),Nm('Por recibir'),Nm('Necesidad'),Nm('Por Forma 8'),Nm('Por Forma 7'),Nm('Faltante'),T('Cobertura',14)],
+    filasN().map(r=>[ueN(r[0]),RN[ueR(r[0])],r[1],nom(r[1]),r[2]?'Sí':'',r[3]?'Bajo inventario crítico':'Bajo la línea',r[4],r[5],r[6],r[7],r[8],r[9],r[10],r[11],r[12],r[12]===0?'Completa':(r[10]+r[11]>0?'Parcial':'Sin fuente')])],
+  f8:()=>['Formas 8','Formas 8 propuestas: despacho desde CEDIS',[T('CEDIS que despacha',18),T('Tipo',14),T('UE que recibe',34),T('Red de la UE',18),T('Código',12),T('Renglón',46),T('Vital',6),Nm('Cantidad')],
+    filasM(8).map(m=>[CN[m[4]],TIPO[m[3]],ueN(m[0]),RN[ueR(m[0])],m[1],nom(m[1]),vit(m[1])?'Sí':'',m[5]])],
+  f7:()=>['Formas 7','Formas 7 propuestas: traslados entre unidades ejecutoras',[T('UE que cede',34),T('UE que recibe',34),T('Red',18),T('Código',12),T('Renglón',46),T('Vital',6),T('Inventario que se cede',22),Nm('Días sin movimiento en quien cede'),Nm('Cantidad')],
+    filasM(7).map(m=>[ueN(m[4]),ueN(m[0]),RN[ueR(m[0])],m[1],nom(m[1]),vit(m[1])?'Sí':'',CLASE[m[6]],m[7],m[5]])],
+  exc:()=>['Excesos','Excesos e inventario sin movimiento en unidades ejecutoras',[T('Unidad ejecutora',34),T('Red',18),T('Código',12),T('Renglón',46),T('Clase',22),{h:'Meses de cobertura',t:'dec'},Nm('Días sin movimiento'),Nm('Saldo'),Nm('Cedible'),Nm('Usado en Formas 7'),Nm('Remanente')],
+    filasX().map(x=>[ueN(x[0]),RN[ueR(x[0])],x[1],nom(x[1]),CLASE[x[2]],x[3],x[4],x[5],x[6],x[7],x[6]-x[7]])],
+  sin:()=>['Sin cobertura','Faltante sin fuente en la red · para gestión de Planificación',[T('Código',12),T('Renglón',56),T('Vital',6),Nm('UE con faltante'),Nm('Necesidad'),Nm('Cubierto por la red'),Nm('Faltante'),{h:'% cubierto',t:'pct'}],
+    sinCob().map(([c,x])=>[c,nom(c),vit(c)?'Sí':'',x.u.size,x.q,x.q-x.f,x.f,(x.q-x.f)/x.q])],
+  mq:()=>['Cobertura MQ','Unidades sin datos de insumos médico-quirúrgicos en Saldos en línea',[T('Unidad ejecutora',40),T('Red',18),Nm('Renglones MQ con saldo'),Nm('Renglones totales'),T('Situación',90)],
+    UES.filter(u=>u[3]<=5).map(u=>[u[0],RN[u[1]],u[3],u[2],'Sujeto a la instalación del módulo de gestión de inventario de insumos quirúrgicos en SALMI (Control de Inventario / Coordinación Nacional de Almacenes)'])]
+};
+async function excel(todo){
+  toast('Preparando Excel…');
+  try{ await cargarExcelJS(); }catch(e){ toast('No se pudo preparar el Excel: revise la conexión y vuelva a intentar.'); return; }
+  const wb=new ExcelJS.Workbook(); wb.creator='Dirección Nacional de Logística'; const meta=metaBase();
+  let nombre;
+  if(todo){
+    const g={red:st.red,ue:st.ue,q:st.q,v:st.v}; st.red='';st.ue='';st.q='';st.v='';
+    const k=J.kpi, f=k.porFuente;
+    await hoja(wb,'Resumen','Resumen nacional',meta.filter(x=>x[0]!=='Filtros'),[T('Indicador',50),Nm('Valor',18)],[
+      ['Líneas UE × renglón bajo la línea de pedido',k.lineas],['Unidades necesarias',k.unidades],['Unidades cubiertas por la red',k.cubiertas],['Líneas cubiertas completas',k.completas],['Líneas cubiertas en parte',k.parciales],['Líneas sin fuente en la red',k.sinFuente],
+      ['Líneas vitales',k.vitales],['Líneas vitales cubiertas completas',k.vitalesCompletas],['Formas 8 a CEDIS',k.formas8],['Formas 7 entre UE',k.formas7],
+      ['Unidades desde el CEDIS que surte (F8)',f.cedisPropio],['Unidades desde otro CEDIS (F8)',f.otroCedis],['Unidades desde UE de la misma red (F7)',f.ueMismaRed]]);
+    for(const t of ['ue','f8','f7','exc','sin','mq']){ const [n,ti,c,fi]=defs[t](); await hoja(wb,n,ti,meta.filter(x=>x[0]!=='Filtros'),c,fi); }
+    Object.assign(st,g); nombre='ABASTECIMIENTO_RED_COMPLETO';
+  } else {
+    const [n,ti,c,fi]=defs[st.tab](); if(!fi.length){ toast('No hay filas que exportar con los filtros actuales.'); return; }
+    await hoja(wb,n,ti,meta,c,fi); nombre='ABASTECIMIENTO_RED_'+n.toUpperCase().replace(/\s+/g,'_');
+  }
+  const buf=await wb.xlsx.writeBuffer(); const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download=nombre+'_'+hoyPTY()+'.xlsx';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); toast('Excel descargado.');
+}
+/* ---------- eventos ---------- */
+$('tabs').onclick=e=>{ const b=e.target.closest('.tab'); if(!b) return; st.tab=b.dataset.t; pintar(); };
+$('fRed').onchange=e=>{ st.red=e.target.value; pintar(); };
+$('fUE').onchange=e=>{ st.ue=e.target.value; pintar(); };
+let _t; $('fB').oninput=e=>{ clearTimeout(_t); _t=setTimeout(()=>{ st.q=e.target.value.trim(); pintar(); },250); };
+$('fV').onchange=e=>{ st.v=e.target.value; pintar(); };
+$('btnLimpiar').onclick=()=>{ st.red='';st.ue='';st.q='';st.v=''; $('fRed').value='';$('fUE').value='';$('fB').value='';$('fV').value=''; pintar(); };
+$('btnXlsVista').onclick=()=>excel(false); $('btnXlsTodo').onclick=()=>excel(true);
+$('btnAyuda').onclick=()=>$('modal').classList.add('on'); $('cerrarM').onclick=()=>$('modal').classList.remove('on');
+$('modal').onclick=e=>{ if(e.target.id==='modal') $('modal').classList.remove('on'); };
+iniciar();
+})();
+</script>
+</body>
+</html>
