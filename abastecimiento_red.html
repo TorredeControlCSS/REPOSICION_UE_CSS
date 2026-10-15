@@ -169,6 +169,7 @@ async function iniciar(){
   }catch(e){ $('cuerpo').innerHTML='<div id="cargando">No se pudo cargar abastecimiento_red.json. Revise la conexión y recargue la página.</div>'; return; }
   $('frs').innerHTML='<span class="fr">Saldos al <b>'+fL(J.corte)+'</b></span> <span class="fr">Formas 8 al <b>'+fL(J.corteF8)+'</b></span> <span class="fr">Publicado <b>'+horaPTY(J.generado)+'</b></span>';
   const sel=$('fUE'); UES.map((u,i)=>[u[0],i]).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{ const o=document.createElement('option'); o.value=i; o.textContent=n; sel.appendChild(o); });
+  try{ const pu=new URLSearchParams(location.search).get('ue'); if(pu){ const k=s=>String(s).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]+/g,' ').trim(); const i=UES.findIndex(u=>k(u[0])===k(pu)); if(i>=0){ st.ue=String(i); sel.value=st.ue; } } }catch(e){}
   ajustarAltoCab(); resumen(); avisos(); pintar();
 }
 function ajustarAltoCab(){ document.documentElement.style.setProperty('--hh',($('cab').offsetHeight||52)+'px'); }
