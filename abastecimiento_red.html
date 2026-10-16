@@ -292,7 +292,7 @@ function sankeyHTML(ui,F){
     titulo='Orígenes del abastecimiento'; nota='Grosor = líneas de despacho (renglón × origen). Toque un renglón de la tabla para ver sus cantidades.';
   }
   if(!L.length) return '<h3>'+titulo+'</h3><div class="nota">Sin fuentes en la red para '+(st.ren?'este renglón':'esta unidad')+'.</div><div class="desc">'+nota+'</div>';
-  const tot=L.reduce((s,x)=>s+x.v,0), W=Math.round(Math.min(600,Math.max(420,(window.innerWidth||1400)*.36))), X0=Math.round(W*.54), X1=Math.round(W*.8), AREA=Math.min(250,Math.max(110,L.length*24));
+  const tot=L.reduce((s,x)=>s+x.v,0), W=Math.round(Math.min(600,Math.max(420,(window.innerWidth||1400)*.36))), X0=Math.round(W*.54), X1=Math.round(W*.8), AREA=(()=>{ const iw=window.innerWidth||1400, ih=window.innerHeight||800, hh=$('cab')?$('cab').offsetHeight:52; const col=iw>1100?((iw-60)*(iw>1400?1/2.3:.8/2.3)-20):iw-60, esc=Math.max(.6,col/W); const meta=(ih-hh-265)/esc-24-L.length*4; return Math.max(L.length*26,Math.min(st.ren?140+L.length*70:700,meta)); })();
   const sc=AREA/tot, slots=L.map(x=>Math.max(27,x.v*sc)+2), H=slots.reduce((a,b)=>a+b,0)+20;
   let y=10, ry=10+(H-20-tot*sc)/2; const r0=ry, cx=(X0+X1)/2;
   let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Diagrama de orígenes del abastecimiento">';
