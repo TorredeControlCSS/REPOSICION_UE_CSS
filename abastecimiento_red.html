@@ -21,8 +21,10 @@ header .sub{font-size:11px;color:#cfe0f2}
 .hbtn{font:inherit;font-size:12px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);padding:5px 10px;cursor:pointer;border-radius:6px}
 .hbtn.pri{background:#fff;color:var(--azul);font-weight:700;border-color:#fff}
 .resumen{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap}
-.k{background:var(--bg,var(--p-gris));padding:6px 12px;border-radius:var(--r);min-width:120px}
-.k .v{font-family:Consolas,monospace;font-size:17px;font-weight:700;line-height:1.15}
+.resumen{flex-wrap:nowrap;overflow-x:auto}
+.k{background:var(--bg,var(--p-gris));padding:5px 10px;border-radius:var(--r);flex:1 1 0;min-width:96px}
+.k .l{white-space:normal;line-height:1.2}
+.k .v{font-family:Consolas,monospace;font-size:16px;font-weight:700;line-height:1.15}
 .k .l{font-size:11px;color:var(--gris)}
 .tabs{display:flex;gap:4px;padding:0 16px;flex-wrap:wrap}
 .tab{font:inherit;border:0;background:#dfe3e9;color:var(--tinta);padding:7px 12px;border-radius:var(--r) var(--r) 0 0;cursor:pointer}
@@ -50,7 +52,10 @@ tr.sel td{background:#e3edf8 !important}
 .c-b{background:var(--p-azul);color:#0C447C}.c-g{background:var(--p-gris);color:#5f6b78}.c-n{background:var(--p-nar);color:#8a4b12}
 .vital{background:var(--p-rojo);color:#a23224}
 .desc{color:var(--gris);font-size:12px}
-.ue-grid{display:grid;grid-template-columns:minmax(340px,.8fr) minmax(0,1.9fr);gap:10px;padding:10px}
+.ue-grid{display:grid;grid-template-columns:minmax(420px,1fr) minmax(0,1.3fr);gap:12px;padding:10px}
+.ue-der td.rn{min-width:235px;max-width:270px}
+.ue-der th{white-space:normal;vertical-align:bottom;line-height:1.2}
+@media(max-width:1400px){.ue-grid{grid-template-columns:minmax(340px,.8fr) minmax(0,1.5fr)}.ue-der td.rn{min-width:200px}}
 .ue-der td{padding:5px 6px;font-size:12px}.ue-der th{padding:6px 6px}
 @media(max-width:1100px){.ue-grid{grid-template-columns:1fr}}
 .ue-izq{position:sticky;top:calc(var(--hh) + 8px);align-self:start;display:flex;flex-direction:column;gap:8px}
@@ -59,7 +64,8 @@ tr.sel td{background:#e3edf8 !important}
 .caja-sk h3{margin:0 0 4px;font-size:13px;color:var(--azul)}
 .ue-der .tw{max-height:calc(100vh - var(--hh) - 120px);border:1px solid var(--borde);border-radius:var(--r)}
 .nota{font-size:12px;color:var(--gris);padding:6px 10px}
-.aviso{margin:8px 16px;padding:8px 12px;border-radius:var(--r);background:var(--p-amar)}
+.pie{margin:0 16px 16px;padding:6px 2px;font-size:11.5px;color:var(--gris)}
+.pie .lnk{font-size:11.5px}
 .lnk{color:var(--azul2);cursor:pointer;text-decoration:underline;background:none;border:0;font:inherit;padding:0}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:900}
 .modal-bg.on{display:flex}
@@ -90,7 +96,6 @@ tr.sel td{background:#e3edf8 !important}
   <div class="der"><span id="frs"></span><button class="hbtn pri" id="btnTour">▶ Ver tutorial guiado</button><button class="hbtn" id="btnAyuda">Cómo se calcula</button></div>
 </header>
 <div class="resumen" id="resumen"></div>
-<div id="avisos"></div>
 <div class="tabs" id="tabs">
   <button class="tab on" data-t="ue">Por unidad ejecutora</button>
   <button class="tab" data-t="f8">Formas 8 (CEDIS)</button>
@@ -114,6 +119,7 @@ tr.sel td{background:#e3edf8 !important}
   <div class="conteo" id="conteo"></div>
   <div id="cuerpo"><div id="cargando">Cargando datos…</div></div>
 </section>
+<div class="pie" id="avisos"></div>
 <div class="modal-bg" id="modal"><div class="modal">
   <h2>Cómo se calcula</h2>
   <p>Para cada unidad ejecutora y renglón se usa el mismo modelo de la Calculadora de Reposición UE.</p>
@@ -190,7 +196,8 @@ function resumen(){
 }
 function avisos(){
   const mq=UES.filter(u=>u[3]<=5).length;
-  $('avisos').innerHTML=mq?'<div class="aviso" id="avisoMQ">'+mq+' unidades ejecutoras muestran 5 o menos renglones de insumos médico-quirúrgicos en Saldos en línea: sus necesidades de esos insumos no se pueden calcular y están sujetas a la instalación del módulo de gestión de inventario de insumos quirúrgicos en SALMI (Departamento de Control de Inventario / Coordinación Nacional de Almacenes). Vea la pestaña «Cobertura de datos MQ».</div>':'';
+  $('avisos').innerHTML=mq?'<span id="avisoMQ">Nota: '+mq+' unidades no tienen datos de insumos médico-quirúrgicos en Saldos en línea; esas necesidades están sujetas a la instalación del módulo de inventario MQ en SALMI (Control de Inventario / Coordinación Nacional de Almacenes). <button class="lnk" id="verMQ">Ver unidades</button></span>':'';
+  const b=$('verMQ'); if(b) b.onclick=()=>{ st.tab='mq'; pintar(); window.scrollTo(0,0); };
 }
 /* ---------- filtros ---------- */
 function pasaRen(c,vital,crit){ if(st.v==='v'&&!vital) return false; if(st.v==='c'&&!(vital||crit)) return false;
@@ -211,7 +218,7 @@ function tablaOrdenable(vista, cols, filas, opc){
       return (typeof x==='string'||typeof y==='string') ? String(x).localeCompare(String(y))*s.d : (x-y)*s.d; }); } }
   const corta=F.length>MAXFILAS;
   const th=cols.map(c=>{ const on=s&&s.k===c.k; return '<th data-k="'+c.k+'" class="'+(c.n?'n ':'')+(on?'on':'')+'" title="Ordenar por '+esc(c.h)+'">'+c.h+'<span class="o">'+(on?(s.d>0?'▲':'▼'):'↕')+'</span></th>'; }).join('');
-  const tb=F.slice(0,MAXFILAS).map((f,i)=>'<tr'+(opc.trAttr?opc.trAttr(f,i):'')+'>'+cols.map(c=>'<td'+(c.n?' class="n num"':'')+'>'+c.html(f)+'</td>').join('')+'</tr>').join('');
+  const tb=F.slice(0,MAXFILAS).map((f,i)=>'<tr'+(opc.trAttr?opc.trAttr(f,i):'')+'>'+cols.map(c=>'<td'+(c.n?' class="n num"':c.cls?' class="'+c.cls+'"':'')+'>'+c.html(f)+'</td>').join('')+'</tr>').join('');
   const html='<div class="tw"'+(opc.id?' id="'+opc.id+'"':'')+'><table><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody></table></div>'+(corta?'<div class="nota">Se muestran '+fmt(MAXFILAS)+' de '+fmt(F.length)+' filas; el Excel trae todas.</div>':'');
   return {html, filas:F};
 }
@@ -251,13 +258,11 @@ function vistaUE(){
   const ui=+st.ue, F=filasN();
   const mv={}; M.filter(m=>m[0]===ui).forEach(m=>{ (mv[m[1]]||(mv[m[1]]=[])).push(m); });
   const q=F.reduce((s,r)=>s+r[9],0), c=F.reduce((s,r)=>s+r[10]+r[11],0);
-  const cols=[nRen('ren','Renglón'),
-    {k:'est',h:'Estado',v:r=>r[3]?0:1,html:r=>r[3]?'<span class="chip c-r">Crítico</span>':'<span class="chip c-a">Bajo línea</span>'},
+  const cols=[{k:'ren',h:'Renglón',cls:'rn',v:r=>nom(r[1]).toLowerCase(),html:r=>'<b class="num">'+esc(r[1])+'</b> '+(r[3]?'<span class="chip c-r">Crítico</span>':'<span class="chip c-a">Bajo línea</span>')+(vit(r[1])?' <span class="chip vital">VITAL</span>':'')+'<div class="desc">'+esc(nom(r[1]).slice(0,70))+'</div>'},
     {k:'saldo',h:'Saldo',n:1,v:r=>r[4],html:r=>fmt(r[4])},{k:'rop',h:'Línea de pedido',n:1,v:r=>r[6],html:r=>fmt(r[6])},
     {k:'pend',h:'Por recibir',n:1,v:r=>r[8],html:r=>fmt(r[8])},{k:'nec',h:'Necesidad',n:1,v:r=>r[9],html:r=>'<b>'+fmt(r[9])+'</b>'},
     {k:'org',h:'De dónde sale',v:r=>(mv[r[1]]||[]).length,html:r=>(mv[r[1]]||[]).map(m=>'<div><span class="chip '+(m[2]===8?'c-b':CLCHIP[m[6]])+'">F'+m[2]+'</span> '+esc(origenN(m))+' · <b class="num">'+fmt(m[5])+'</b></div>').join('')||'<span class="desc">—</span>'},
-    {k:'falt',h:'Faltante',n:1,v:r=>r[12],html:r=>r[12]?fmt(r[12]):'·'},
-    {k:'cob',h:'Cobertura',v:r=>r[12]===0?0:(r[10]+r[11]>0?1:2),html:cobChip}];
+    {k:'falt',h:'Faltante',n:1,v:r=>r[12],html:r=>r[12]?fmt(r[12])+'<div>'+cobChip(r)+'</div>':cobChip(r)}];
   const t=tablaOrdenable('ue',cols,F,{id:'tablaUE',trAttr:r=>' class="click'+(st.ren===r[1]?' sel':'')+'" data-c="'+r[1]+'"'});
   $('conteo').innerHTML=F.length+' renglones bajo la línea de pedido · <button class="lnk" id="volver">ver todas las unidades</button> · toque un renglón para ver de dónde se abastece';
   $('cuerpo').innerHTML='<div class="ue-grid"><div class="ue-izq" id="ueIzq"><div class="caja"><div style="font-size:15px;font-weight:700;color:var(--azul)">'+esc(ueN(ui))+'</div><div class="desc">'+RN[ueR(ui)]+'</div><div style="margin-top:4px">Necesidad <b class="num">'+fmt(q)+'</b> · cubierta <b class="num">'+fmt(c)+'</b> ('+pct(c/q)+')</div></div>'+
@@ -287,13 +292,13 @@ function sankeyHTML(ui,F){
     titulo='Orígenes del abastecimiento'; nota='Grosor = líneas de despacho (renglón × origen). Toque un renglón de la tabla para ver sus cantidades.';
   }
   if(!L.length) return '<h3>'+titulo+'</h3><div class="nota">Sin fuentes en la red para '+(st.ren?'este renglón':'esta unidad')+'.</div><div class="desc">'+nota+'</div>';
-  const tot=L.reduce((s,x)=>s+x.v,0), W=440, X0=228, X1=350, AREA=Math.min(360,Math.max(120,L.length*30));
-  const sc=AREA/tot, slots=L.map(x=>Math.max(28,x.v*sc)+3), H=slots.reduce((a,b)=>a+b,0)+20;
+  const tot=L.reduce((s,x)=>s+x.v,0), W=Math.round(Math.min(600,Math.max(420,(window.innerWidth||1400)*.36))), X0=Math.round(W*.54), X1=Math.round(W*.8), AREA=Math.min(250,Math.max(110,L.length*24));
+  const sc=AREA/tot, slots=L.map(x=>Math.max(27,x.v*sc)+2), H=slots.reduce((a,b)=>a+b,0)+20;
   let y=10, ry=10+(H-20-tot*sc)/2; const r0=ry, cx=(X0+X1)/2;
   let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Diagrama de orígenes del abastecimiento">';
   L.forEach((x,i)=>{ const h=x.v*sc, yt=y+(slots[i]-3-h)/2;
     s+='<path d="M'+X0+' '+yt+' C'+cx+' '+yt+' '+cx+' '+ry+' '+X1+' '+ry+' L'+X1+' '+(ry+h)+' C'+cx+' '+(ry+h)+' '+cx+' '+(yt+h)+' '+X0+' '+(yt+h)+' Z" fill="'+x.c+'" fill-opacity=".38"><title>'+esc(x.l)+': '+fmt(x.v)+'</title></path><rect x="'+(X0-6)+'" y="'+yt+'" width="6" height="'+Math.max(2,h)+'" fill="'+x.c+'"/>';
-    const cy=y+(slots[i]-3)/2; s+='<text x="'+(X0-10)+'" y="'+(cy-2)+'" font-size="11" text-anchor="end" fill="#1d2733">'+esc(x.l.length>34?x.l.slice(0,33)+'…':x.l)+'</text><text x="'+(X0-10)+'" y="'+(cy+11)+'" font-size="11" font-weight="700" text-anchor="end" fill="#1d2733" font-family="Consolas,monospace">'+fmt(x.v)+'</text>';
+    const cy=y+(slots[i]-3)/2; s+='<text x="'+(X0-10)+'" y="'+(cy-2)+'" font-size="11" text-anchor="end" fill="#1d2733">'+esc(x.l.length>Math.round(X0/7)?x.l.slice(0,Math.round(X0/7)-1)+'…':x.l)+'</text><text x="'+(X0-10)+'" y="'+(cy+11)+'" font-size="11" font-weight="700" text-anchor="end" fill="#1d2733" font-family="Consolas,monospace">'+fmt(x.v)+'</text>';
     y+=slots[i]; ry+=h; });
   const mc=r0+tot*sc/2; s+='<rect x="'+X1+'" y="'+r0+'" width="8" height="'+(tot*sc)+'" fill="#0C447C"/><text x="'+(X1+14)+'" y="'+(mc-8)+'" font-size="11" fill="#5f6b78">'+esc(centro[0])+'</text><text x="'+(X1+14)+'" y="'+(mc+7)+'" font-size="13" font-weight="700" fill="#1d2733" font-family="Consolas,monospace">'+esc(centro[1])+'</text><text x="'+(X1+14)+'" y="'+(mc+20)+'" font-size="10" fill="#5f6b78">'+esc(centro[2])+'</text>';
   s+='</svg>';
@@ -434,7 +439,7 @@ function primeraUE(){ const R=rankingUE().sort((a,b)=>b.vf-a.vf||b.f-a.f); retur
 const TOUR=[
   {sel:'#cab',tit:'1. Encabezado',txt:'Muestra de qué fecha son los saldos y las Formas 8 usados, y cuándo se publicó el cálculo. Se queda fijo al bajar en la página. «Cómo se calcula» abre las fórmulas.',prep:'inicio'},
   {sel:'#resumen',tit:'2. Resumen nacional',txt:'Cuántas líneas (unidad × renglón) están bajo su línea de pedido, qué parte de lo que necesitan se cubre con el inventario de la red, cuántas Formas 8 y Formas 7 se proponen y cuánto queda sin fuente.'},
-  {sel:'#avisoMQ',tit:'3. Datos de insumos médico-quirúrgicos',txt:'Algunas unidades no tienen instalado en SALMI el módulo de inventario de insumos quirúrgicos: sus necesidades de esos insumos no se pueden calcular. La lista está en la última pestaña.'},
+  {sel:'#avisoMQ',tit:'3. Nota sobre insumos médico-quirúrgicos',txt:'Al pie de la página: algunas unidades no tienen instalado en SALMI el módulo de inventario de insumos quirúrgicos y sus necesidades de esos insumos no se pueden calcular. «Ver unidades» abre la lista.'},
   {sel:'#tabs',tit:'4. Las vistas',txt:'Por unidad ejecutora (pre-pedido de cada unidad), Formas 8 a los CEDIS, Formas 7 entre unidades, excesos e inventario sin movimiento, faltantes sin fuente para Planificación y cobertura de datos MQ.'},
   {sel:'#filtros',tit:'5. Filtros y descargas',txt:'Filtre por red, unidad, renglón o solo vitales. «Excel de esta vista» descarga lo que está viendo, con sus filtros y el orden elegido; «Excel completo» trae todas las vistas en un solo libro.'},
   {sel:'#tablaRank',tit:'6. Ranking de unidades',txt:'Las unidades con más renglones vitales sin cobertura completa aparecen primero. Toque cualquier título de columna para ordenar de mayor a menor o de menor a mayor. Toque una unidad para abrir su pre-pedido.',prep:'ranking'},
