@@ -62,6 +62,8 @@ tr.sel td{background:#e3edf8 !important}
 .caja{background:var(--p-gris);border-radius:var(--r);padding:8px 12px}
 .caja-sk{border:1px solid var(--borde);border-radius:var(--r);padding:8px}
 .caja-sk h3{margin:0 0 4px;font-size:13px;color:var(--azul)}
+.caja-sk svg.sk{display:block;width:100%;height:auto;max-height:calc(100vh - var(--hh) - 290px);margin:0 auto}
+.ue-izq{max-height:calc(100vh - var(--hh) - 16px)}
 .ue-der .tw{max-height:calc(100vh - var(--hh) - 120px);border:1px solid var(--borde);border-radius:var(--r)}
 .nota{font-size:12px;color:var(--gris);padding:6px 10px}
 .pie{margin:0 16px 16px;padding:6px 2px;font-size:11.5px;color:var(--gris)}
@@ -295,7 +297,7 @@ function sankeyHTML(ui,F){
   const tot=L.reduce((s,x)=>s+x.v,0), W=Math.round(Math.min(600,Math.max(420,(window.innerWidth||1400)*.36))), X0=Math.round(W*.54), X1=Math.round(W*.8), AREA=(()=>{ const iw=window.innerWidth||1400, ih=window.innerHeight||800, hh=$('cab')?$('cab').offsetHeight:52; const col=iw>1100?((iw-60)*(iw>1400?1/2.3:.8/2.3)-20):iw-60, esc=Math.max(.6,col/W); const meta=(ih-hh-265)/esc-24-L.length*4; return Math.max(L.length*26,Math.min(st.ren?140+L.length*70:700,meta)); })();
   const sc=AREA/tot, slots=L.map(x=>Math.max(27,x.v*sc)+2), H=slots.reduce((a,b)=>a+b,0)+20;
   let y=10, ry=10+(H-20-tot*sc)/2; const r0=ry, cx=(X0+X1)/2;
-  let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Diagrama de orígenes del abastecimiento">';
+  let s='<svg class="sk" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMin meet" role="img" aria-label="Diagrama de orígenes del abastecimiento">';
   L.forEach((x,i)=>{ const h=x.v*sc, yt=y+(slots[i]-3-h)/2;
     s+='<path d="M'+X0+' '+yt+' C'+cx+' '+yt+' '+cx+' '+ry+' '+X1+' '+ry+' L'+X1+' '+(ry+h)+' C'+cx+' '+(ry+h)+' '+cx+' '+(yt+h)+' '+X0+' '+(yt+h)+' Z" fill="'+x.c+'" fill-opacity=".38"><title>'+esc(x.l)+': '+fmt(x.v)+'</title></path><rect x="'+(X0-6)+'" y="'+yt+'" width="6" height="'+Math.max(2,h)+'" fill="'+x.c+'"/>';
     const cy=y+(slots[i]-3)/2; s+='<text x="'+(X0-10)+'" y="'+(cy-2)+'" font-size="11" text-anchor="end" fill="#1d2733">'+esc(x.l.length>Math.round(X0/7)?x.l.slice(0,Math.round(X0/7)-1)+'…':x.l)+'</text><text x="'+(X0-10)+'" y="'+(cy+11)+'" font-size="11" font-weight="700" text-anchor="end" fill="#1d2733" font-family="Consolas,monospace">'+fmt(x.v)+'</text>';
