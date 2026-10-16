@@ -137,22 +137,25 @@ function _arvExcel_(A, J){
       ['Sin fuente en la red','Renglones sin fuente suficiente en CEDIS ni en otras unidades',['Renglón','Descripción','Vital','Necesidad','Cubierto por la red','Faltante'],
         A.sin.map(function(x){ return [x.c,x.n,x.v?'Sí':'',x.q,x.cub,x.f]; }),[90,420,45,100,120,100]]
     ];
+    var logo=null; try{ logo=UrlFetchApp.fetch(ARV.LOGO,{muteHttpExceptions:true}).getBlob(); }catch(e){}
     var primera=true;
     hojas.forEach(function(h){
       var sh=primera?t.getSheets()[0].setName(h[0]):t.insertSheet(h[0]); primera=false;
-      sh.getRange('A1').setValue('CAJA DE SEGURO SOCIAL · DIRECCIÓN NACIONAL DE LOGÍSTICA · ABASTECIMIENTO EN RED');
-      sh.getRange(1,1,1,h[2].length).merge().setFontWeight('bold').setFontSize(12).setFontColor('#0C447C');
-      sh.getRange('A2').setValue(A.ue+' · '+h[1]+' · saldos al '+_arvFecha_(J.corte)+' · propuesta sujeta a validación de existencias físicas');
-      sh.getRange(2,1,1,h[2].length).merge().setFontSize(10).setFontColor('#555555');
-      sh.getRange(4,1,1,h[2].length).setValues([h[2]]).setBackground('#1E5A9E').setFontColor('#FFFFFF').setFontWeight('bold').setWrap(true);
+      var n=h[2].length, HR=5;   // fila de encabezados de columna
+      if(logo){ try{ sh.insertImage(logo,1,1).setWidth(46).setHeight(46); }catch(e){} }
+      sh.setRowHeight(1,22); sh.setRowHeight(2,18); sh.setRowHeight(3,18);
+      sh.getRange(1,2,1,n-1).merge().setValue('CAJA DE SEGURO SOCIAL · DIRECCIÓN NACIONAL DE LOGÍSTICA · ABASTECIMIENTO EN RED').setFontWeight('bold').setFontSize(13).setFontColor('#0C447C');
+      sh.getRange(2,2,1,n-1).merge().setValue(A.ue+' · '+h[1]+' · saldos al '+_arvFecha_(J.corte)).setFontSize(10).setFontColor('#555555');
+      sh.getRange(3,2,1,n-1).merge().setValue('Propuesta sujeta a validación de existencias físicas antes de emitir los formularios').setFontSize(10).setFontColor('#0C447C').setFontWeight('bold');
+      sh.getRange(HR,1,1,n).setValues([h[2]]).setBackground('#1E5A9E').setFontColor('#FFFFFF').setFontWeight('bold').setWrap(true).setVerticalAlignment('middle');
       if(h[3].length){
-        sh.getRange(5,1,h[3].length,h[2].length).setValues(h[3]);
-        var c0=h[0]==='Sin fuente en la red'?4:h[2].length;
-        sh.getRange(5,c0,h[3].length,h[2].length-c0+1).setNumberFormat('#,##0');
-        if(h[0]==='Pedir a CEDIS (F8)') sh.getRange(5,6,h[3].length,1).setNumberFormat('#,##0');
-        sh.getRange(4,1,h[3].length+1,h[2].length).createFilter();
-      } else sh.getRange(5,1).setValue('Sin renglones en este bloque.').setFontColor('#5f6b78');
-      h[4].forEach(function(w,i){ sh.setColumnWidth(i+1,w); }); sh.setFrozenRows(4);
+        sh.getRange(HR+1,1,h[3].length,n).setValues(h[3]);
+        var c0=h[0]==='Sin fuente en la red'?4:n;
+        sh.getRange(HR+1,c0,h[3].length,n-c0+1).setNumberFormat('#,##0');
+        if(h[0]==='Pedir a CEDIS (F8)') sh.getRange(HR+1,6,h[3].length,1).setNumberFormat('#,##0');
+        sh.getRange(HR,1,h[3].length+1,n).createFilter();
+      } else sh.getRange(HR+1,1).setValue('Sin renglones en este bloque.').setFontColor('#5f6b78');
+      h[4].forEach(function(w,i){ sh.setColumnWidth(i+1,w); }); sh.setFrozenRows(HR);
     });
     SpreadsheetApp.flush();
     return UrlFetchApp.fetch('https://docs.google.com/spreadsheets/d/'+id+'/export?format=xlsx',{headers:{Authorization:'Bearer '+ScriptApp.getOAuthToken()}}).getBlob().setName(nombre+'.xlsx');
