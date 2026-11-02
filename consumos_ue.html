@@ -879,6 +879,13 @@ async function rRev(){
  BJ=J?J.E.filter(e=>cats.includes(e.cat)).map(e=>ovrAplicar(e,J.generado)).filter(e=>e.e!=='REEMPLAZADO'):[];
  $('rCnt').textContent=J?'actualizado '+new Date(J.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16):'';
  pintarRev();}
+/* Relee la lista publicada sin cerrar el detalle abierto: la pantalla converge al estado real del GAS
+   (cada firma publica sus JSON al terminar). Solo lee un JSON estatico; no llama al GAS. */
+async function rRevSuave(){if(!ME||!$('rPer').value)return;try{const f='envios_'+$('rPer').value+'.json';delete JC[f];const J=await getJ(f,true);if(!J)return;const cats=misCats();
+ BJ=J.E.filter(e=>cats.includes(e.cat)).map(e=>ovrAplicar(e,J.generado)).filter(e=>e.e!=='REEMPLAZADO');
+ $('rCnt').textContent='actualizado '+new Date(J.generado).toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16);pintarRev();}catch(z){}}
+setInterval(()=>{if(!document.hidden&&cur==='rev'&&!$('mb').classList.contains('show'))rRevSuave();},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&cur==='rev'&&!$('mb').classList.contains('show'))rRevSuave();});
 function pintarRev(){
  const subs=subsRev(),fc=$('rCat').value,fu=$('rUe').value;
  const base=BJ.filter(e=>(!fc||e.cat===fc)&&(!fu||e.ue===fu));
@@ -915,11 +922,14 @@ function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.tri
     invalidar(e.per,e.ue);revisarPendientes(false);
     $('rDet').style.display='none';SEL=null;pintarRev();if(x.estado==='APROBADO'&&x.publicacion){if(x.publicacion.ok){it&&(it.e='PUBLICADO');ovrPoner(e.id,{e:'PUBLICADO'});pintarRev();toast('Aprobado y publicado en MAESTROS_DINALOG'+(x.publicacion.publicacion?' ('+x.publicacion.publicacion+')':'')+'. El Motor ya usa este consumo.',8000);}
      else modal('Aprobado, pero no se pudo publicar','<div class="warn" style="font-size:13px">El envío quedó <b>aprobado</b>, pero la escritura en MAESTROS_DINALOG falló: '+esc(x.publicacion.error||'')+'.<br><br>Un administrador puede reintentarla en <b>Administración › Publicación al Motor</b> (Correr simulación y Publicar).</div>');}
-    else toast(titulo+': '+e.id+(x.json&&!x.json.ok?' · aviso: los tableros se actualizarán al regenerar JSON':'. Análisis y cobertura lo mostrarán en 1 a 2 minutos.'),6000);}
+    else toast(titulo+': '+e.id+(x.json&&!x.json.ok?' · aviso: los tableros se actualizarán al regenerar JSON':'. Análisis y cobertura lo mostrarán en 1 a 2 minutos.'),6000);rRevSuave();}
    catch(z){clearInterval(avT);
+    const mE=/estado actual: ([A-Z_]+)/.exec(z.message||'');
+    if(mE){const est=mE[1];cerrarModal();ovrPoner(e.id,{e:est});var it3=BJ.find(q=>q.id===e.id);if(it3)it3.e=est;invalidar(e.per,e.ue);$('rDet').style.display='none';SEL=null;pintarRev();rRevSuave();revisarPendientes(false);
+     toast(e.id+' ya no está pendiente: su estado actual es '+est+'. No hace falta firmarlo de nuevo; la lista se actualizó.',9000);return;}
     if(/Sin respuesta/.test(z.message||'')){const est=await verificarEnvio(e.id,e.e);
      if(est){cerrarModal();ovrPoner(e.id,{e:est});var it2=BJ.find(q=>q.id===e.id);if(it2)it2.e=est;invalidar(e.per,e.ue);revisarPendientes(false);$('rDet').style.display='none';SEL=null;pintarRev();
-      toast(titulo+': '+e.id+' quedó registrado (estado '+est+'). El servidor tardó más de lo normal en responder.',9000);return;}
+      rRevSuave();toast(titulo+': '+e.id+' quedó registrado (estado '+est+'). El servidor tardó más de lo normal en responder.',9000);return;}
      if($('cmOk')){$('cmOk').disabled=false;$('cmOk').textContent='Sí, '+titulo.toLowerCase();}
      modal('No se confirmó todavía','<div class="warn" style="font-size:13px">El servidor no respondió a tiempo y todavía no se ve el cambio de estado de <b>'+esc(e.id)+'</b>.<br><br><b>No repita la acción.</b> Espere 2 minutos y recargue la página para ver el estado real del envío.</div>');return;}
     if($('cmOk')){$('cmOk').disabled=false;$('cmOk').textContent='Sí, '+titulo.toLowerCase();}err(z);}};});
