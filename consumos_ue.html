@@ -391,6 +391,8 @@ async function postJson(body){
  throw new Error('El servidor no confirmó el envío. Revise el historial antes de reintentar.');
 }
 function err(e){toast(e.message||String(e),6000);}
+/* Tras una escritura sin respuesta: lee el estado publicado del envio (JSON estatico, sin carga al GAS). Devuelve el estado nuevo o ''. */
+async function verificarEnvio(id,antes){try{const r=await getJ('envio/'+id+'.json',true);const est=r&&r.envio&&r.envio.e;return est&&est!==antes?est:'';}catch(z){return '';}}
 function sesionVencida(msg){clearInterval(entrar._t);['usuarios','solicitudes','periodos','publicaciones','bitacora'].forEach(a=>ss.del('adm|'+a));document.title='Registro de Consumos por Unidad Ejecutora · DINALOG';TOKEN='';ss.del('cons_tok');ME=null;cerrarModal();$('scrApp').style.display='none';$('scrLogin').style.display='';$('who').innerHTML='';toast(msg||'Su sesión venció. Ingrese de nuevo.');}
 
 /* ---------- tabla ordenable ---------- */
@@ -906,14 +908,21 @@ function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.tri
   '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-cancel="1" id="cmNo">Cancelar</button><button class="'+(req?'bad':'ok')+'" id="cmOk">Sí, '+titulo.toLowerCase()+'</button></div><div class="note" style="text-align:right">Enter confirma'+(req?' (Ctrl+Enter desde el comentario)':'')+' · Esc cancela</div>',
   ()=>{$('cmNo').onclick=cerrarModal;if(!req)setTimeout(()=>$('cmOk').focus(),80);$('cmOk').onclick=async()=>{const c=$('cm').value.trim();if(req&&!c){toast('El comentario es obligatorio');$('cm').focus();return;}
    $('cmOk').disabled=true;$('cmOk').textContent='Guardando…';
-   try{const x=await jsonp({accion:'accion_envio',id:e.id,op,comentario:c},{reintentos:0,timeout:90000});cerrarModal();
+   const t0=Date.now(),avT=setInterval(()=>{const sg=Math.round((Date.now()-t0)/1000);if(sg>=20&&$('cmOk'))$('cmOk').textContent='Guardando… '+sg+' s · no cierre esta ventana';},5000);
+   try{const x=await jsonp({accion:'accion_envio',id:e.id,op,comentario:c},{reintentos:0,timeout:300000});clearInterval(avT);cerrarModal();
     const ch={e:x.estado};if(x.estado==='EN_CORRECCION')ch.obs=c;if(x.estado==='VALIDADO')ch.vpor=ME.nombre;if(x.estado==='APROBADO')ch.apor=ME.nombre;if(c&&(op==='OBSERVAR'||op==='DEVOLVER'))ch.obs=c;ovrPoner(e.id,ch);
     var it=BJ.find(z=>z.id===e.id);if(it)Object.assign(it,ch);
     invalidar(e.per,e.ue);revisarPendientes(false);
     $('rDet').style.display='none';SEL=null;pintarRev();if(x.estado==='APROBADO'&&x.publicacion){if(x.publicacion.ok){it&&(it.e='PUBLICADO');ovrPoner(e.id,{e:'PUBLICADO'});pintarRev();toast('Aprobado y publicado en MAESTROS_DINALOG'+(x.publicacion.publicacion?' ('+x.publicacion.publicacion+')':'')+'. El Motor ya usa este consumo.',8000);}
      else modal('Aprobado, pero no se pudo publicar','<div class="warn" style="font-size:13px">El envío quedó <b>aprobado</b>, pero la escritura en MAESTROS_DINALOG falló: '+esc(x.publicacion.error||'')+'.<br><br>Un administrador puede reintentarla en <b>Administración › Publicación al Motor</b> (Correr simulación y Publicar).</div>');}
     else toast(titulo+': '+e.id+(x.json&&!x.json.ok?' · aviso: los tableros se actualizarán al regenerar JSON':'. Análisis y cobertura lo mostrarán en 1 a 2 minutos.'),6000);}
-   catch(z){$('cmOk').disabled=false;$('cmOk').textContent='Sí, '+titulo.toLowerCase();err(z);}};});
+   catch(z){clearInterval(avT);
+    if(/Sin respuesta/.test(z.message||'')){const est=await verificarEnvio(e.id,e.e);
+     if(est){cerrarModal();ovrPoner(e.id,{e:est});var it2=BJ.find(q=>q.id===e.id);if(it2)it2.e=est;invalidar(e.per,e.ue);revisarPendientes(false);$('rDet').style.display='none';SEL=null;pintarRev();
+      toast(titulo+': '+e.id+' quedó registrado (estado '+est+'). El servidor tardó más de lo normal en responder.',9000);return;}
+     if($('cmOk')){$('cmOk').disabled=false;$('cmOk').textContent='Sí, '+titulo.toLowerCase();}
+     modal('No se confirmó todavía','<div class="warn" style="font-size:13px">El servidor no respondió a tiempo y todavía no se ve el cambio de estado de <b>'+esc(e.id)+'</b>.<br><br><b>No repita la acción.</b> Espere 2 minutos y recargue la página para ver el estado real del envío.</div>');return;}
+    if($('cmOk')){$('cmOk').disabled=false;$('cmOk').textContent='Sí, '+titulo.toLowerCase();}err(z);}};});
  if($('aVal'))$('aVal').onclick=()=>act('VALIDAR','Validar',false);if($('aObs'))$('aObs').onclick=()=>act('OBSERVAR','Devolver a la UE',true);
  if($('aApr'))$('aApr').onclick=()=>act('APROBAR','Aprobar',false);if($('aDev'))$('aDev').onclick=()=>act('DEVOLVER','Devolver al validador',true);if($('aReab'))$('aReab').onclick=()=>act('REABRIR','Reabrir',true);}
 
