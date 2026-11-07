@@ -232,7 +232,7 @@ input[type=range]:active{cursor:grabbing}
   <div class="cols">
   <p>Arriba eliges una sola vez el <b>renglón</b>, la <b>Unidad Ejecutora</b>, el <b>CEDIS</b>, la <b>base de salida</b> y la <b>media móvil</b>. Las tres pestañas respetan esa selección.</p>
   <h4>Base de salida</h4>
-  <p><b>Req F8</b>: lo que las unidades piden al CEDIS elegido. <b>Distribuciones</b>: lo que CEDIS Panamá despachó (solo aplica a Panamá). <b>Consumo reportado</b>: lo que las unidades declaran consumir por mes.</p>
+  <p><b>Req F8</b>: lo que las unidades piden al CEDIS elegido. <b>Distribuciones</b>: lo que CEDIS Panamá despachó (solo aplica a Panamá). <b>Consumo reportado</b>: lo que las unidades declaran consumir por mes. Para CEDIS Panamá, que es el proveedor nacional y repone a Divisa y Chiriquí, cuenta el de todas las unidades del país; para Divisa y Chiriquí, el de las unidades que suplen.</p>
   <h4>Media móvil</h4>
   <p>Promedio mensual de los últimos 60, 90 o 120 días. Una ventana corta reacciona rápido a cambios recientes; una larga suaviza picos.</p>
   <h4>Cobertura</h4>
@@ -355,7 +355,8 @@ function jsonp(api, params, ms){
 function salidaCedis(c,ced,base){
   const o=S[c]; if(!o) return 0; const i=idx();
   if(base==='dist') return ced==='PA'?((o[4]&&o[4][i]!=null)?o[4][i]:o[14]):0;
-  if(base==='consumo') return ced==='PA'?o[11]:ced==='DI'?o[12]:o[13];
+  /* 07-nov-2026 · CEDIS Panamá es el proveedor nacional: su consumo es el de TODAS las unidades del país (igual que Yarvis y el Inventario Consolidado). Divisa y Chiriquí: sus unidades. */
+  if(base==='consumo') return ced==='PA'?((o[11]||0)+(o[12]||0)+(o[13]||0)):ced==='DI'?o[12]:o[13];
   const mr=ced==='PA'?o[5]:ced==='DI'?o[6]:o[7], rr=ced==='PA'?o[8]:ced==='DI'?o[9]:o[10];
   return (mr&&mr[i]!=null)?mr[i]:rr;
 }
@@ -482,7 +483,7 @@ function renderSim(){
   const nAtr=trs.filter(x=>atrasoDias(x.t)).length, prox=trs.slice().sort((a,b)=>String(a.t.fecha).localeCompare(String(b.t.fecha)))[0];
   const etTr=st.ced!=='PA'?'':SIG_EST!=='ok'?'<span class="chip">tránsitos: '+(SIG_EST==='cargando'?'consultando SÍGUELO':'SÍGUELO sin respuesta')+'</span>':
     trs.length?'<span class="chip verde">'+trs.length+' OC en camino · '+fmt(totTr)+' u · próxima '+fechaLarga(prox.t.fecha)+'</span>'+(nAtr?' <span class="chip rojo">'+nAtr+' atrasada'+(nAtr>1?'s':'')+'</span>':''):'<span class="chip">sin OC en camino</span>';
-  const bl=st.base==='req'?'F8 de '+CED_NOM[st.ced]:st.base==='dist'?'Distribuciones de CEDIS Panamá':'consumo reportado de sus UE';
+  const bl=st.base==='req'?'F8 de '+CED_NOM[st.ced]:st.base==='dist'?'Distribuciones de CEDIS Panamá':(st.ced==='PA'?'consumo reportado de todas las UE del país':'consumo reportado de sus UE');
   let h='<div class="sim-cab"><h3>'+c+' · '+esc(desc(c))+'</h3>'+etTr+'<button class="btn-link" id="btnVolver" title="Volver a la lista de renglones">‹ Volver a la lista</button></div>'+
     '<div class="sim-grid"><div id="simIzq">'+
     '<div class="simk"><div><span class="l">Inventario actual</span><span class="v" id="kInv"></span><span class="l">en '+CED_NOM[st.ced]+'</span></div>'+
