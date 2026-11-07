@@ -182,10 +182,10 @@ header h1{font-size:16.5px}header{padding:6px 18px}.hoy .cel .v{font-size:17px!i
 <script>
 (function(){
 'use strict';
-const BASE='https://torredecontrolcss.github.io/REPOSICION_UE_CSS/';
+const BASE='https://torrecontrolcss.org/REPOSICION_UE_CSS/';
 /* Reservas de inventario de CEDIS Panamá para Formas 8 en despacho (hoja RESERVAS del Motor de Asignación);
    la misma fuente que el informe semanal de existencias: disponible = saldo − reservado. */
-const RESERVAS_URL='https://torredecontrolcss.github.io/ASIGNACION_F8/kanban/f8_renglones.json';
+const RESERVAS_URL='https://torrecontrolcss.org/ASIGNACION_F8/kanban/f8_renglones.json';
 /* B: mismo formato que usó el dummy aprobado. Se llena por partes:
    al abrir → índice, resumen (73 unidades), catálogo y tránsitos; al elegir unidad → sus 3 archivos. */
 const B={trc:null,ues:{},dic:{},ced:{},tr:{},gen:'',idx:null,res:null,f8idx:{},f8docs:{},resPA:null};
@@ -327,7 +327,7 @@ function zDe(ns){ return {85:1.04,90:1.28,95:1.65,97.5:1.96,99:2.33}[ns]||1.28; 
 /* ---------- inicio (sin unidad) · 10-oct-2026: mapa + tabla, mismo patrón del Kanban ---------- */
 const NOMC={'CEDIS PANAMA':'CEDIS Panamá','CEDIS DIVISA':'CEDIS Divisa','CEDIS CHIRIQUI':'CEDIS Chiriquí'};
 const RM={mapa:null,capa:null,lineas:null,coord:null,poli:null,cargando:null,mk:{},
-  PORTAL:'https://torredecontrolcss.github.io/SIGUELO_DINALOG/',
+  PORTAL:'https://torrecontrolcss.org/SIGUELO_DINALOG/',
   HUB:{'CEDIS PANAMA':[9.05473,-79.42908],'CEDIS DIVISA':[8.128,-80.682],'CEDIS CHIRIQUI':[8.43,-82.43]},
   PAIS:[[7.15,-83.05],[9.65,-77.15]],
   /* Vistas por región: las cuatro del Kanban (kanban_tablero.html) más las dos redes del interior. */
