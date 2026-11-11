@@ -917,12 +917,15 @@ function rDetalle(){const r=SEL;if(!r)return;const e=r.envio,q=$('rQ').value.tri
    $('cmOk').disabled=true;$('cmOk').textContent='Guardando…';
    const t0=Date.now(),avT=setInterval(()=>{const sg=Math.round((Date.now()-t0)/1000);if(sg>=20&&$('cmOk'))$('cmOk').textContent='Guardando… '+sg+' s · no cierre esta ventana';},5000);
    try{const x=await jsonp({accion:'accion_envio',id:e.id,op,comentario:c},{reintentos:0,timeout:300000});clearInterval(avT);cerrarModal();
+    /* 11-nov-2026: los JSON del aprobado se generan aparte, sin hacer esperar */
+    if(x.json&&x.json.pendiente)jsonp({accion:'json_evento'},{reintentos:0,timeout:300000}).catch(()=>{});
+    const segs=x.ms?' · '+(x.ms/1000).toFixed(1)+' s':'';
     const ch={e:x.estado};if(x.estado==='EN_CORRECCION')ch.obs=c;if(x.estado==='VALIDADO')ch.vpor=ME.nombre;if(x.estado==='APROBADO')ch.apor=ME.nombre;if(c&&(op==='OBSERVAR'||op==='DEVOLVER'))ch.obs=c;ovrPoner(e.id,ch);
     var it=BJ.find(z=>z.id===e.id);if(it)Object.assign(it,ch);
     invalidar(e.per,e.ue);revisarPendientes(false);
-    $('rDet').style.display='none';SEL=null;pintarRev();if(x.estado==='APROBADO'&&x.publicacion){if(x.publicacion.ok){it&&(it.e='PUBLICADO');ovrPoner(e.id,{e:'PUBLICADO'});pintarRev();toast('Aprobado y publicado en MAESTROS_DINALOG'+(x.publicacion.publicacion?' ('+x.publicacion.publicacion+')':'')+'. El Motor ya usa este consumo.',8000);}
+    $('rDet').style.display='none';SEL=null;pintarRev();if(x.estado==='APROBADO'&&x.publicacion){if(x.publicacion.ok){it&&(it.e='PUBLICADO');ovrPoner(e.id,{e:'PUBLICADO'});pintarRev();toast('Aprobado y publicado en MAESTROS_DINALOG'+(x.publicacion.publicacion?' ('+x.publicacion.publicacion+')':'')+'. El Motor ya usa este consumo'+segs+'.',8000);}
      else modal('Aprobado, pero no se pudo publicar','<div class="warn" style="font-size:13px">El envío quedó <b>aprobado</b>, pero la escritura en MAESTROS_DINALOG falló: '+esc(x.publicacion.error||'')+'.<br><br>Un administrador puede reintentarla en <b>Administración › Publicación al Motor</b> (Correr simulación y Publicar).</div>');}
-    else toast(titulo+': '+e.id+(x.json&&!x.json.ok?' · aviso: los tableros se actualizarán al regenerar JSON':'. Análisis y cobertura lo mostrarán en 1 a 2 minutos.'),6000);rRevSuave();}
+    else toast(titulo+': '+e.id+segs+(x.json&&!x.json.ok?' · aviso: los tableros se actualizarán al regenerar JSON':'. Análisis y cobertura lo mostrarán en 1 a 2 minutos.'),6000);rRevSuave();}
    catch(z){clearInterval(avT);
     const mE=/estado actual: ([A-Z_]+)/.exec(z.message||'');
     if(mE){const est=mE[1];cerrarModal();ovrPoner(e.id,{e:est});var it3=BJ.find(q=>q.id===e.id);if(it3)it3.e=est;invalidar(e.per,e.ue);$('rDet').style.display='none';SEL=null;pintarRev();rRevSuave();revisarPendientes(false);
