@@ -805,6 +805,7 @@ $('cSend').onclick=()=>{const rows=cRows().filter(r=>r.v!=='');
  ()=>$('sOk').onclick=async()=>{const b=$('sOk');b.disabled=true;b.textContent='Enviando…';
   try{const r=await postJson({accion:'enviar',ue:C.ue,cat:C.cat,periodo:C.per,canal:C.archivo?'EXCEL':'FORMULARIO',contingencia:esAdmin(),archivo:C.archivo,filas:rows.map(x=>[x.cod,+x.v,String(x.j||'')])});
    if(!r.ok)throw new Error(r.error);ls.del(dkey());
+   if(r.json&&r.json.pendiente)jsonp({accion:'json_evento'},{reintentos:0,timeout:300000}).catch(()=>{});
    if(r.id)jsonp({accion:'notif_evento',ids:r.id},{reintentos:0,timeout:300000}).catch(()=>{});
    const env={};rows.forEach(x=>env[x.cod]={v:+x.v,j:String(x.j||'')});ls.set('cons_sent|'+C.ue+'|'+C.cat+'|'+C.per,JSON.stringify({id:r.id,d:env}));
    const hp=new Date().toLocaleString('sv-SE',{timeZone:'America/Panama'}).slice(0,16);
